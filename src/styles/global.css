@@ -2524,6 +2524,17 @@ kbd {
     overflow-y: auto;
   }
 
+  .privacy-preference {
+    /* Keep the launcher clear of the full-width Start CTA. */
+    left: max(0.65rem, env(safe-area-inset-left));
+    right: auto;
+    bottom: max(0.65rem, env(safe-area-inset-bottom));
+  }
+
+  .editor-actions {
+    padding-bottom: 0.35rem;
+  }
+
   .privacy-choices__actions a {
     width: 100%;
     margin-left: 0;

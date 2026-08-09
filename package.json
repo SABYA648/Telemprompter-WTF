@@ -27,9 +27,9 @@
     "check": "npm run typecheck && npm run lint && npm run content:lint && npm run format:check && npm run test && npm run build"
   },
   "dependencies": {
-    "@huggingface/transformers": "3.7.5",
     "@astrojs/preact": "^6.0.2",
     "@astrojs/sitemap": "^3.7.3",
+    "@huggingface/transformers": "3.7.5",
     "astro": "^7.2.0",
     "preact": "^10.29.8"
   },
