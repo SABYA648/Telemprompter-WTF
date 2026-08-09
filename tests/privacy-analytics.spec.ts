@@ -20,15 +20,20 @@ test('GA stays absent before consent and after declining', async ({ page }) => {
 
 test('GA is requested only after explicit allow', async ({ page }) => {
   const gaRequests: string[] = [];
-  await page.route('https://www.googletagmanager.com/**', async (route) => {
-    gaRequests.push(route.request().url());
-    await route.abort();
+  const collectRequests: string[] = [];
+  page.on('request', (request) => {
+    const url = request.url();
+    if (url.includes('googletagmanager.com/gtag/js')) gaRequests.push(url);
+    if (url.includes('google-analytics.com/g/collect')) collectRequests.push(url);
   });
   await page.goto('/');
   expect(gaRequests).toEqual([]);
+  expect(collectRequests).toEqual([]);
   await page.getByRole('button', { name: 'Allow analytics' }).click();
-  await expect.poll(() => gaRequests.length).toBe(1);
+  await expect.poll(() => gaRequests.length).toBeGreaterThan(0);
   expect(gaRequests[0]).toContain('G-TEST123');
+  // Rest-parameter Array pushes break GA4 bootstrap; Arguments-based queue must produce collect.
+  await expect.poll(() => collectRequests.length).toBeGreaterThan(0);
 });
 
 test('declining keeps optional analytics absent', async ({ page }) => {

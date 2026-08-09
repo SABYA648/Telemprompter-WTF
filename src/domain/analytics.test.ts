@@ -52,6 +52,57 @@ describe('analytics abstraction', () => {
     expect(new Analytics('G-TEST123').available).toBe(true);
   });
 
+  it('queues gtag bootstrap commands as Arguments objects, not Arrays', () => {
+    const dataLayer: unknown[] = [];
+    const appended: { src: string }[] = [];
+    const originalWindow = globalThis.window;
+    const originalDocument = globalThis.document;
+
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      writable: true,
+      value: { dataLayer },
+    });
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      writable: true,
+      value: {
+        createElement: () => ({ async: false, src: '', dataset: {} }),
+        head: { append: (node: { src: string }) => appended.push(node) },
+        querySelectorAll: () => [],
+      },
+    });
+
+    try {
+      const analytics = new Analytics('G-TEST123');
+      analytics.allow();
+      expect(analytics.isEnabled).toBe(true);
+      expect(appended).toHaveLength(1);
+      expect(appended[0]?.src).toContain('id=G-TEST123');
+      expect(dataLayer.length).toBeGreaterThanOrEqual(4);
+      for (const entry of dataLayer) {
+        expect(Array.isArray(entry)).toBe(false);
+        expect(Object.prototype.toString.call(entry)).toBe('[object Arguments]');
+      }
+      const first = dataLayer[0] as IArguments;
+      const config = dataLayer[3] as IArguments;
+      expect(first[0]).toBe('consent');
+      expect(config[0]).toBe('config');
+      expect(config[1]).toBe('G-TEST123');
+    } finally {
+      Object.defineProperty(globalThis, 'window', {
+        configurable: true,
+        writable: true,
+        value: originalWindow,
+      });
+      Object.defineProperty(globalThis, 'document', {
+        configurable: true,
+        writable: true,
+        value: originalDocument,
+      });
+    }
+  });
+
   it('drops user-content-shaped properties', () => {
     expect(
       filterSafeProperties({
