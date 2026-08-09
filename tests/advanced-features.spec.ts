@@ -61,21 +61,25 @@ async function installMicrophoneMock(page: Page, denied = false) {
   }, denied);
 }
 
-test('Smart Pace requests the microphone explicitly, transitions, and cleans up', async ({
-  page,
-}) => {
-  await installMicrophoneMock(page);
+async function openFreshEditor(page: Page) {
   await page.goto('/');
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
+}
+
+test('Smart Pace auto-starts on presenter open, follows pace, and cleans up', async ({ page }) => {
+  await installMicrophoneMock(page);
+  await openFreshEditor(page);
   await page.getByLabel('Teleprompter script').fill(sampleScript);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
-  await page.getByRole('button', { name: /Voice tracking/ }).click();
-  await page.getByRole('button', { name: 'Use Smart Pace' }).click();
   await expect(
-    page.getByRole('button', { name: /Learning room sound|Following your pace/ }),
+    page.getByRole('button', {
+      name: /Learning room sound|Following your pace|Requesting microphone/,
+    }),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: /Following your pace/ })).toBeVisible({
     timeout: 4000,
   });
+  await expect(page.locator('.script-word--live').first()).toBeVisible({ timeout: 4000 });
   await page.getByRole('button', { name: 'Exit presenter' }).click();
   expect(
     await page.evaluate(() =>
@@ -89,15 +93,20 @@ test('Smart Pace requests the microphone explicitly, transitions, and cleans up'
 
 test('microphone denial leaves Manual available and offers retry', async ({ page }) => {
   await installMicrophoneMock(page, true);
-  await page.goto('/');
+  await openFreshEditor(page);
   await page.getByLabel('Teleprompter script').fill(sampleScript);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
-  await page.getByRole('button', { name: /Voice tracking/ }).click();
+  await expect(page.getByRole('button', { name: /Microphone blocked|Voice tracking/ })).toBeVisible(
+    {
+      timeout: 4000,
+    },
+  );
+  await page.getByRole('button', { name: /Microphone blocked|Voice tracking|Manual/ }).click();
+  await expect(page.getByRole('button', { name: 'Use Smart Pace' })).toBeEnabled();
   await page.getByRole('button', { name: 'Use Smart Pace' }).click();
   await expect(
     page.getByText('Microphone access was blocked. Manual scrolling still works.'),
   ).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Use Smart Pace' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Exit presenter' })).toBeVisible();
 });
 
@@ -130,11 +139,12 @@ test('Private Precision model download is explicit, progress reaches ready, and 
       body: Buffer.alloc(sizes[name] ?? 0),
     });
   });
-  await page.goto('/');
+  await openFreshEditor(page);
   await page.getByLabel('Teleprompter script').fill(sampleScript);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   expect(requests).toEqual([]);
-  await page.getByRole('button', { name: /Voice tracking/ }).click();
+  // Auto-started Smart Pace should not download model assets.
+  await page.getByRole('button', { name: /Following your pace|Voice tracking|Manual/ }).click();
   expect(requests).toEqual([]);
   await expect(page.getByRole('heading', { name: 'Private Precision, beta' })).toBeVisible();
   await expect(page.getByText(/About 67 MB first download/)).toBeVisible();
@@ -158,7 +168,7 @@ test('Document Picture in Picture path opens a synchronized compact view', async
       value: { requestWindow: async () => frame.contentWindow },
     });
   });
-  await page.goto('/');
+  await openFreshEditor(page);
   await page.getByLabel('Teleprompter script').fill(sampleScript);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await page.getByRole('button', { name: 'Picture in Picture' }).click();
@@ -202,7 +212,7 @@ test('local screen recording exposes stop, preview, and save UI', async ({ page 
       configurable: true,
     });
   });
-  await page.goto('/');
+  await openFreshEditor(page);
   await page.getByLabel('Teleprompter script').fill(sampleScript);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await page.getByRole('button', { name: 'Record' }).click();
@@ -225,7 +235,7 @@ test('compact view failure leaves the main presenter usable', async ({ page }) =
     });
     window.open = () => null;
   });
-  await page.goto('/');
+  await openFreshEditor(page);
   await page.getByLabel('Teleprompter script').fill(sampleScript);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await page.getByRole('button', { name: 'Pop out' }).click();
@@ -251,7 +261,7 @@ test('recording cancellation shows a local error and preserves presenter control
       },
     });
   });
-  await page.goto('/');
+  await openFreshEditor(page);
   await page.getByLabel('Teleprompter script').fill(sampleScript);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await page.getByRole('button', { name: 'Record' }).click();

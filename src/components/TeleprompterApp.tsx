@@ -35,8 +35,22 @@ export default function TeleprompterApp(): preact.JSX.Element {
 
   useEffect(() => {
     const saved = loadLocalState();
+    let preferences = saved.preferences;
+    // One-shot experience refresh: older installs defaulted to Manual. Promote them to
+    // Smart Pace once so the product asks to listen by default. Precision stays put.
+    const experienceKey = 'teleprompter-wtf.experience-v2-smart';
+    try {
+      if (!localStorage.getItem(experienceKey)) {
+        if (preferences.voiceMode === 'manual') {
+          preferences = { ...preferences, voiceMode: 'smart' };
+        }
+        localStorage.setItem(experienceKey, '1');
+      }
+    } catch {
+      // Storage can be unavailable; the in-memory default still prefers Smart Pace.
+    }
     setScript(saved.script);
-    setPreferences(saved.preferences);
+    setPreferences(preferences);
     setPrivacyConsent(saved.privacyConsent);
     setSaveStatus(saved.savedAt ? 'Restored from this device' : 'Saved only on this device');
     // Derived once at app start: a non-empty restored script means this session continues

@@ -652,6 +652,38 @@ button {
   transform-origin: center;
 }
 
+.script-word {
+  border-radius: 0.18em;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.presenter--listening .script-word {
+  color: rgb(246 240 228 / 0.55);
+}
+
+.presenter--listening .script-word--trail {
+  color: rgb(246 240 228 / 0.78);
+  background: rgb(228 73 46 / 0.08);
+}
+
+.presenter--listening .script-word--live {
+  color: #fff8ee;
+  background: rgb(228 73 46 / 0.22);
+  box-shadow: 0 0 0 0.08em rgb(228 73 46 / 0.12);
+}
+
+.presenter--speaking .script-word--live {
+  background: rgb(228 73 46 / 0.34);
+  box-shadow: 0 0 0 0.1em rgb(228 73 46 / 0.18);
+}
+
+.presenter--listening .focus-guide span {
+  border-top-color: rgb(228 73 46 / 0.28);
+}
+
 .presenter__progress {
   position: fixed;
   z-index: 10;

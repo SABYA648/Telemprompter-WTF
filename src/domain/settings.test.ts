@@ -31,8 +31,9 @@ describe('presenter settings', () => {
     expect(result.fontSize).toBe(DEFAULT_PREFERENCES.fontSize);
     expect(result.alignment).toBe('left');
     expect(result.focusLine).toBe(true);
-    expect(result.voiceMode).toBe('manual');
+    expect(result.voiceMode).toBe('smart');
     expect(sanitizePreferences({ voiceMode: 'precision' }).voiceMode).toBe('precision');
+    expect(sanitizePreferences({ voiceMode: 'manual' }).voiceMode).toBe('manual');
   });
 
   it('maps the speed scale monotonically', () => {

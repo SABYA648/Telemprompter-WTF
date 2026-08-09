@@ -20,7 +20,8 @@ export const DEFAULT_PREFERENCES: PresenterPreferences = {
   focusLine: true,
   focusPosition: 42,
   speakingWpm: 130,
-  voiceMode: 'manual',
+  // Smart Pace is the default presenting experience: listen locally and follow rhythm.
+  voiceMode: 'smart',
 };
 
 export function clamp(value: number, min: number, max: number): number {
@@ -70,9 +71,11 @@ export function sanitizePreferences(
     verticalFlip: source.verticalFlip === true,
     focusLine: source.focusLine !== false,
     voiceMode:
-      source.voiceMode === 'smart' || source.voiceMode === 'precision'
-        ? source.voiceMode
-        : 'manual',
+      source.voiceMode === 'manual'
+        ? 'manual'
+        : source.voiceMode === 'precision'
+          ? 'precision'
+          : 'smart',
   };
 }
 

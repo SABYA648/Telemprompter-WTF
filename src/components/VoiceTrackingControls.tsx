@@ -22,7 +22,12 @@ interface Props {
   mode: VoiceMode;
   onModeChange: (mode: VoiceMode) => void;
   onMultiplier: (multiplier: number) => void;
-  onAlignment: (characterIndex: number, confidence: number) => void;
+  onAlignment: (characterIndex: number, confidence: number, tokenEnd?: number) => void;
+  onVoiceActivity?: (activity: {
+    listening: boolean;
+    speechActive: boolean;
+    state: SmartPaceState;
+  }) => void;
 }
 
 type ModelState = 'checking' | 'missing' | 'downloading' | 'ready' | 'preparing' | 'error';
@@ -54,6 +59,7 @@ export default function VoiceTrackingControls({
   onModeChange,
   onMultiplier,
   onAlignment,
+  onVoiceActivity,
 }: Props): preact.JSX.Element {
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<SmartPaceState>('off');
@@ -66,10 +72,12 @@ export default function VoiceTrackingControls({
   const sessionRef = useRef<LocalAudioSession | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const workerBusyRef = useRef(false);
+  const autoStartAttemptedRef = useRef(false);
   const capabilities = useRef(detectBrowserCapabilities()).current;
   const deviceRating = precisionCapability(capabilities);
   const alignment = useMemo(() => new ScriptAlignmentEngine(script), [script]);
   const isActive = state === 'calibrating' || state === 'listening' || state === 'paused';
+  const [speechActive, setSpeechActive] = useState(false);
 
   useEffect(() => {
     void isLocalModelReady().then((ready) => setModelState(ready ? 'ready' : 'missing'));
@@ -79,6 +87,14 @@ export default function VoiceTrackingControls({
   useEffect(() => {
     if (open) doneRef.current?.focus();
   }, [open]);
+
+  useEffect(() => {
+    onVoiceActivity?.({
+      listening: isActive,
+      speechActive,
+      state,
+    });
+  }, [isActive, speechActive, state]);
 
   const close = () => {
     setOpen(false);
@@ -116,17 +132,20 @@ export default function VoiceTrackingControls({
     workerRef.current = null;
     workerBusyRef.current = false;
     onMultiplier(1);
+    setSpeechActive(false);
     setState('off');
   };
 
   const handlePace = (reading: PaceReading) => {
     setState(reading.state);
+    setSpeechActive(reading.speechActive);
     onMultiplier(reading.multiplier);
   };
 
-  const begin = async (nextMode: 'smart' | 'precision') => {
+  const begin = async (nextMode: 'smart' | 'precision', options?: { auto?: boolean }) => {
     stopVoice();
     setMessage('');
+    if (options?.auto) setOpen(false);
     setState('requesting');
     onModeChange(nextMode);
     if (nextMode === 'precision') {
@@ -171,7 +190,10 @@ export default function VoiceTrackingControls({
             detail: { confidence: result.confidence, milliseconds: data.milliseconds },
           }),
         );
-        if (result.movement !== 'hold') onAlignment(result.characterIndex, result.confidence);
+        if (result.movement !== 'hold') {
+          const token = alignment.tokens[result.tokenIndex];
+          onAlignment(result.characterIndex, result.confidence, token?.end);
+        }
       };
       worker.onerror = () => {
         workerBusyRef.current = false;
@@ -204,7 +226,8 @@ export default function VoiceTrackingControls({
       await session.start();
       if (nextMode === 'smart') analytics.track('smart_pace_enable', { result: 'started' });
       else analytics.track('private_precision_enable');
-      close();
+      if (options?.auto) setOpen(false);
+      else close();
     } catch (error) {
       session.stop();
       sessionRef.current = null;
@@ -223,8 +246,19 @@ export default function VoiceTrackingControls({
       }
       onModeChange('manual');
       onMultiplier(1);
+      // Auto-start denial should not trap the presenter behind a dialog.
+      if (!options?.auto) setOpen(true);
     }
   };
+
+  // Default experience: request Smart Pace as soon as the presenter opens.
+  useEffect(() => {
+    if (autoStartAttemptedRef.current) return;
+    if (mode !== 'smart') return;
+    if (!capabilities.microphone) return;
+    autoStartAttemptedRef.current = true;
+    void begin('smart', { auto: true });
+  }, [mode, capabilities.microphone]);
 
   const chooseManual = () => {
     stopVoice();
@@ -314,9 +348,12 @@ export default function VoiceTrackingControls({
                 class={mode === 'smart' ? 'voice-option voice-option--selected' : 'voice-option'}
               >
                 <div>
-                  <p class="voice-option__tag">Fastest. Fully local.</p>
+                  <p class="voice-option__tag">Default. Fully local.</p>
                   <h3>Smart Pace</h3>
-                  <p>Matches scrolling to your speaking rhythm without transcribing your voice.</p>
+                  <p>
+                    Starts with you. Matches scrolling to your speaking rhythm and faintly
+                    highlights the live reading zone so you stay in sync. No transcription.
+                  </p>
                 </div>
                 <button
                   class="button button--primary button--small"

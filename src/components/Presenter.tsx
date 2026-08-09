@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   analytics,
   durationBucket,
@@ -10,6 +10,12 @@ import {
 } from '../domain/analytics';
 import { countWords, durationSeconds, formatDuration } from '../domain/calculations';
 import { detectBrowserCapabilities } from '../domain/capabilities';
+import {
+  estimateFocusCharacterIndex,
+  highlightWindowAround,
+  segmentScript,
+  type HighlightWindow,
+} from '../domain/scriptHighlight';
 import { SETTING_LIMITS, clamp, speedToPixelsPerSecond } from '../domain/settings';
 import { TimeBasedScrollController } from '../domain/scrollController';
 import type { PresenterPreferences } from '../domain/types';
@@ -59,13 +65,41 @@ export default function Presenter({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [speechActive, setSpeechActive] = useState(false);
+  const [highlight, setHighlight] = useState<HighlightWindow>({
+    trailStart: 0,
+    liveStart: 0,
+    liveEnd: 0,
+  });
   const voiceMultiplierRef = useRef(1);
+  const scriptElementRef = useRef<HTMLDivElement>(null);
+  const precisionAnchorRef = useRef<number | null>(null);
+  const segments = useMemo(() => segmentScript(script), [script]);
+  const segmentsRef = useRef(segments);
+  const focusPositionRef = useRef(preferences.focusPosition);
+  segmentsRef.current = segments;
+  focusPositionRef.current = preferences.focusPosition;
   settingsOpenRef.current = settingsOpen;
   shortcutsOpenRef.current = shortcutsOpen;
   const capabilities = useRef(detectBrowserCapabilities()).current;
   const words = countWords(script);
   const estimatedTotal = durationSeconds(words, preferences.speakingWpm);
   const remaining = estimatedTotal * (1 - progress);
+
+  const syncHighlightFromScroll = () => {
+    const scroller = scrollerRef.current;
+    const scriptElement = scriptElementRef.current;
+    if (!scroller || !scriptElement || !script.length) return;
+    // Precision anchors temporarily own the live word when speech recognition is confident.
+    // Otherwise the focus-line caret estimate keeps Smart Pace and the reader visually aligned.
+    const center =
+      precisionAnchorRef.current ??
+      estimateFocusCharacterIndex(scroller, scriptElement, focusPositionRef.current, script.length);
+    setHighlight(highlightWindowAround(segmentsRef.current, center));
+  };
+  const syncHighlightRef = useRef(syncHighlightFromScroll);
+  syncHighlightRef.current = syncHighlightFromScroll;
 
   const revealControls = () => {
     setControlsVisible(true);
@@ -100,6 +134,7 @@ export default function Presenter({
         setProgress(snapshot.progress);
         progressRef.current = snapshot.progress;
         if (snapshot.progress >= COMPLETE_PROGRESS_THRESHOLD) markComplete();
+        syncHighlightRef.current();
       },
       onComplete: markComplete,
     });
@@ -136,12 +171,29 @@ export default function Presenter({
     );
   };
 
-  const applyAlignment = (characterIndex: number, confidence: number) => {
+  const applyAlignment = (characterIndex: number, confidence: number, tokenEnd?: number) => {
     const scroller = scrollerRef.current;
     if (!scroller || !script.length) return;
     const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
     const target = (characterIndex / script.length) * maxScroll;
     controllerRef.current?.moveToward(target, confidence >= 0.78 ? 0.18 : 0.07);
+    const center =
+      typeof tokenEnd === 'number' && tokenEnd > characterIndex
+        ? Math.round((characterIndex + tokenEnd) / 2)
+        : characterIndex;
+    precisionAnchorRef.current = center;
+    setHighlight(highlightWindowAround(segmentsRef.current, center, 6, 3));
+    window.setTimeout(() => {
+      // Resume focus-line tracking after a short precision hold so scroll and highlight stay glued.
+      if (precisionAnchorRef.current === center) precisionAnchorRef.current = null;
+    }, 1800);
+  };
+
+  const handleVoiceActivity = (activity: { listening: boolean; speechActive: boolean }) => {
+    setVoiceListening(activity.listening);
+    setSpeechActive(activity.speechActive);
+    if (!activity.listening) precisionAnchorRef.current = null;
+    else requestAnimationFrame(() => syncHighlightRef.current());
   };
 
   useEffect(() => {
@@ -332,7 +384,7 @@ export default function Presenter({
   return (
     <section
       ref={presenterRef}
-      class={`presenter ${controlsVisible || !playing ? 'presenter--controls' : ''}`}
+      class={`presenter ${controlsVisible || !playing ? 'presenter--controls' : ''} ${voiceListening ? 'presenter--listening' : ''} ${speechActive ? 'presenter--speaking' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-label="Teleprompter presenter"
@@ -370,6 +422,7 @@ export default function Presenter({
           }}
         >
           <div
+            ref={scriptElementRef}
             class="presenter__script"
             style={{
               fontSize: `${preferences.fontSize}px`,
@@ -378,7 +431,27 @@ export default function Presenter({
               transform: `scale(${preferences.mirror ? -1 : 1}, ${preferences.verticalFlip ? -1 : 1})`,
             }}
           >
-            {script}
+            {segments.map((segment) => {
+              if (segment.kind === 'gap') {
+                return <span key={`g-${segment.start}`}>{segment.text}</span>;
+              }
+              const isLive =
+                segment.start >= highlight.liveStart && segment.end <= highlight.liveEnd;
+              const isTrail =
+                !isLive &&
+                segment.start >= highlight.trailStart &&
+                segment.start < highlight.liveStart;
+              const className = isLive
+                ? 'script-word script-word--live'
+                : isTrail
+                  ? 'script-word script-word--trail'
+                  : 'script-word';
+              return (
+                <span key={`w-${segment.start}`} class={className} data-script-word="true">
+                  {segment.text}
+                </span>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -422,6 +495,7 @@ export default function Presenter({
           onModeChange={(voiceMode) => updatePreference('voiceMode', voiceMode)}
           onMultiplier={updateVoiceMultiplier}
           onAlignment={applyAlignment}
+          onVoiceActivity={handleVoiceActivity}
         />
         <RecordingControl />
         <PictureInPictureControl
