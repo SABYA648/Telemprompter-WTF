@@ -1,0 +1,63 @@
+---
+import Layout from '../layouts/Layout.astro';
+const title = 'About the project | teleprompter.wtf';
+const description = 'Why teleprompter.wtf is free, private, open-source, and intentionally simple.';
+---
+
+<Layout title={title} description={description}>
+  <article class="prose-page section-wrap">
+    <header class="page-intro">
+      <p class="eyebrow">About the project</p>
+      <h1>A teleprompter should not need onboarding.</h1>
+      <p>
+        teleprompter.wtf is a small, open-source utility built around one idea: paste your words and
+        start presenting.
+      </p>
+    </header>
+    <div class="prose-grid">
+      <div class="prose-aside"><p>Paste.<br />Present.<br />Done.</p></div>
+      <div class="prose-body">
+        <h2>Why this exists</h2>
+        <p>
+          Many teleprompters begin with account creation, pricing decisions, or feature-heavy
+          dashboards. Those things get in the way of the moment when you simply need readable words
+          moving at the right pace.
+        </p>
+        <p>
+          This project treats speed, typography, privacy, accessibility, and predictable controls as
+          the product, not as premium extras.
+        </p>
+        <h2>Open source on purpose</h2>
+        <p>
+          The code is available so anyone can inspect how local storage and analytics work, report
+          an issue, improve accessibility, or self-host the tool. The core application does not need
+          a database or a script-storage service.
+        </p>
+        <p>
+          Local voice tracking is documented in detail, including the pinned model, temporary
+          recognition state, and fallback behavior. <a href="/private-voice-tracking"
+            >Read how it works</a
+          >.
+        </p>
+        <p>
+          <a href="https://github.com/SABYA648/Telemprompter-WTF" rel="noopener noreferrer"
+            >View SABYA648/Telemprompter-WTF on GitHub</a
+          >.
+        </p>
+        <h2>What it will not do</h2>
+        <p>
+          teleprompter.wtf will not put scripts in public links, require an account for the basic
+          presenter, sell attention to advertisers, or claim your words need a cloud database to
+          scroll on your screen.
+        </p>
+        <h2>Use it, then tell us what hurt</h2>
+        <p>
+          The most useful contributions are concrete: a browser where fullscreen behaves oddly, a
+          control that is hard to reach on a particular phone, or a wording choice that does not
+          work with assistive technology. Open a GitHub issue with reproducible details. Never
+          include a private script.
+        </p>
+      </div>
+    </div>
+  </article>
+</Layout>

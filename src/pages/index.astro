@@ -1,0 +1,120 @@
+---
+import PrivacyChoices from '../components/PrivacyChoices';
+import TeleprompterApp from '../components/TeleprompterApp';
+import Layout from '../layouts/Layout.astro';
+
+const title = 'Free Online Teleprompter | teleprompter.wtf';
+const description =
+  'Paste your script and present in seconds with a fast, free online teleprompter. No login, no ads, local scripts, and optional local voice tracking.';
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'teleprompter.wtf',
+    url: 'https://teleprompter.wtf/',
+    description,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'teleprompter.wtf',
+    url: 'https://teleprompter.wtf/',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any modern web browser',
+    description,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    isAccessibleForFree: true,
+    browserRequirements: 'JavaScript is required for presenter controls',
+  },
+];
+---
+
+<Layout title={title} description={description} schema={schema}>
+  <section class="home-hero">
+    <div class="home-hero__copy">
+      <p class="eyebrow"><span aria-hidden="true"></span> Private by design</p>
+      <h1>Free online teleprompter</h1>
+      <p>Paste your script. Hit start. No login, no ads, and no cloud script storage.</p>
+    </div>
+    <TeleprompterApp client:load />
+    <PrivacyChoices client:idle />
+  </section>
+
+  <section class="confidence-strip" aria-label="Product promises">
+    <p><strong>No account</strong><span>Open it and get to work.</span></p>
+    <p><strong>Browser-local</strong><span>Your words and voice stay on your device.</span></p>
+    <p><strong>Presenter-first</strong><span>Smooth, readable, distraction-free.</span></p>
+  </section>
+
+  <section class="home-content section-wrap">
+    <div class="section-heading">
+      <p class="eyebrow">Everything you need</p>
+      <h2>A teleprompter that actually follows you.</h2>
+      <p>Manual scrolling is ready immediately. Voice tracking appears only when you ask for it.</p>
+    </div>
+    <div class="feature-list">
+      <article>
+        <span>01</span><h3>Start with Manual</h3><p>
+          Deterministic scrolling stays consistent across displays. Pause, resume, restart, and
+          adjust speed without losing your place.
+        </p>
+      </article>
+      <article>
+        <span>02</span><h3>Try Smart Pace</h3><p>
+          Local microphone signal analysis matches the scroll to your speaking rhythm. It does not
+          transcribe speech and needs no model download.
+        </p>
+      </article>
+      <article>
+        <span>03</span><h3>Choose Private Precision Beta</h3><p>
+          Download an optional local voice model that can follow your place in the known script.
+          Recognition is temporary and stays on this device.
+        </p>
+      </article>
+    </div>
+    <div class="feature-list feature-list--secondary">
+      <article>
+        <span>04</span><h3>Record locally</h3><p>
+          Capture a screen or camera where browser support permits. Preview and save the real file
+          without an upload step.
+        </p>
+      </article>
+      <article>
+        <span>05</span><h3>Use a compact view</h3><p>
+          Picture in Picture uses the best browser path available, with a pop-out fallback when
+          native compact windows are unavailable.
+        </p>
+      </article>
+      <article>
+        <span>06</span><h3>Fit your setup</h3><p>
+          Adjust type, focus position, and column width. Mirror or flip the script for beam-splitter
+          glass and inverted rigs.
+        </p>
+      </article>
+    </div>
+    <p class="home-voice-link">
+      Want the technical privacy boundary? <a href="/private-voice-tracking"
+        >See how local voice tracking works</a
+      >. Compare the full <a href="/features">feature set</a> or read the
+      <a href="/privacy">privacy policy</a>.
+    </p>
+    <div class="home-links">
+      <div>
+        <p class="eyebrow">New to prompting?</p><h2>Deliver naturally, not mechanically.</h2>
+      </div>
+      <div class="link-stack">
+        <a href="/guides/how-to-use-a-teleprompter"
+          ><span>Read the practical setup guide</span><b aria-hidden="true">↗</b></a
+        >
+        <a href="/guides/teleprompter-speed"
+          ><span>Choose the right scroll speed</span><b aria-hidden="true">↗</b></a
+        >
+        <a href="/tools/words-to-minutes"
+          ><span>Turn word count into speaking time</span><b aria-hidden="true">↗</b></a
+        >
+        <a href="/guides"><span>Browse all teleprompter guides</span><b aria-hidden="true">↗</b></a>
+        <a href="/tools"><span>Open the free planning tools</span><b aria-hidden="true">↗</b></a>
+      </div>
+    </div>
+  </section>
+</Layout>

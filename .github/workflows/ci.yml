@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run content:lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --omit=dev
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --build-arg PUBLIC_GA_MEASUREMENT_ID=G-TEST123 -t teleprompter-wtf:ci .
+      - run: docker run -d --name teleprompter-ci --read-only --tmpfs /tmp:uid=101,gid=101 --tmpfs /var/cache/nginx:uid=101,gid=101 --tmpfs /var/run:uid=101,gid=101 -p 8080:8080 teleprompter-wtf:ci
+      - run: |
+          for attempt in {1..20}; do
+            curl --fail http://127.0.0.1:8080/health.txt && exit 0
+            sleep 1
+          done
+          docker logs teleprompter-ci
+          exit 1
+      - run: test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/private-voice-tracking)" = "200"
+      - run: test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/models/whisper-tiny-v1/onnx/encoder_model_quantized.onnx)" = "200"

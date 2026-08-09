@@ -1,0 +1,89 @@
+---
+import Layout from '../layouts/Layout.astro';
+const title = 'Teleprompter Features | teleprompter.wtf';
+const description =
+  'Manual scrolling, local voice tracking, browser recording, Picture in Picture, mirror mode, local autosave, and practical presenter controls.';
+---
+
+<Layout title={title} description={description}>
+  <article class="content-page section-wrap">
+    <header class="page-intro">
+      <p class="eyebrow">Built for the take</p>
+      <h1>Simple on the surface. Capable when needed.</h1>
+      <p>
+        Paste and present immediately. Local voice, recording, and compact-view tools stay behind
+        clear controls until you need them.
+      </p>
+      <a class="button button--primary" href="/">Open the teleprompter</a>
+    </header>
+    <div class="feature-detail-grid">
+      <section>
+        <p class="feature-number">01</p><h2>Smooth, steady scrolling</h2><p>
+          The scroll engine uses elapsed time rather than frame counts, so speed stays consistent on
+          standard and high-refresh displays. Pause and resume without jumps.
+        </p>
+      </section>
+      <section>
+        <p class="feature-number">02</p><h2>Smart Pace</h2><p>
+          Microphone energy and cadence are processed locally to slow down in silence and match your
+          speaking rhythm. No transcription and no model download.
+        </p>
+      </section>
+      <section>
+        <p class="feature-number">03</p><h2>Private Precision Beta</h2><p>
+          An optional local model (about 67 MB on first download, kept in this browser) recognizes
+          short temporary fragments and aligns them to your known script. The script, microphone
+          audio, and fragments stay on your device.
+        </p>
+      </section>
+      <section>
+        <p class="feature-number">04</p><h2>A readable stage</h2><p>
+          Control font size, line height, text width, alignment, and focus position. A near-black
+          presenter keeps attention on warm, high-contrast type.
+        </p>
+      </section>
+      <section>
+        <p class="feature-number">05</p><h2>Prompter-rig ready</h2><p>
+          Mirror text horizontally for beam-splitter glass, flip it vertically for an inverted
+          setup, and use fullscreen where the browser supports it.
+        </p>
+      </section>
+      <section>
+        <p class="feature-number">06</p><h2>Local recording</h2><p>
+          Record a display, window, tab, or camera when the browser exposes those capabilities.
+          Microphone capture is optional. Preview and save without uploading.
+        </p>
+      </section>
+      <section>
+        <p class="feature-number">07</p><h2>Compact presenter</h2><p>
+          Document Picture in Picture is preferred, followed by canvas-backed video Picture in
+          Picture and an ordinary pop-out. The interface never promises unsupported behavior.
+        </p>
+      </section>
+      <section>
+        <p class="feature-number">08</p><h2>Fast from the keyboard</h2><p>
+          Use Space to play or pause, arrows for speed, brackets for type size, F for fullscreen, M
+          for mirror, and Home to restart.
+        </p>
+      </section>
+      <section>
+        <p class="feature-number">09</p><h2>Local, resilient editing</h2><p>
+          Type or paste plain text with native undo and redo. Paragraphs are preserved, TXT files
+          import locally, and autosave restores your script after a refresh.
+        </p>
+      </section>
+      <section>
+        <p class="feature-number">10</p><h2>Private by design</h2><p>
+          There is no script or recording backend. Optional analytics are off until you choose them,
+          and every user-script surface is masked from optional experience diagnostics.
+        </p>
+      </section>
+    </div>
+    <aside class="callout">
+      <div><p class="eyebrow">Ready?</p><h2>Paste. Present. Done.</h2></div><a
+        class="button button--primary"
+        href="/">Start teleprompter</a
+      >
+    </aside>
+  </article>
+</Layout>

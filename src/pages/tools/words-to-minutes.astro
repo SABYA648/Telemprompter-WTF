@@ -1,0 +1,97 @@
+---
+import WordsToMinutes from '../../components/WordsToMinutes';
+import Layout from '../../layouts/Layout.astro';
+const title = 'Words to Minutes Calculator | teleprompter.wtf';
+const description =
+  'Convert word count to estimated speaking time at relaxed, conversational, brisk, and fast speaking rates.';
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Words to Minutes Calculator',
+    url: 'https://teleprompter.wtf/tools/words-to-minutes',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any modern web browser',
+    description,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://teleprompter.wtf/' },
+      { '@type': 'ListItem', position: 2, name: 'Tools', item: 'https://teleprompter.wtf/tools' },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Words to minutes',
+        item: 'https://teleprompter.wtf/tools/words-to-minutes',
+      },
+    ],
+  },
+];
+---
+
+<Layout title={title} description={description} schema={schema}>
+  <article class="tool-page section-wrap">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><a href="/tools">Tools</a><span>/</span><span
+        aria-current="page">Words to minutes</span
+      >
+    </nav>
+    <header class="page-intro page-intro--center">
+      <p class="eyebrow">Free speaking time tool</p>
+      <h1>Words to minutes</h1>
+      <p>
+        See how long a script takes to say across realistic speaking speeds. The calculation happens
+        instantly in your browser.
+      </p>
+    </header>
+    <WordsToMinutes client:load />
+    <div class="tool-explainer">
+      <section>
+        <h2>A useful default</h2><p>
+          At 130 words per minute, 1,000 words takes about 7 minutes 42 seconds. This is a practical
+          starting estimate for clear, conversational delivery.
+        </p>
+      </section>
+      <section>
+        <h2>Allow time for more than words</h2><p>
+          Pauses, laughter, audience questions, demonstrations, slide changes, and emphasis all
+          extend runtime. For a live event, keep a buffer rather than filling every available second
+          with copy.
+        </p>
+      </section>
+      <section>
+        <h2>Measure your own pace</h2><p>
+          Record yourself reading a representative 200-word section naturally. Divide 200 by the
+          number of minutes it took. Use that personal WPM for a more accurate estimate.
+        </p>
+      </section>
+    </div>
+    <div class="tool-crosslink">
+      <p>Need to hit a fixed time?</p><a href="/tools/teleprompter-speed-calculator"
+        >Calculate the required WPM <span aria-hidden="true">→</span></a
+      >
+    </div>
+    <aside class="callout">
+      <div><p class="eyebrow">Timing looks good?</p><h2>Open the free teleprompter.</h2></div><a
+        class="button button--primary"
+        href="/">Start teleprompter</a
+      >
+    </aside>
+  </article>
+</Layout>
+
+<script>
+  import { analytics } from '../../domain/analytics';
+
+  const cta = document.querySelector<HTMLAnchorElement>('.callout a[href="/"]');
+  cta?.addEventListener('click', () => {
+    analytics.track('use_teleprompter_cta', {
+      page_type: 'tool',
+      content_cluster: 'speaking_time',
+      cta_location: 'end',
+    });
+  });
+</script>

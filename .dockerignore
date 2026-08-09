@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+dist
+dist-ga
+.astro
+artifacts
+playwright-report
+test-results
+*.log
+.env
+public/models/runtime
+public/models/whisper-tiny-v1

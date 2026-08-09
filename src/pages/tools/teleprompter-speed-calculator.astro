@@ -1,0 +1,94 @@
+---
+import SpeedCalculator from '../../components/SpeedCalculator';
+import Layout from '../../layouts/Layout.astro';
+const title = 'Teleprompter Speed Calculator | teleprompter.wtf';
+const description =
+  'Calculate the speaking pace needed for a script and time limit, or estimate duration from word count and words per minute.';
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Teleprompter Speed Calculator',
+    url: 'https://teleprompter.wtf/tools/teleprompter-speed-calculator',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any modern web browser',
+    description,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://teleprompter.wtf/' },
+      { '@type': 'ListItem', position: 2, name: 'Tools', item: 'https://teleprompter.wtf/tools' },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Teleprompter speed calculator',
+        item: 'https://teleprompter.wtf/tools/teleprompter-speed-calculator',
+      },
+    ],
+  },
+];
+---
+
+<Layout title={title} description={description} schema={schema}>
+  <article class="tool-page section-wrap">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><a href="/tools">Tools</a><span>/</span><span
+        aria-current="page">Speed calculator</span
+      >
+    </nav>
+    <header class="page-intro page-intro--center">
+      <p class="eyebrow">Free speaking pace tool</p>
+      <h1>Teleprompter speed calculator</h1>
+      <p>
+        Work out the words per minute your time limit requires, or how long your script will take at
+        a comfortable pace.
+      </p>
+    </header>
+    <SpeedCalculator client:load />
+    <div class="tool-explainer">
+      <section>
+        <h2>How the calculation works</h2><p>
+          Required WPM equals the script’s word count divided by the available minutes. Estimated
+          duration reverses that calculation: words divided by WPM. These numbers are a planning
+          baseline, not a demand to speak without pauses.
+        </p>
+      </section>
+      <section>
+        <h2>What is a good teleprompter pace?</h2><p>
+          About 120–150 WPM feels conversational for many speakers. Technical explanations often
+          need less speed; energetic introductions can take more. If the required pace feels rushed,
+          trimming the script usually sounds better than reading faster.
+        </p>
+      </section>
+      <section>
+        <h2>Set the screen after timing the script</h2><p>
+          Font size, line height, and text width affect physical scrolling speed. Configure the
+          presenter for your camera distance, then rehearse the densest section and adjust the
+          scroll control by feel.
+        </p>
+      </section>
+    </div>
+    <aside class="callout">
+      <div><p class="eyebrow">Pace decided?</p><h2>Take the script to the presenter.</h2></div><a
+        class="button button--primary"
+        href="/">Start teleprompter</a
+      >
+    </aside>
+  </article>
+</Layout>
+
+<script>
+  import { analytics } from '../../domain/analytics';
+
+  const cta = document.querySelector<HTMLAnchorElement>('.callout a[href="/"]');
+  cta?.addEventListener('click', () => {
+    analytics.track('use_teleprompter_cta', {
+      page_type: 'tool',
+      content_cluster: 'speed',
+      cta_location: 'end',
+    });
+  });
+</script>

@@ -1,0 +1,47 @@
+---
+import Layout from '../../layouts/Layout.astro';
+const title = 'Free Teleprompter Calculators | teleprompter.wtf';
+const description =
+  'Free browser calculators for teleprompter speed, required words per minute, and script speaking time. No signup and no backend.';
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://teleprompter.wtf/' },
+    { '@type': 'ListItem', position: 2, name: 'Tools', item: 'https://teleprompter.wtf/tools' },
+  ],
+};
+---
+
+<Layout title={title} description={description} schema={schema}>
+  <section class="listing-page section-wrap">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><span aria-current="page">Tools</span>
+    </nav>
+    <header class="page-intro">
+      <p class="eyebrow">Useful arithmetic</p>
+      <h1>Teleprompter calculators</h1>
+      <p>Plan a script or check a deadline without a spreadsheet, signup, or server request.</p>
+    </header>
+    <div class="guide-grid tool-listing">
+      <article>
+        <p class="guide-index">Pace and deadline</p>
+        <h2><a href="/tools/teleprompter-speed-calculator">Teleprompter speed calculator</a></h2>
+        <p>Calculate the WPM needed for a fixed time, or estimate duration from words and pace.</p>
+        <a class="arrow-link" href="/tools/teleprompter-speed-calculator"
+          >Open calculator <span aria-hidden="true">→</span></a
+        >
+      </article>
+      <article>
+        <p class="guide-index">Speaking time</p>
+        <h2><a href="/tools/words-to-minutes">Words to minutes</a></h2>
+        <p>
+          Compare one word count across deliberate, relaxed, conversational, brisk, and fast rates.
+        </p>
+        <a class="arrow-link" href="/tools/words-to-minutes"
+          >Open calculator <span aria-hidden="true">→</span></a
+        >
+      </article>
+    </div>
+  </section>
+</Layout>

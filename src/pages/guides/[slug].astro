@@ -1,0 +1,151 @@
+---
+import { guideBySlug, guides } from '../../content/guides';
+import Layout from '../../layouts/Layout.astro';
+
+export function getStaticPaths() {
+  return guides.map((guide) => ({ params: { slug: guide.slug }, props: { guide } }));
+}
+
+const { guide } = Astro.props;
+const title = `${guide.title} | teleprompter.wtf`;
+const canonical = `https://teleprompter.wtf/guides/${guide.slug}`;
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: guide.title,
+    description: guide.description,
+    datePublished: guide.updated,
+    dateModified: guide.updated,
+    author: { '@type': 'Organization', name: 'teleprompter.wtf' },
+    publisher: { '@type': 'Organization', name: 'teleprompter.wtf' },
+    mainEntityOfPage: canonical,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://teleprompter.wtf/' },
+      { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://teleprompter.wtf/guides' },
+      { '@type': 'ListItem', position: 3, name: guide.title, item: canonical },
+    ],
+  },
+];
+const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filter(Boolean);
+---
+
+<Layout title={title} description={guide.description} ogType="article" schema={schema}>
+  <article class="guide-page section-wrap">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><a href="/guides">Guides</a><span>/</span><span
+        aria-current="page">{guide.eyebrow}</span
+      >
+    </nav>
+    <header class="guide-header">
+      <p class="eyebrow">{guide.eyebrow}</p>
+      <h1>{guide.title}</h1>
+      <p>{guide.intro}</p>
+      <p class="updated">
+        Updated {
+          new Date(`${guide.updated}T00:00:00Z`).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            timeZone: 'UTC',
+          })
+        }
+      </p>
+    </header>
+    <div class="guide-layout">
+      <aside class="guide-toc">
+        <p>In this guide</p>
+        <ol>
+          {
+            guide.sections.map((section: { heading: string }, index: number) => (
+              <li>
+                <a href={`#section-${index + 1}`}>{section.heading}</a>
+              </li>
+            ))
+          }
+        </ol>
+      </aside>
+      <div class="guide-article">
+        {
+          guide.sections.map(
+            (
+              section: { heading: string; paragraphs: string[]; bullets?: string[] },
+              index: number,
+            ) => (
+              <section id={`section-${index + 1}`}>
+                <p class="section-number">{String(index + 1).padStart(2, '0')}</p>
+                <h2>{section.heading}</h2>
+                {section.paragraphs.map((paragraph: string) => (
+                  <p>{paragraph}</p>
+                ))}
+                {section.bullets && (
+                  <ul>
+                    {section.bullets.map((bullet: string) => (
+                      <li>{bullet}</li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ),
+          )
+        }
+        {
+          guide.slug === 'voice-activated-teleprompters' && (
+            <p class="guide-context-link">
+              See the exact local processing boundary in{' '}
+              <a href="/private-voice-tracking">How private voice tracking works</a>.
+            </p>
+          )
+        }
+        <aside class="inline-cta">
+          <p class="eyebrow">Put it into practice</p><h2>Your script, full screen in seconds.</h2><p
+          >
+            No account and no upload. Paste the words and start.
+          </p><a class="button button--primary" href="/" data-cta-cluster={guide.cluster}
+            >Open teleprompter</a
+          >
+        </aside>
+      </div>
+    </div>
+    <section class="related-guides">
+      <p class="eyebrow">Keep reading</p><h2>Related guides</h2>
+      <div>
+        {
+          related.map(
+            (item) =>
+              item && (
+                <a href={`/guides/${item.slug}`}>
+                  <>
+                    <span>{item.eyebrow}</span>
+                    <strong>{item.title}</strong>
+                    <b aria-hidden="true">→</b>
+                  </>
+                </a>
+              ),
+          )
+        }
+      </div>
+    </section>
+  </article>
+</Layout>
+
+<script>
+  import { analytics } from '../../domain/analytics';
+  import type { GuideCluster } from '../../content/guides';
+
+  const inlineCta = document.querySelector<HTMLAnchorElement>('.inline-cta a[data-cta-cluster]');
+  if (inlineCta) {
+    const cluster = inlineCta.dataset.ctaCluster as GuideCluster;
+    inlineCta.addEventListener('click', () => {
+      analytics.track('use_teleprompter_cta', {
+        page_type: 'guide',
+        content_cluster: cluster,
+        cta_location: 'inline',
+      });
+    });
+  }
+</script>

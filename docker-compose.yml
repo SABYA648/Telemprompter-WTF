@@ -1,0 +1,16 @@
+services:
+  teleprompter:
+    build:
+      context: .
+      args:
+        PUBLIC_GA_MEASUREMENT_ID: ${PUBLIC_GA_MEASUREMENT_ID:-}
+        PUBLIC_GOOGLE_SITE_VERIFICATION: ${PUBLIC_GOOGLE_SITE_VERIFICATION:-}
+        PUBLIC_BING_SITE_VERIFICATION: ${PUBLIC_BING_SITE_VERIFICATION:-}
+    ports:
+      - '8080:8080'
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:uid=101,gid=101
+      - /var/cache/nginx:uid=101,gid=101
+      - /var/run:uid=101,gid=101

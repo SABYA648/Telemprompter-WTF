@@ -1,0 +1,94 @@
+---
+import { guides } from '../../content/guides';
+import Layout from '../../layouts/Layout.astro';
+const title = 'Teleprompter Guides | teleprompter.wtf';
+const description =
+  'Practical teleprompter guides for setup, natural delivery, eye contact, script formatting, videos, presentations, voice tracking, and scroll speed.';
+const groups = [
+  {
+    title: 'Get started',
+    slugs: [
+      'what-is-a-teleprompter',
+      'how-to-use-a-teleprompter',
+      'how-to-format-a-teleprompter-script',
+    ],
+  },
+  {
+    title: 'Recording and video',
+    slugs: [
+      'teleprompter-for-youtube',
+      'teleprompter-for-video-recording',
+      'teleprompter-for-zoom',
+    ],
+  },
+  {
+    title: 'Presenting naturally',
+    slugs: [
+      'teleprompter-for-presentations',
+      'how-to-read-a-teleprompter-naturally',
+      'how-to-maintain-eye-contact',
+    ],
+  },
+  { title: 'Voice and pace', slugs: ['voice-activated-teleprompters', 'teleprompter-speed'] },
+].map((group) => ({
+  ...group,
+  guides: group.slugs.map((slug) => guides.find((guide) => guide.slug === slug)).filter(Boolean),
+}));
+---
+
+<Layout title={title} description={description}>
+  <section class="listing-page section-wrap">
+    <header class="page-intro">
+      <p class="eyebrow">Practical field notes</p>
+      <h1>Use a teleprompter well.</h1>
+      <p>
+        Clear guidance for writing, pacing, camera placement, and delivering words like you mean
+        them.
+      </p>
+    </header>
+    <div class="guide-groups">
+      {
+        groups.map((group) => (
+          <section>
+            <div class="section-heading">
+              <>
+                <p class="eyebrow">Browse by goal</p>
+                <h2>{group.title}</h2>
+              </>
+            </div>
+            <div class="guide-grid">
+              {group.guides.map(
+                (guide, index) =>
+                  guide && (
+                    <article>
+                      <p class="guide-index">
+                        {String(index + 1).padStart(2, '0')} · {guide.eyebrow}
+                      </p>
+                      <h3>
+                        <a href={`/guides/${guide.slug}`}>{guide.title}</a>
+                      </h3>
+                      <p>{guide.description}</p>
+                      <a class="arrow-link" href={`/guides/${guide.slug}`}>
+                        Read guide <span aria-hidden="true">→</span>
+                      </a>
+                    </article>
+                  ),
+              )}
+            </div>
+          </section>
+        ))
+      }
+    </div>
+    <p class="guide-voice-link">
+      Looking for the privacy details behind voice follow? <a href="/private-voice-tracking"
+        >Read how local voice tracking works</a
+      >.
+    </p>
+    <aside class="callout">
+      <div><p class="eyebrow">Skip the reading</p><h2>Put your script on screen.</h2></div><a
+        class="button button--primary"
+        href="/">Open teleprompter</a
+      >
+    </aside>
+  </section>
+</Layout>

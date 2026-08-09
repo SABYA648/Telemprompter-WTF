@@ -1,0 +1,170 @@
+---
+import PrivacyActions from '../components/PrivacyActions';
+import Layout from '../layouts/Layout.astro';
+const title = 'Privacy | teleprompter.wtf';
+const description =
+  'A plain-language account of how teleprompter.wtf handles scripts, microphone audio, local voice models, recordings, storage, and optional Google Analytics.';
+---
+
+<Layout title={title} description={description}>
+  <article class="prose-page section-wrap">
+    <header class="page-intro">
+      <p class="eyebrow">Plain-language privacy</p>
+      <h1>Your script, voice, and recordings stay on your device.</h1>
+      <p>
+        The teleprompter processes and displays your words on your device. We designed the core tool
+        so it does not need to receive them. Optional site measurement is separate and off until you
+        choose it.
+      </p>
+      <p class="updated">Last updated: 9 August 2026</p>
+    </header>
+    <div class="prose-grid">
+      <aside class="privacy-summary" aria-label="Privacy summary">
+        <strong>In one minute</strong>
+        <ul>
+          <li>No account</li>
+          <li>No script upload</li>
+          <li>No speech upload</li>
+          <li>No recording upload</li>
+          <li>Optional measurement only after consent</li>
+        </ul>
+      </aside>
+      <div class="prose-body">
+        <h2>The short version</h2>
+        <div
+          class="privacy-table-wrap"
+          role="region"
+          aria-label="Privacy data handling table"
+          tabindex="0"
+        >
+          <table class="privacy-table">
+            <thead
+              ><tr
+                ><th>Data</th><th>Used for</th><th>Processed where</th><th>Persisted where</th><th
+                  >Sent externally</th
+                ></tr
+              ></thead
+            >
+            <tbody>
+              <tr
+                ><th scope="row">Script</th><td>Editing and presenting</td><td>Browser</td><td
+                  >Local storage when autosave is available</td
+                ><td>No</td></tr
+              >
+              <tr
+                ><th scope="row">Preferences</th><td>Presenter setup</td><td>Browser</td><td
+                  >Local storage</td
+                ><td>No</td></tr
+              >
+              <tr
+                ><th scope="row">Smart Pace microphone</th><td>Speech rhythm</td><td>Browser</td><td
+                  >Nowhere</td
+                ><td>No</td></tr
+              >
+              <tr
+                ><th scope="row">Private Precision microphone</th><td>Local recognition</td><td
+                  >Browser worker</td
+                ><td>Nowhere</td><td>No</td></tr
+              >
+              <tr
+                ><th scope="row">Recognition fragments</th><td>Local script alignment</td><td
+                  >Browser</td
+                ><td>Nowhere</td><td>No</td></tr
+              >
+              <tr
+                ><th scope="row">Voice model</th><td>Local recognition</td><td>Browser</td><td
+                  >Versioned Cache Storage</td
+                ><td>Downloaded from teleprompter.wtf only</td></tr
+              >
+              <tr
+                ><th scope="row">Recordings</th><td>Local capture and preview</td><td>Browser</td
+                ><td>Only when you save the file</td><td>No</td></tr
+              >
+              <tr
+                ><th scope="row">GA4 events</th><td>Aggregate product usage</td><td
+                  >Google, only after opt-in</td
+                ><td>According to operator and Google settings</td><td
+                  >Yes, after analytics consent</td
+                ></tr
+              >
+            </tbody>
+          </table>
+        </div>
+        <h2>Script processing</h2>
+        <p>
+          Your script stays in your browser. Script contents are not added to the page URL, sent to
+          teleprompter.wtf, included in analytics events, or intentionally written to application
+          logs.
+        </p>
+        <h2>Local browser storage</h2>
+        <p>
+          To restore your work after a refresh, the tool may save your script and preferences in
+          your browser’s local storage. That data remains associated with this browser profile on
+          this device. It is not synchronization and will not appear on another device.
+        </p>
+        <p>
+          Anyone with access to your unlocked browser profile may be able to access locally stored
+          data. Clear the script after working with sensitive material, use a private browsing
+          window, or use the control below to remove all data owned by teleprompter.wtf.
+        </p>
+        <PrivacyActions client:load />
+        <h2>Microphone and local voice tracking</h2>
+        <p>
+          The microphone is requested only after you press a Smart Pace or Private Precision button.
+          Smart Pace listens locally: it analyzes signal energy and cadence in this browser and does
+          not transcribe your voice. Private Precision Beta runs a speech model on your device to
+          find your place in the known script, using temporary recognition fragments that never
+          leave the device. Stopping voice tracking or leaving the presenter stops media tracks,
+          closes the audio context, and disposes of local recognition state.
+        </p>
+        <p>
+          The Private Precision model is downloaded once, on your explicit request, and kept in this
+          browser for future visits. The first download transfers about 67 MB in total: 45 MB of
+          model files served from teleprompter.wtf, plus the speech runtime fetched at first use.
+          The model is stored in versioned browser Cache Storage and is removable without deleting
+          your script.
+        </p>
+        <h2>Local recording</h2>
+        <p>
+          Screen and camera capture use browser media APIs. Recordings are created locally and are
+          not uploaded: recorded chunks become a local Blob for preview and saving. The application
+          has no recording endpoint and does not persist a recording unless you choose to save the
+          file.
+        </p>
+        <h2>Optional Google Analytics</h2>
+        <p>
+          Optional Google Analytics 4 measures product usage with your consent. It is a single,
+          unchecked choice: the GA4 script is not loaded before you allow it, No thanks is given
+          equal access, and the teleprompter works the same either way. You can reopen Privacy
+          choices on the homepage and withdraw consent at any time.
+        </p>
+        <p>
+          GA4 receives a fixed vocabulary of low-cardinality product events and never receives your
+          script or voice content. Advertising storage, ad user data, ad personalization, and Google
+          signals stay denied. Events never include script text, recognition fragments, filenames,
+          microphone labels, clipboard contents, or raw error messages.
+        </p>
+        <h2>Network requests</h2>
+        <p>
+          Loading the website necessarily reveals ordinary request information to the hosting
+          provider, such as an IP address, user agent, and requested page. The core teleprompter
+          requires no request containing your script.
+        </p>
+        <h2>Your choices</h2>
+        <p>
+          You can decline optional analytics, clear the current script, clear saved preferences,
+          remove the local voice model, or configure the browser to block storage. Clearing all site
+          data through browser settings removes both local app data and model caches.
+        </p>
+        <h2>Questions and changes</h2>
+        <p>
+          This policy will be updated when the product’s data practices change. Questions or privacy
+          issues can be raised in the project’s <a
+            href="https://github.com/SABYA648/Telemprompter-WTF/issues"
+            rel="noopener noreferrer">public issue tracker</a
+          >; do not include private script content.
+        </p>
+      </div>
+    </div>
+  </article>
+</Layout>

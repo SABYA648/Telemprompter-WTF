@@ -1,0 +1,100 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  image?: string;
+  ogType?: string;
+  schema?: Record<string, unknown> | Record<string, unknown>[];
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description,
+  image = '/og.png',
+  ogType = 'website',
+  schema,
+  noindex = false,
+} = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://teleprompter.wtf');
+const socialImage = new URL(image, Astro.site ?? 'https://teleprompter.wtf');
+const googleVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
+const bingVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f4efe5" />
+    <meta name="color-scheme" content="light dark" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content="teleprompter.wtf" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
+    {googleVerification && <meta name="google-site-verification" content={googleVerification} />}
+    {bingVerification && <meta name="msvalidate.01" content={bingVerification} />}
+    {noindex && <meta name="robots" content="noindex,follow" />}
+    {schema && <script is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />}
+    <script>
+      import { analytics } from '../domain/analytics';
+      import { loadLocalState } from '../domain/localState';
+      // Apply a previously stored consent choice on every page, so GA page views and
+      // content-to-product events work site-wide. Undecided or denied means nothing loads.
+      const consent = loadLocalState().privacyConsent;
+      if (consent.decided && consent.usageAnalytics) analytics.allow();
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <a class="wordmark" href="/" aria-label="teleprompter.wtf home">
+          teleprompter<span>.wtf</span>
+        </a>
+        <nav aria-label="Primary navigation">
+          <a href="/features">Features</a>
+          <a href="/guides">Guides</a>
+          <a href="/tools">Tools</a>
+          <a href="/about">About</a>
+        </nav>
+      </div>
+    </header>
+    <main id="main-content"><slot /></main>
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <div>
+          <a class="wordmark wordmark--footer" href="/">teleprompter<span>.wtf</span></a>
+          <p>Paste. Present. Done. No account required.</p>
+        </div>
+        <nav aria-label="Footer navigation">
+          <a href="/features">Features</a>
+          <a href="/guides">Guides</a>
+          <a href="/tools">Tools</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/about">About</a>
+          <a href="https://github.com/SABYA648/Telemprompter-WTF" rel="noopener noreferrer"
+            >GitHub</a
+          >
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

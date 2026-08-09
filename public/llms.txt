@@ -1,0 +1,38 @@
+# teleprompter.wtf
+
+> Free online teleprompter: paste your script and present. No login, no ads, no cloud script storage.
+
+teleprompter.wtf is a free, open-source teleprompter that runs in the browser. Paste a script and present with manual scrolling; no account is required. Smart Pace follows speaking rhythm using local microphone signal analysis without transcribing speech. Private Precision Beta optionally downloads a local on-device speech model (about 67 MB with its runtime, downloaded once and kept in the browser) to follow your place in the known script. Recording is local as well. Scripts, microphone audio, recognition fragments, and recordings never leave the device. Optional Google Analytics usage measurement is consent-gated and never receives script or voice content.
+
+## Product
+
+- [Open the teleprompter](https://teleprompter.wtf/)
+- [Features](https://teleprompter.wtf/features)
+- [Private voice tracking](https://teleprompter.wtf/private-voice-tracking)
+- [Privacy](https://teleprompter.wtf/privacy)
+- [About the project](https://teleprompter.wtf/about)
+
+## Tools
+
+- [Teleprompter tools hub](https://teleprompter.wtf/tools)
+- [Teleprompter speed calculator](https://teleprompter.wtf/tools/teleprompter-speed-calculator)
+- [Words to minutes calculator](https://teleprompter.wtf/tools/words-to-minutes)
+
+## Guides
+
+- [Teleprompter guide hub](https://teleprompter.wtf/guides)
+- [How to use a teleprompter](https://teleprompter.wtf/guides/how-to-use-a-teleprompter)
+- [Teleprompter for YouTube videos](https://teleprompter.wtf/guides/teleprompter-for-youtube)
+- [Teleprompter setup for video recording](https://teleprompter.wtf/guides/teleprompter-for-video-recording)
+- [Teleprompter for talks and presentations](https://teleprompter.wtf/guides/teleprompter-for-presentations)
+- [Teleprompter on Zoom and video calls](https://teleprompter.wtf/guides/teleprompter-for-zoom)
+- [Choosing teleprompter speed](https://teleprompter.wtf/guides/teleprompter-speed)
+- [What is a teleprompter](https://teleprompter.wtf/guides/what-is-a-teleprompter)
+- [How to read a teleprompter naturally](https://teleprompter.wtf/guides/how-to-read-a-teleprompter-naturally)
+- [How to maintain eye contact](https://teleprompter.wtf/guides/how-to-maintain-eye-contact)
+- [How to format a teleprompter script](https://teleprompter.wtf/guides/how-to-format-a-teleprompter-script)
+- [How voice-activated teleprompters work](https://teleprompter.wtf/guides/voice-activated-teleprompters)
+
+## Source
+
+- [GitHub repository](https://github.com/SABYA648/Telemprompter-WTF)

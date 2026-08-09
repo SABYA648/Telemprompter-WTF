@@ -1,0 +1,58 @@
+{
+  "name": "teleprompter-wtf",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A fast, private, free online teleprompter.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "astro dev",
+    "assets:prepare": "node scripts/prepare-runtime-assets.mjs",
+    "models:fetch": "node scripts/fetch-local-model.mjs",
+    "build": "npm run assets:prepare && astro build && node scripts/prune-build.mjs",
+    "preview": "astro preview",
+    "typecheck": "astro check",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "content:lint": "node scripts/content-lint.mjs",
+    "test:e2e": "npm run build && PUBLIC_GA_MEASUREMENT_ID=G-TEST123 TELEPROMPTER_OUT_DIR=dist-ga npm run build && playwright test",
+    "test:e2e:headed": "npm run build && PUBLIC_GA_MEASUREMENT_ID=G-TEST123 TELEPROMPTER_OUT_DIR=dist-ga npm run build && playwright test --headed",
+    "test:e2e:docker": "PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 playwright test",
+    "test:inference": "PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 node scripts/verify-local-inference.mjs",
+    "test:seo-crawl": "node scripts/seo-crawl-check.mjs",
+    "revenue:estimate": "node scripts/revenue-estimate.mjs",
+    "check": "npm run typecheck && npm run lint && npm run content:lint && npm run format:check && npm run test && npm run build"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.7.5",
+    "@astrojs/preact": "^6.0.2",
+    "@astrojs/sitemap": "^3.7.3",
+    "astro": "^7.2.0",
+    "preact": "^10.29.8"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@axe-core/playwright": "^4.12.1",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.0.0",
+    "eslint-plugin-astro": "^1.5.0",
+    "prettier": "^3.6.2",
+    "prettier-plugin-astro": "^0.14.1",
+    "serve": "^14.2.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.66.0",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "overrides": {
+    "onnxruntime-node": "1.21.0",
+    "sharp": "0.35.3"
+  }
+}

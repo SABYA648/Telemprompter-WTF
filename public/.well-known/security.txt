@@ -1,0 +1,5 @@
+Contact: https://github.com/SABYA648/Telemprompter-WTF/security/advisories/new
+Expires: 2027-08-09T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://teleprompter.wtf/.well-known/security.txt
+Policy: https://github.com/SABYA648/Telemprompter-WTF/security/policy
