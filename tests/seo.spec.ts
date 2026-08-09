@@ -41,7 +41,7 @@ test('all indexable pages expose complete unique metadata', async ({ page }) => 
     descriptions.add(description ?? '');
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
-      new RegExp(`^https://teleprompter\\.wtf/`),
+      new RegExp(`^https://www\\.teleprompter\\.wtf/`),
     );
     await expect(page.locator('h1')).toHaveCount(1);
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
@@ -62,21 +62,27 @@ test('JSON-LD blocks parse as valid JSON', async ({ page }) => {
 test('robots, sitemap, llms, health, and custom 404 are served', async ({ request }) => {
   const robots = await request.get('/robots.txt');
   expect(robots.status()).toBe(200);
-  expect(await robots.text()).toContain('https://teleprompter.wtf/sitemap-index.xml');
+  expect(await robots.text()).toContain('https://www.teleprompter.wtf/sitemap-index.xml');
 
   const sitemap = await request.get('/sitemap-index.xml');
   expect(sitemap.status()).toBe(200);
-  expect(await sitemap.text()).toContain('https://teleprompter.wtf/');
+  expect(await sitemap.text()).toContain('https://www.teleprompter.wtf/');
 
   const llms = await request.get('/llms.txt');
   expect(llms.status()).toBe(200);
   const llmsText = await llms.text();
   expect(llmsText).toContain('Private Precision');
-  expect(llmsText).toContain('https://teleprompter.wtf/guides');
+  expect(llmsText).toContain('https://www.teleprompter.wtf/guides');
 
-  const health = await request.get('/health.txt');
+  const health = await request.get('/health');
   expect(health.status()).toBe(200);
   expect((await health.text()).trim()).toBe('ok');
+  expect(health.headers()['cache-control'] ?? '').toMatch(/no-store/i);
+  expect(health.headers()['x-robots-tag'] ?? '').toMatch(/noindex/i);
+
+  const healthTxt = await request.get('/health.txt');
+  expect(healthTxt.status()).toBe(200);
+  expect((await healthTxt.text()).trim()).toBe('ok');
 
   const missing = await request.get('/this-route-does-not-exist');
   expect(missing.status()).toBe(404);

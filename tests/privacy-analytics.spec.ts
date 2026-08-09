@@ -67,7 +67,9 @@ test('GA interface and network request are absent when no measurement ID exists'
     if (request.url().includes('google')) gaRequests.push(request.url());
   });
   await page.goto('http://127.0.0.1:48172/');
-  await expect(page.getByRole('heading', { name: 'Free online teleprompter' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Free online teleprompter that follows your voice' }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Allow analytics' })).toHaveCount(0);
   await expect(page.locator('script[data-teleprompter-analytics]')).toHaveCount(0);
   expect(gaRequests).toEqual([]);

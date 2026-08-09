@@ -29,10 +29,12 @@ export const LOCAL_RUNTIME_FILES = [
   ['ort-wasm-simd-threaded.jsep.mjs', 44484],
 ] as const;
 
-const MANAGED_FILES = [
-  ...LOCAL_MODEL_FILES.map(([file, bytes]) => [`/models/${LOCAL_MODEL_ID}/${file}`, bytes]),
-  ...LOCAL_RUNTIME_FILES.map(([file, bytes]) => [`/models/runtime/${file}`, bytes]),
-] as const;
+const MANAGED_FILES: ReadonlyArray<readonly [string, number]> = [
+  ...LOCAL_MODEL_FILES.map(
+    ([file, bytes]) => [`/models/${LOCAL_MODEL_ID}/${file}`, bytes] as const,
+  ),
+  ...LOCAL_RUNTIME_FILES.map(([file, bytes]) => [`/models/runtime/${file}`, bytes] as const),
+];
 
 const contentTypeFor = (url: string): string => {
   if (url.endsWith('.onnx')) return 'application/octet-stream';

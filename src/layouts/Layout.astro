@@ -18,8 +18,8 @@ const {
   schema,
   noindex = false,
 } = Astro.props;
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://teleprompter.wtf');
-const socialImage = new URL(image, Astro.site ?? 'https://teleprompter.wtf');
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://www.teleprompter.wtf');
+const socialImage = new URL(image, Astro.site ?? 'https://www.teleprompter.wtf');
 const googleVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
 const bingVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
 ---

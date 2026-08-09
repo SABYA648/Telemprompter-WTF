@@ -3,22 +3,22 @@ import PrivacyChoices from '../components/PrivacyChoices';
 import TeleprompterApp from '../components/TeleprompterApp';
 import Layout from '../layouts/Layout.astro';
 
-const title = 'Free Online Teleprompter | teleprompter.wtf';
+const title = 'Free Online Teleprompter That Follows Your Voice | teleprompter.wtf';
 const description =
-  'Paste your script and present in seconds with a fast, free online teleprompter. No login, no ads, local scripts, and optional local voice tracking.';
+  'Free online teleprompter that follows your voice. Paste your script and start. Smart Pace listens locally. No login, no ads, and your script stays on your device.';
 const schema = [
   {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'teleprompter.wtf',
-    url: 'https://teleprompter.wtf/',
+    url: 'https://www.teleprompter.wtf/',
     description,
   },
   {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
     name: 'teleprompter.wtf',
-    url: 'https://teleprompter.wtf/',
+    url: 'https://www.teleprompter.wtf/',
     applicationCategory: 'UtilitiesApplication',
     operatingSystem: 'Any modern web browser',
     description,
@@ -32,43 +32,45 @@ const schema = [
 <Layout title={title} description={description} schema={schema}>
   <section class="home-hero">
     <div class="home-hero__copy">
-      <p class="eyebrow"><span aria-hidden="true"></span> Private by design</p>
-      <h1>Free online teleprompter</h1>
-      <p>Paste your script. Hit start. No login, no ads, and no cloud script storage.</p>
+      <h1>Free online teleprompter that follows your voice</h1>
+      <div class="home-hero__support">
+        <p>
+          Paste your script and start. Smart Pace listens locally and adjusts the scroll as you
+          speak.
+        </p>
+        <p class="home-hero__trust">No login · No ads · Your script stays on your device</p>
+      </div>
     </div>
     <TeleprompterApp client:load />
     <PrivacyChoices client:idle />
   </section>
 
-  <section class="confidence-strip" aria-label="Product promises">
-    <p><strong>No account</strong><span>Open it and get to work.</span></p>
-    <p><strong>Browser-local</strong><span>Your words and voice stay on your device.</span></p>
-    <p><strong>Presenter-first</strong><span>Smooth, readable, distraction-free.</span></p>
-  </section>
-
   <section class="home-content section-wrap">
     <div class="section-heading">
-      <p class="eyebrow">Everything you need</p>
-      <h2>A teleprompter that actually follows you.</h2>
-      <p>Manual scrolling is ready immediately. Voice tracking appears only when you ask for it.</p>
+      <p class="eyebrow">How it helps</p>
+      <h2>It follows your pace.</h2>
+      <p>
+        Manual scrolling is ready immediately. Smart Pace and Private Precision appear only when you
+        ask for them.
+      </p>
     </div>
     <div class="feature-list">
       <article>
-        <span>01</span><h3>Start with Manual</h3><p>
-          Deterministic scrolling stays consistent across displays. Pause, resume, restart, and
-          adjust speed without losing your place.
+        <span>01</span><h3>It follows your pace</h3><p>
+          Smart Pace uses your microphone locally to match scroll to your speaking rhythm. Pause,
+          and it slows. No transcription and no model download.
         </p>
       </article>
       <article>
-        <span>02</span><h3>Try Smart Pace</h3><p>
-          Local microphone signal analysis matches the scroll to your speaking rhythm. It does not
-          transcribe speech and needs no model download.
+        <span>02</span><h3>Want tighter following?</h3><p>
+          Private Precision Beta can download an optional local voice model (about 67 MB first use)
+          to follow your place in the known script. More precise. Still on-device. Still Beta.
         </p>
       </article>
       <article>
-        <span>03</span><h3>Choose Private Precision Beta</h3><p>
-          Download an optional local voice model that can follow your place in the known script.
-          Recognition is temporary and stays on this device.
+        <span>03</span><h3>Keep it beside your camera</h3><p>
+          Picture in Picture uses the best browser path available, with a pop-out fallback when
+          native compact windows are unavailable.
         </p>
       </article>
     </div>
@@ -80,15 +82,15 @@ const schema = [
         </p>
       </article>
       <article>
-        <span>05</span><h3>Use a compact view</h3><p>
-          Picture in Picture uses the best browser path available, with a pop-out fallback when
-          native compact windows are unavailable.
+        <span>05</span><h3>Your script stays yours</h3><p>
+          Scripts, microphone processing, and recordings stay on your device. Optional analytics
+          never receive your script or voice content.
         </p>
       </article>
       <article>
-        <span>06</span><h3>Fit your setup</h3><p>
-          Adjust type, focus position, and column width. Mirror or flip the script for beam-splitter
-          glass and inverted rigs.
+        <span>06</span><h3>Free. No account.</h3><p>
+          Open it and get to work. No login, no ads, and no cloud script storage. The source is on
+          GitHub.
         </p>
       </article>
     </div>

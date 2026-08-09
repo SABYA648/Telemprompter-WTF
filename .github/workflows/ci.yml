@@ -46,7 +46,7 @@ jobs:
       - run: docker run -d --name teleprompter-ci --read-only --tmpfs /tmp:uid=101,gid=101 --tmpfs /var/cache/nginx:uid=101,gid=101 --tmpfs /var/run:uid=101,gid=101 -p 8080:8080 teleprompter-wtf:ci
       - run: |
           for attempt in {1..20}; do
-            curl --fail http://127.0.0.1:8080/health.txt && exit 0
+            curl --fail http://127.0.0.1:8080/health && exit 0
             sleep 1
           done
           docker logs teleprompter-ci

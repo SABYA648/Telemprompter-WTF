@@ -8,7 +8,9 @@ const longScript = Array.from(
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Free online teleprompter' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Free online teleprompter that follows your voice' }),
+  ).toBeVisible();
 });
 
 test('homepage loads and updates script statistics', async ({ page }) => {

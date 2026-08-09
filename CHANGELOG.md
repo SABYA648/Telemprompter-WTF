@@ -14,7 +14,7 @@ First public release of teleprompter.wtf.
 - Browser-local recording: screen and camera capture through `getDisplayMedia` / `getUserMedia` and MediaRecorder, saved locally only. No upload endpoint exists.
 - Picture in Picture: Document Picture in Picture preferred, with canvas-backed video Picture in Picture and an ordinary pop-out as fallbacks.
 - Guides, tools, and SEO architecture: 20 indexable static routes, Article and Breadcrumb structured data, canonical sitemap, robots.txt, and a curated llms.txt.
-- Docker deployment: multi-stage build producing an unprivileged Nginx image with a read-only filesystem option and a `/health.txt` healthcheck.
+- Docker deployment: multi-stage build producing an unprivileged Nginx image with a read-only filesystem option and a `/health` healthcheck.
 - Privacy-first analytics: optional, consent-gated GA4 with a typed event allowlist, content-shaped property filtering, IP anonymization, and no advertising signals. E2E canary tests assert that script and voice content never appears on the wire.
 
 ### Notes

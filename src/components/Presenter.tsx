@@ -78,7 +78,7 @@ export default function Presenter({
   useEffect(() => {
     document.body.classList.add('presenting');
     const background = document.querySelectorAll<HTMLElement>(
-      '.site-header, .site-footer, .home-hero__copy, .editor-shell, .confidence-strip, .home-content, .privacy-choices, .privacy-preference',
+      '.site-header, .site-footer, .home-hero__copy, .editor-shell, .home-content, .privacy-choices, .privacy-preference',
     );
     background.forEach((element) => {
       element.inert = true;

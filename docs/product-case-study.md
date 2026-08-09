@@ -38,7 +38,7 @@ Build an instant browser utility that:
 - **Local state only.** Scripts, settings, and consent choices live in versioned browser-local storage with safe migration and corruption handling.
 - **Smart Pace: signal analysis, not recognition.** Local Web Audio analysis with room calibration, adaptive thresholds, speech activity, and silence timing tracks rhythm without producing a transcript. It is the zero-download default voice mode.
 - **Private Precision Beta: local Whisper with script alignment.** A pinned quantized Whisper Tiny ONNX model (`onnx-community/whisper-tiny`, revision `ff4177021cc41f7db950912b73ea4fdf7d01d8e7`) runs through ONNX Runtime Web in a dedicated Worker. Six-second audio windows produce temporary recognition fragments that are aligned against a bounded region of the known script and discarded. Smart Pace always runs alongside as fallback. See [docs/local-precision.md](docs/local-precision.md).
-- **Docker and Nginx.** A multi-stage build verifies checksummed model assets, compiles the static site, and serves it from an unprivileged Nginx image with a read-only filesystem option and a `/health.txt` healthcheck. Model files sit same-origin under `/models/` with one-year immutable caching and byte-range support.
+- **Docker and Nginx.** A multi-stage build verifies checksummed model assets, compiles the static site, and serves it from an unprivileged Nginx image with a read-only filesystem option and a `/health` healthcheck. Model files sit same-origin under `/models/` with one-year immutable caching and byte-range support.
 
 ## Tradeoffs, stated honestly
 

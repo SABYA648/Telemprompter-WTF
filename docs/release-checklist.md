@@ -7,7 +7,7 @@ Version 1.0.0 release gate. Part one is enforced by the repository; part two is 
 - Typecheck, lint, format check, content lint, unit tests, and production build via `npm run check`.
 - Playwright end-to-end suites: app, privacy and analytics (including script and voice canaries and GA payload assertions), SEO metadata, advanced features, responsive and accessibility, visual.
 - Local inference verification (`npm run test:inference`) against the production Docker build with privacy canaries.
-- Docker image build, container end-to-end tests, and `/health.txt` healthcheck.
+- Docker image build, container end-to-end tests, and `/health` healthcheck.
 - Lighthouse runs against the container-served origin; artifacts retained under `artifacts/lighthouse/`.
 - Sitemap, robots.txt, and llms.txt validated as part of the build and content lint.
 - CI runs quality, end-to-end, and Docker jobs on every change via GitHub Actions.

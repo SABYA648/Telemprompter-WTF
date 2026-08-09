@@ -4,7 +4,7 @@
 
 ## Live site
 
-[teleprompter.wtf](https://teleprompter.wtf)
+[teleprompter.wtf](https://www.teleprompter.wtf)
 
 Source: [SABYA648/Telemprompter-WTF](https://github.com/SABYA648/Telemprompter-WTF)
 
@@ -67,7 +67,7 @@ Scripts, microphone audio, recognition results, and recordings are processed on 
 
 Scripts and preferences can persist in local storage. Voice model files can persist in Cache Storage after explicit download. Microphone samples, recognition fragments, and recordings are not persisted by default.
 
-Optional GA4 usage analytics can be enabled by the visitor and never loads before opt-in. Analytics use a fixed event vocabulary, IP anonymization, and no advertising storage, advertising signals, Google Signals, or user-provided data collection. See [docs/analytics.md](docs/analytics.md) and the public [privacy page](https://teleprompter.wtf/privacy).
+Optional GA4 usage analytics can be enabled by the visitor and never loads before opt-in. Analytics use a fixed event vocabulary, IP anonymization, and no advertising storage, advertising signals, Google Signals, or user-provided data collection. See [docs/analytics.md](docs/analytics.md) and the public [privacy page](https://www.teleprompter.wtf/privacy).
 
 ## Analytics
 
@@ -173,7 +173,7 @@ The complete multi-stage build fetches and verifies the model, builds static Ast
 ```bash
 docker build -t teleprompter-wtf .
 docker run --read-only --tmpfs /tmp:uid=101,gid=101 --tmpfs /var/cache/nginx:uid=101,gid=101 --tmpfs /var/run:uid=101,gid=101 -p 8080:8080 teleprompter-wtf
-curl --fail http://127.0.0.1:8080/health.txt
+curl --fail http://127.0.0.1:8080/health
 ```
 
 Or:
@@ -182,7 +182,7 @@ Or:
 docker compose up --build -d
 ```
 
-TLS, the HTTP-to-HTTPS redirect, and the `www`-to-apex redirect belong at the deployment edge. See [docs/deployment.md](docs/deployment.md).
+TLS, the HTTP-to-HTTPS redirect, and the apex-to-`www` redirect belong at the deployment edge. See [docs/deployment.md](docs/deployment.md) and [docs/coolify-deployment.md](docs/coolify-deployment.md).
 
 ## SEO architecture
 

@@ -3,7 +3,7 @@ import preact from '@astrojs/preact';
 import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
-  site: 'https://teleprompter.wtf',
+  site: 'https://www.teleprompter.wtf',
   outDir: process.env.TELEPROMPTER_OUT_DIR ?? 'dist',
   integrations: [preact(), sitemap()],
   output: 'static',

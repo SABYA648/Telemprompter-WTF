@@ -141,7 +141,7 @@ export default function TeleprompterApp(): preact.JSX.Element {
   };
 
   const share = async () => {
-    const url = 'https://teleprompter.wtf';
+    const url = 'https://www.teleprompter.wtf';
     const capabilities = detectBrowserCapabilities();
     try {
       if (capabilities.webShare) {
@@ -176,7 +176,11 @@ export default function TeleprompterApp(): preact.JSX.Element {
 
   return (
     <>
-      <section class="editor-shell" aria-labelledby="editor-title" data-hydrated={hydrated || undefined}>
+      <section
+        class="editor-shell"
+        aria-labelledby="editor-title"
+        data-hydrated={hydrated || undefined}
+      >
         <div class="editor-heading">
           <div>
             <p class="eyebrow">Your script</p>

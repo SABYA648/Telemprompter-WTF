@@ -2,7 +2,7 @@
 
 ## Static hosting
 
-Run `npm ci`, `npm run models:fetch`, and `npm run build`, then publish `dist/` at `https://teleprompter.wtf`. The site uses clean extensionless canonical URLs. Configure the host to serve generated `index.html` files for those routes and return `404.html` with status 404 for missing routes.
+Run `npm ci`, `npm run models:fetch`, and `npm run build`, then publish `dist/` at `https://www.teleprompter.wtf`. The site uses clean extensionless canonical URLs. Configure the host to serve generated `index.html` files for those routes and return `404.html` with status 404 for missing routes.
 
 `public/_headers` is copied into the build for compatible hosts. Equivalent Nginx behavior is included in `nginx.conf`.
 
@@ -15,7 +15,7 @@ docker run --read-only \
   --tmpfs /var/cache/nginx:uid=101,gid=101 \
   --tmpfs /var/run:uid=101,gid=101 \
   -p 8080:8080 teleprompter-wtf
-curl --fail http://127.0.0.1:8080/health.txt
+curl --fail http://127.0.0.1:8080/health
 ```
 
 Or use `docker compose up --build -d`.
@@ -36,8 +36,9 @@ All are public identifiers compiled into the static output. None is a secret. An
 
 ## Canonical redirects
 
-Terminate TLS at the CDN, load balancer, or reverse proxy. Redirect HTTP to HTTPS and `www.teleprompter.wtf` to `teleprompter.wtf` at that edge. Application canonicals and sitemap URLs always use `https://teleprompter.wtf`.
+Terminate TLS at the CDN, load balancer, Coolify, or reverse proxy. Redirect HTTP to HTTPS and permanently redirect `teleprompter.wtf` to the equivalent `www.teleprompter.wtf` URL at that edge, preserving path and query string. Application canonicals and sitemap URLs always use `https://www.teleprompter.wtf`.
 
+See [coolify-deployment.md](coolify-deployment.md) for the Coolify-specific checklist.
 Add HSTS only after the production domain and intended subdomains are permanently HTTPS capable:
 
 ```text

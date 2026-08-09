@@ -6,32 +6,32 @@ teleprompter.wtf is a free, open-source teleprompter that runs in the browser. P
 
 ## Product
 
-- [Open the teleprompter](https://teleprompter.wtf/)
-- [Features](https://teleprompter.wtf/features)
-- [Private voice tracking](https://teleprompter.wtf/private-voice-tracking)
-- [Privacy](https://teleprompter.wtf/privacy)
-- [About the project](https://teleprompter.wtf/about)
+- [Open the teleprompter](https://www.teleprompter.wtf/)
+- [Features](https://www.teleprompter.wtf/features)
+- [Private voice tracking](https://www.teleprompter.wtf/private-voice-tracking)
+- [Privacy](https://www.teleprompter.wtf/privacy)
+- [About the project](https://www.teleprompter.wtf/about)
 
 ## Tools
 
-- [Teleprompter tools hub](https://teleprompter.wtf/tools)
-- [Teleprompter speed calculator](https://teleprompter.wtf/tools/teleprompter-speed-calculator)
-- [Words to minutes calculator](https://teleprompter.wtf/tools/words-to-minutes)
+- [Teleprompter tools hub](https://www.teleprompter.wtf/tools)
+- [Teleprompter speed calculator](https://www.teleprompter.wtf/tools/teleprompter-speed-calculator)
+- [Words to minutes calculator](https://www.teleprompter.wtf/tools/words-to-minutes)
 
 ## Guides
 
-- [Teleprompter guide hub](https://teleprompter.wtf/guides)
-- [How to use a teleprompter](https://teleprompter.wtf/guides/how-to-use-a-teleprompter)
-- [Teleprompter for YouTube videos](https://teleprompter.wtf/guides/teleprompter-for-youtube)
-- [Teleprompter setup for video recording](https://teleprompter.wtf/guides/teleprompter-for-video-recording)
-- [Teleprompter for talks and presentations](https://teleprompter.wtf/guides/teleprompter-for-presentations)
-- [Teleprompter on Zoom and video calls](https://teleprompter.wtf/guides/teleprompter-for-zoom)
-- [Choosing teleprompter speed](https://teleprompter.wtf/guides/teleprompter-speed)
-- [What is a teleprompter](https://teleprompter.wtf/guides/what-is-a-teleprompter)
-- [How to read a teleprompter naturally](https://teleprompter.wtf/guides/how-to-read-a-teleprompter-naturally)
-- [How to maintain eye contact](https://teleprompter.wtf/guides/how-to-maintain-eye-contact)
-- [How to format a teleprompter script](https://teleprompter.wtf/guides/how-to-format-a-teleprompter-script)
-- [How voice-activated teleprompters work](https://teleprompter.wtf/guides/voice-activated-teleprompters)
+- [Teleprompter guide hub](https://www.teleprompter.wtf/guides)
+- [How to use a teleprompter](https://www.teleprompter.wtf/guides/how-to-use-a-teleprompter)
+- [Teleprompter for YouTube videos](https://www.teleprompter.wtf/guides/teleprompter-for-youtube)
+- [Teleprompter setup for video recording](https://www.teleprompter.wtf/guides/teleprompter-for-video-recording)
+- [Teleprompter for talks and presentations](https://www.teleprompter.wtf/guides/teleprompter-for-presentations)
+- [Teleprompter on Zoom and video calls](https://www.teleprompter.wtf/guides/teleprompter-for-zoom)
+- [Choosing teleprompter speed](https://www.teleprompter.wtf/guides/teleprompter-speed)
+- [What is a teleprompter](https://www.teleprompter.wtf/guides/what-is-a-teleprompter)
+- [How to read a teleprompter naturally](https://www.teleprompter.wtf/guides/how-to-read-a-teleprompter-naturally)
+- [How to maintain eye contact](https://www.teleprompter.wtf/guides/how-to-maintain-eye-contact)
+- [How to format a teleprompter script](https://www.teleprompter.wtf/guides/how-to-format-a-teleprompter-script)
+- [How voice-activated teleprompters work](https://www.teleprompter.wtf/guides/voice-activated-teleprompters)
 
 ## Source
 

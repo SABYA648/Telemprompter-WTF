@@ -4,9 +4,9 @@ SEO-specific launch checks. The full production release gate, including automate
 
 ## Deployment
 
-- Confirm `https://teleprompter.wtf` is the public origin.
+- Confirm `https://www.teleprompter.wtf` is the public origin.
 - Confirm HTTP redirects to HTTPS at the deployment edge.
-- Route `www.teleprompter.wtf` to the apex domain with a permanent redirect.
+- Route `teleprompter.wtf` to `www.teleprompter.wtf` with a permanent redirect, preserving path and query.
 - Confirm no staging domain is indexable.
 - Inspect a rendered canonical on the homepage, a guide, a tool, and the voice-tracking page.
 - Verify the production 404 returns status 404 with the custom page body.
