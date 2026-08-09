@@ -322,7 +322,12 @@ export class Analytics {
   private load(): void {
     if (this.loaded || !this.measurementId || typeof document === 'undefined') return;
     window.dataLayer = window.dataLayer ?? [];
-    window.gtag = (...args: unknown[]) => window.dataLayer?.push(args);
+    // GA4's gtag.js only replays queued commands that were pushed as the Arguments
+    // object (Google's official snippet). Rest-parameter Arrays are ignored, so no
+    // collect hits are ever sent.
+    window.gtag = function gtag() {
+      window.dataLayer?.push(arguments);
+    };
     window.gtag('consent', 'default', {
       analytics_storage: 'denied',
       ad_storage: 'denied',

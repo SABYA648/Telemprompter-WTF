@@ -30,13 +30,17 @@ Do not add an application-level apex redirect. Canonical tags, sitemap, robots, 
 
 ## Environment variables
 
-Optional build args / environment variables:
+These are **Docker build args** (and matching `ENV` values during `npm run build`). They are baked into the static JS at image build time. Setting them only as Coolify runtime env vars on an already-built image does nothing — rebuild the image after changing them.
 
 ```text
 PUBLIC_GA_MEASUREMENT_ID=
 PUBLIC_GOOGLE_SITE_VERIFICATION=
 PUBLIC_BING_SITE_VERIFICATION=
 ```
+
+`PUBLIC_GA_MEASUREMENT_ID` must look like `G-XXXXXXXX`. Absent or invalid means no GA code and no privacy banner. With a valid ID, GA still loads only after the visitor opts in.
+
+In Coolify: add the values under build arguments (or as build-time environment variables that are present for the Dockerfile `ARG`/`ENV`/`RUN npm run build` stage), then redeploy with a rebuild.
 
 No Clarity variable. No secrets are required for a working deploy.
 
