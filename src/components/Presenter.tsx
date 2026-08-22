@@ -13,6 +13,7 @@ import { detectBrowserCapabilities } from '../domain/capabilities';
 import {
   estimateFocusCharacterIndex,
   highlightWindowAround,
+  scrollOffsetForCharacter,
   segmentScript,
   type HighlightWindow,
 } from '../domain/scriptHighlight';
@@ -173,10 +174,15 @@ export default function Presenter({
 
   const applyAlignment = (characterIndex: number, confidence: number, tokenEnd?: number) => {
     const scroller = scrollerRef.current;
+    const scriptElement = scriptElementRef.current;
     if (!scroller || !script.length) return;
     const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    const target = (characterIndex / script.length) * maxScroll;
-    controllerRef.current?.moveToward(target, confidence >= 0.78 ? 0.18 : 0.07);
+    const focused =
+      scriptElement &&
+      scrollOffsetForCharacter(scroller, scriptElement, characterIndex, focusPositionRef.current);
+    const target =
+      typeof focused === 'number' ? focused : (characterIndex / script.length) * maxScroll;
+    controllerRef.current?.moveToward(target, confidence >= 0.7 ? 0.48 : 0.22);
     const center =
       typeof tokenEnd === 'number' && tokenEnd > characterIndex
         ? Math.round((characterIndex + tokenEnd) / 2)
@@ -447,7 +453,13 @@ export default function Presenter({
                   ? 'script-word script-word--trail'
                   : 'script-word';
               return (
-                <span key={`w-${segment.start}`} class={className} data-script-word="true">
+                <span
+                  key={`w-${segment.start}`}
+                  class={className}
+                  data-script-word="true"
+                  data-start={segment.start}
+                  data-end={segment.end}
+                >
                   {segment.text}
                 </span>
               );

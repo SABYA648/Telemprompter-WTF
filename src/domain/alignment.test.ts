@@ -19,6 +19,15 @@ describe('Private Precision script alignment', () => {
     ]);
   });
 
+  it('aligns a single live word to the next script token', () => {
+    const engine = new ScriptAlignmentEngine(script);
+    const first = engine.align('Welcome');
+    expect(first.movement).toBe('gentle');
+    expect(first.tokenIndex).toBe(0);
+    const second = engine.align('to');
+    expect(second.tokenIndex).toBe(1);
+  });
+
   it('aligns exact and imperfect fragments', () => {
     const engine = new ScriptAlignmentEngine(script);
     const exact = engine.align('start with a simple idea about clear communication');

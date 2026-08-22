@@ -9,6 +9,7 @@ import {
   saveLocalState,
 } from '../domain/localState';
 import { SETTING_LIMITS } from '../domain/settings';
+import { primeBrowserSpeechInUserGesture } from '../domain/browserSpeech';
 import type { PresenterPreferences, PrivacyConsent } from '../domain/types';
 import Presenter from './Presenter';
 
@@ -180,6 +181,7 @@ export default function TeleprompterApp(): preact.JSX.Element {
 
   const start = () => {
     if (!script.trim()) return;
+    if (preferences.voiceMode === 'smart') primeBrowserSpeechInUserGesture();
     setPresenting(true);
   };
 
