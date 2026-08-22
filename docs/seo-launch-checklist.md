@@ -30,8 +30,8 @@ SEO-specific launch checks. The full production release gate, including automate
 
 ## Privacy and measurement
 
-- Verify GA4 is absent before the Usage analytics opt-in.
-- Verify GA4 loads only after opt-in and that Reject loads nothing.
+- Verify Umami and GA4 are absent before the Usage analytics opt-in.
+- Verify they load only after opt-in and that Reject loads nothing.
 - Test consent withdrawal and confirm relevant first-party cookies are removed where browser policy permits.
 
 ## Performance and monitoring

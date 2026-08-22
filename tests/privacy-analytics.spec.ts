@@ -1,9 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-test('GA stays absent before consent and after declining', async ({ page }) => {
-  const gaRequests: string[] = [];
+test('analytics stay absent before consent and after declining', async ({ page }) => {
+  const analyticsRequests: string[] = [];
   page.on('request', (request) => {
-    if (request.url().includes('googletagmanager.com')) gaRequests.push(request.url());
+    if (/googletagmanager\.com|analytics\.sabya\.pm/.test(request.url())) {
+      analyticsRequests.push(request.url());
+    }
   });
 
   await page.goto('/');
@@ -11,17 +13,20 @@ test('GA stays absent before consent and after declining', async ({ page }) => {
   await page.getByLabel('Teleprompter script').fill('No analytics before consent.');
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await page.waitForTimeout(400);
-  expect(gaRequests).toEqual([]);
+  expect(analyticsRequests).toEqual([]);
   await page.getByRole('button', { name: 'Exit presenter' }).click();
   await page.getByRole('button', { name: 'No thanks' }).click();
   await page.waitForTimeout(250);
-  expect(gaRequests).toEqual([]);
+  expect(analyticsRequests).toEqual([]);
 });
 
 test('GA is requested only after explicit allow', async ({ page }) => {
   const gaRequests: string[] = [];
   await page.route('https://www.googletagmanager.com/**', async (route) => {
     gaRequests.push(route.request().url());
+    await route.abort();
+  });
+  await page.route('https://analytics.sabya.pm/**', async (route) => {
     await route.abort();
   });
   await page.goto('/');
@@ -31,10 +36,33 @@ test('GA is requested only after explicit allow', async ({ page }) => {
   expect(gaRequests[0]).toContain('G-TEST123');
 });
 
+test('Umami is requested only after explicit allow', async ({ page }) => {
+  const umamiRequests: string[] = [];
+  await page.route('https://analytics.sabya.pm/**', async (route) => {
+    umamiRequests.push(route.request().url());
+    await route.abort();
+  });
+  await page.route('https://www.googletagmanager.com/**', async (route) => {
+    await route.abort();
+  });
+  await page.goto('/');
+  expect(umamiRequests).toEqual([]);
+  await expect(page.locator('script[data-teleprompter-analytics="umami"]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Allow analytics' }).click();
+  await expect.poll(() => umamiRequests.length).toBeGreaterThan(0);
+  expect(umamiRequests[0]).toContain('https://analytics.sabya.pm/script.js');
+  await expect(page.locator('script[data-teleprompter-analytics="umami"]')).toHaveAttribute(
+    'data-website-id',
+    'c5952a2b-b192-46fe-8a3d-04ad673ffd6d',
+  );
+});
+
 test('declining keeps optional analytics absent', async ({ page }) => {
   const thirdPartyRequests: string[] = [];
   page.on('request', (request) => {
-    if (/googletagmanager/.test(request.url())) thirdPartyRequests.push(request.url());
+    if (/googletagmanager|analytics\.sabya\.pm/.test(request.url())) {
+      thirdPartyRequests.push(request.url());
+    }
   });
   await page.goto('/');
   await page.getByRole('button', { name: 'No thanks' }).click();
@@ -47,6 +75,8 @@ test('no Microsoft Clarity integration remains', async ({ page }) => {
   page.on('request', (request) => {
     if (/clarity\.ms|c\.bing\.com/.test(request.url())) clarityRequests.push(request.url());
   });
+  await page.route('https://www.googletagmanager.com/**', (route) => route.abort());
+  await page.route('https://analytics.sabya.pm/**', (route) => route.abort());
   await page.goto('/');
   await page.getByLabel('Teleprompter script').fill('Clarity is gone from this build.');
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
@@ -58,13 +88,13 @@ test('no Microsoft Clarity integration remains', async ({ page }) => {
   await expect(page.locator('[data-clarity-mask]')).toHaveCount(0);
 });
 
-test('GA interface and network request are absent when no measurement ID exists', async ({
+test('analytics interface and network request are absent when no measurement ID exists', async ({
   page,
 }) => {
   test.skip(Boolean(process.env.PLAYWRIGHT_BASE_URL), 'The Docker E2E image includes test IDs.');
-  const gaRequests: string[] = [];
+  const analyticsRequests: string[] = [];
   page.on('request', (request) => {
-    if (request.url().includes('google')) gaRequests.push(request.url());
+    if (/google|analytics\.sabya\.pm/.test(request.url())) analyticsRequests.push(request.url());
   });
   await page.goto('http://127.0.0.1:48172/');
   await expect(
@@ -72,7 +102,7 @@ test('GA interface and network request are absent when no measurement ID exists'
   ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Allow analytics' })).toHaveCount(0);
   await expect(page.locator('script[data-teleprompter-analytics]')).toHaveCount(0);
-  expect(gaRequests).toEqual([]);
+  expect(analyticsRequests).toEqual([]);
 });
 
 test('private script canary never enters an outgoing request', async ({ page }) => {

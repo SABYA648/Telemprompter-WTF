@@ -170,6 +170,7 @@ declare global {
   interface Window {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
+    umami?: { track: (event: string, data?: Record<string, unknown>) => void };
   }
 }
 
@@ -274,17 +275,49 @@ function clearGaCookies(): void {
   }
 }
 
+const GA_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/i;
+const UMAMI_WEBSITE_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const DEFAULT_UMAMI_SCRIPT_SRC = 'https://analytics.sabya.pm/script.js';
+
+export function parseGaMeasurementId(value = ''): string {
+  return GA_MEASUREMENT_ID_PATTERN.test(value) ? value : '';
+}
+
+export function parseUmamiWebsiteId(value = ''): string {
+  return UMAMI_WEBSITE_ID_PATTERN.test(value) ? value.toLowerCase() : '';
+}
+
+export function parseUmamiScriptSrc(value = ''): string {
+  if (!value) return DEFAULT_UMAMI_SCRIPT_SRC;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return '';
+    if (url.hostname !== 'analytics.sabya.pm') return '';
+    if (url.pathname !== '/script.js') return '';
+    if (url.search || url.hash) return '';
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
 export class Analytics {
   private readonly measurementId: string;
+  private readonly umamiWebsiteId: string;
+  private readonly umamiScriptSrc: string;
   private enabled = false;
   private loaded = false;
+  private pendingUmami: Array<{ event: AnalyticsEvent; properties: SafeAnalyticsProperties }> = [];
 
-  constructor(measurementId = '') {
-    this.measurementId = /^G-[A-Z0-9]+$/i.test(measurementId) ? measurementId : '';
+  constructor(measurementId = '', umamiWebsiteId = '', umamiScriptSrc = DEFAULT_UMAMI_SCRIPT_SRC) {
+    this.measurementId = parseGaMeasurementId(measurementId);
+    this.umamiWebsiteId = parseUmamiWebsiteId(umamiWebsiteId);
+    this.umamiScriptSrc = this.umamiWebsiteId ? parseUmamiScriptSrc(umamiScriptSrc) : '';
   }
 
   get available(): boolean {
-    return Boolean(this.measurementId);
+    return Boolean(this.measurementId || (this.umamiWebsiteId && this.umamiScriptSrc));
   }
 
   get isEnabled(): boolean {
@@ -292,13 +325,14 @@ export class Analytics {
   }
 
   allow(): void {
-    if (!this.measurementId) return;
+    if (!this.available) return;
     this.enabled = true;
     this.load();
   }
 
   deny(): void {
     this.enabled = false;
+    this.pendingUmami = [];
     clearGaCookies();
     if (this.loaded && typeof document !== 'undefined') {
       window.gtag?.('consent', 'update', { analytics_storage: 'denied' });
@@ -307,6 +341,7 @@ export class Analytics {
         .forEach((script) => script.remove());
       delete window.gtag;
       delete window.dataLayer;
+      delete window.umami;
       this.loaded = false;
     }
   }
@@ -317,10 +352,32 @@ export class Analytics {
       validateEventProperties(event, (properties ?? {}) as SafeAnalyticsProperties),
     );
     window.gtag?.('event', event, safe);
+    this.sendUmami(event, safe);
+  }
+
+  private sendUmami(event: AnalyticsEvent, properties: SafeAnalyticsProperties): void {
+    if (!this.umamiWebsiteId) return;
+    if (typeof window.umami?.track === 'function') {
+      window.umami.track(event, properties);
+      return;
+    }
+    this.pendingUmami.push({ event, properties });
+  }
+
+  private flushUmami(): void {
+    const queued = this.pendingUmami;
+    this.pendingUmami = [];
+    for (const item of queued) this.sendUmami(item.event, item.properties);
   }
 
   private load(): void {
-    if (this.loaded || !this.measurementId || typeof document === 'undefined') return;
+    if (this.loaded || typeof document === 'undefined') return;
+    if (this.measurementId) this.loadGa();
+    if (this.umamiWebsiteId && this.umamiScriptSrc) this.loadUmami();
+    this.loaded = Boolean(this.measurementId || this.umamiWebsiteId);
+  }
+
+  private loadGa(): void {
     window.dataLayer = window.dataLayer ?? [];
     window.gtag = (...args: unknown[]) => window.dataLayer?.push(args);
     window.gtag('consent', 'default', {
@@ -345,10 +402,29 @@ export class Analytics {
     const script = document.createElement('script');
     script.async = true;
     script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(this.measurementId)}`;
-    script.dataset.teleprompterAnalytics = 'true';
+    script.dataset.teleprompterAnalytics = 'ga';
     document.head.append(script);
-    this.loaded = true;
+  }
+
+  private loadUmami(): void {
+    if (document.querySelector('script[data-teleprompter-analytics="umami"]')) return;
+    const script = document.createElement('script');
+    script.defer = true;
+    script.src = this.umamiScriptSrc;
+    script.dataset.websiteId = this.umamiWebsiteId;
+    script.dataset.teleprompterAnalytics = 'umami';
+    script.addEventListener('load', () => this.flushUmami());
+    document.head.append(script);
   }
 }
 
-export const analytics = new Analytics(import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? '');
+const umamiWebsiteId =
+  import.meta.env.PUBLIC_UMAMI_WEBSITE_ID === undefined
+    ? 'c5952a2b-b192-46fe-8a3d-04ad673ffd6d'
+    : import.meta.env.PUBLIC_UMAMI_WEBSITE_ID;
+
+export const analytics = new Analytics(
+  import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? '',
+  umamiWebsiteId,
+  import.meta.env.PUBLIC_UMAMI_SCRIPT_URL ?? DEFAULT_UMAMI_SCRIPT_SRC,
+);

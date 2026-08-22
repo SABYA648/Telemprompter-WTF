@@ -28,11 +28,13 @@ The full model adds 45,233,651 bytes of weights and tokenizer/configuration file
 
 ```text
 PUBLIC_GA_MEASUREMENT_ID=
+PUBLIC_UMAMI_WEBSITE_ID=c5952a2b-b192-46fe-8a3d-04ad673ffd6d
+PUBLIC_UMAMI_SCRIPT_URL=https://analytics.sabya.pm/script.js
 PUBLIC_GOOGLE_SITE_VERIFICATION=
 PUBLIC_BING_SITE_VERIFICATION=
 ```
 
-All are public identifiers compiled into the static output. None is a secret. An empty or invalid GA measurement ID fails closed: the build then contains no analytics code at all.
+All are public identifiers compiled into the static output. None is a secret. An empty Umami website ID and an invalid or absent GA measurement ID fail closed: that build then contains no analytics code at all.
 
 ## Canonical redirects
 
@@ -61,7 +63,7 @@ The policy allows same-origin microphone, camera, display capture, Picture in Pi
 
 ## Content Security Policy
 
-The CSP limits application, worker, model, media Blob, and GA4 destinations. GA4 domains are permitted by policy but the GA script is not injected before consent. The site does not enable cross-origin isolation, which avoids unnecessary conflicts with analytics and compact-window behavior.
+The CSP limits application, worker, model, media Blob, Umami, and GA4 destinations. Analytics domains are permitted by policy but scripts are not injected before consent. The site does not enable cross-origin isolation, which avoids unnecessary conflicts with analytics and compact-window behavior.
 
 Astro currently emits inline bootstrap code and styles, so `unsafe-inline` remains limited to script and style directives. A deployment that adds hashes or nonces can tighten those directives further.
 

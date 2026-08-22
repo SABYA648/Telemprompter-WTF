@@ -5,6 +5,8 @@ import {
   durationBucket,
   filterSafeProperties,
   isAllowedAnalyticsEvent,
+  parseUmamiScriptSrc,
+  parseUmamiWebsiteId,
   progressBucket,
   scriptSizeBucket,
   validateEventProperties,
@@ -50,6 +52,12 @@ describe('analytics abstraction', () => {
     expect(new Analytics('').available).toBe(false);
     expect(new Analytics('not-a-ga-id').available).toBe(false);
     expect(new Analytics('G-TEST123').available).toBe(true);
+    expect(new Analytics('', 'c5952a2b-b192-46fe-8a3d-04ad673ffd6d').available).toBe(true);
+    expect(new Analytics('', 'not-a-uuid').available).toBe(false);
+    expect(
+      new Analytics('', 'c5952a2b-b192-46fe-8a3d-04ad673ffd6d', 'https://evil.example/script.js')
+        .available,
+    ).toBe(false);
   });
 
   it('drops user-content-shaped properties', () => {
@@ -154,5 +162,20 @@ describe('analytics abstraction', () => {
     expect(voiceModeParam('manual')).toBe('manual');
     expect(voiceModeParam('smart')).toBe('smart_pace');
     expect(voiceModeParam('precision')).toBe('private_precision');
+  });
+
+  it('accepts only the self-hosted Umami script origin', () => {
+    expect(parseUmamiWebsiteId('c5952a2b-b192-46fe-8a3d-04ad673ffd6d')).toBe(
+      'c5952a2b-b192-46fe-8a3d-04ad673ffd6d',
+    );
+    expect(parseUmamiWebsiteId('C5952A2B-B192-46FE-8A3D-04AD673FFD6D')).toBe(
+      'c5952a2b-b192-46fe-8a3d-04ad673ffd6d',
+    );
+    expect(parseUmamiScriptSrc('')).toBe('https://analytics.sabya.pm/script.js');
+    expect(parseUmamiScriptSrc('https://analytics.sabya.pm/script.js')).toBe(
+      'https://analytics.sabya.pm/script.js',
+    );
+    expect(parseUmamiScriptSrc('https://analytics.sabya.pm/script.js?steal=1')).toBe('');
+    expect(parseUmamiScriptSrc('https://example.com/script.js')).toBe('');
   });
 });

@@ -24,7 +24,7 @@ Manual mode stays independent from microphone, model, recording, analytics, and 
 - Browser-local screen and camera recording
 - Progressive Picture in Picture with a pop-out fallback
 - Local autosave, TXT import, mirror, vertical flip, focus guide, and keyboard control
-- Consent-gated GA4 usage analytics, off by default
+- Consent-gated usage analytics (Umami, plus optional GA4), off by default
 - Open source and directly deployable with Docker
 
 ![Script editor with local word and time estimates](docs/screenshots/editor.png)
@@ -67,13 +67,13 @@ Scripts, microphone audio, recognition results, and recordings are processed on 
 
 Scripts and preferences can persist in local storage. Voice model files can persist in Cache Storage after explicit download. Microphone samples, recognition fragments, and recordings are not persisted by default.
 
-Optional GA4 usage analytics can be enabled by the visitor and never loads before opt-in. Analytics use a fixed event vocabulary, IP anonymization, and no advertising storage, advertising signals, Google Signals, or user-provided data collection. See [docs/analytics.md](docs/analytics.md) and the public [privacy page](https://www.teleprompter.wtf/privacy).
+Optional usage analytics can be enabled by the visitor and never load before opt-in. The default tracker is self-hosted Umami. Optional GA4, when a measurement ID is configured, uses a fixed event vocabulary, IP anonymization, and no advertising storage, advertising signals, Google Signals, or user-provided data collection. See [docs/analytics.md](docs/analytics.md) and the public [privacy page](https://www.teleprompter.wtf/privacy).
 
 ## Analytics
 
-Analytics are GA4 only, optional, and consent gated. Without a valid `PUBLIC_GA_MEASUREMENT_ID` at build time the output contains no GA code at all and the app is identical.
+Analytics are optional and consent gated. Self-hosted Umami is included by default. Optional GA4 is included only when a valid `PUBLIC_GA_MEASUREMENT_ID` exists at build time. Set `PUBLIC_UMAMI_WEBSITE_ID` to empty to omit Umami. Without either identifier the output contains no analytics code at all.
 
-The analytics boundary accepts a fixed event allowlist and filters content-shaped properties. Direct `gtag()` calls outside the domain module are not allowed. Script, transcript, voice, filenames, clipboard contents, microphone labels, and raw error messages are prohibited. The full event taxonomy and privacy contract live in [docs/analytics.md](docs/analytics.md).
+The analytics boundary accepts a fixed event allowlist and filters content-shaped properties. Direct `gtag()` or `umami.track()` calls outside the domain module are not allowed. Script, transcript, voice, filenames, clipboard contents, microphone labels, and raw error messages are prohibited. The full event taxonomy and privacy contract live in [docs/analytics.md](docs/analytics.md).
 
 ## Architecture
 
@@ -137,11 +137,13 @@ Copy `.env.example` when optional integrations or verification metadata are need
 
 ```text
 PUBLIC_GA_MEASUREMENT_ID=
+PUBLIC_UMAMI_WEBSITE_ID=c5952a2b-b192-46fe-8a3d-04ad673ffd6d
+PUBLIC_UMAMI_SCRIPT_URL=https://analytics.sabya.pm/script.js
 PUBLIC_GOOGLE_SITE_VERIFICATION=
 PUBLIC_BING_SITE_VERIFICATION=
 ```
 
-All are public build-time identifiers, not secrets. An absent or invalid value fails closed: without a valid GA measurement ID the build contains no analytics code at all.
+All are public build-time identifiers, not secrets. An empty Umami website ID and an invalid or absent GA measurement ID fail closed: that build then contains no analytics code at all.
 
 ## Local voice model
 

@@ -62,8 +62,10 @@ export default function PrivacyChoices(): preact.JSX.Element | null {
             <p class="eyebrow">Your choice</p>
             <h2 id="privacy-choices-title">Optional analytics</h2>
             <p>
-              Help improve teleprompter.wtf with privacy-safe usage analytics (Google Analytics 4)?
-              The teleprompter works the same either way. Your script and voice are never included.
+              Help improve teleprompter.wtf with privacy-safe usage analytics? Self-hosted Umami
+              measures page views and product events after you allow it. Optional Google Analytics 4
+              is included only when that build is configured. The teleprompter works the same either
+              way. Your script and voice are never included.
               {consent.decided &&
                 (consent.usageAnalytics
                   ? ' Analytics are currently on.'

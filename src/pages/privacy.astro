@@ -3,7 +3,7 @@ import PrivacyActions from '../components/PrivacyActions';
 import Layout from '../layouts/Layout.astro';
 const title = 'Privacy | teleprompter.wtf';
 const description =
-  'A plain-language account of how teleprompter.wtf handles scripts, microphone audio, local voice models, recordings, storage, and optional Google Analytics.';
+  'A plain-language account of how teleprompter.wtf handles scripts, microphone audio, local voice models, recordings, storage, and optional usage analytics.';
 ---
 
 <Layout title={title} description={description}>
@@ -16,7 +16,7 @@ const description =
         so it does not need to receive them. Optional site measurement is separate and off until you
         choose it.
       </p>
-      <p class="updated">Last updated: 9 August 2026</p>
+      <p class="updated">Last updated: 22 August 2026</p>
     </header>
     <div class="prose-grid">
       <aside class="privacy-summary" aria-label="Privacy summary">
@@ -81,8 +81,13 @@ const description =
                 ><td>Only when you save the file</td><td>No</td></tr
               >
               <tr
+                ><th scope="row">Umami events</th><td>Aggregate product usage</td><td
+                  >Self-hosted Umami at analytics.sabya.pm, only after opt-in</td
+                ><td>According to operator settings</td><td>Yes, after analytics consent</td></tr
+              >
+              <tr
                 ><th scope="row">GA4 events</th><td>Aggregate product usage</td><td
-                  >Google, only after opt-in</td
+                  >Google, only after opt-in when that build includes GA4</td
                 ><td>According to operator and Google settings</td><td
                   >Yes, after analytics consent</td
                 ></tr
@@ -131,18 +136,20 @@ const description =
           has no recording endpoint and does not persist a recording unless you choose to save the
           file.
         </p>
-        <h2>Optional Google Analytics</h2>
+        <h2>Optional usage analytics</h2>
         <p>
-          Optional Google Analytics 4 measures product usage with your consent. It is a single,
-          unchecked choice: the GA4 script is not loaded before you allow it, No thanks is given
+          Optional usage analytics measure product usage with your consent. It is a single,
+          unchecked choice: no analytics script is loaded before you allow it, No thanks is given
           equal access, and the teleprompter works the same either way. You can reopen Privacy
           choices on the homepage and withdraw consent at any time.
         </p>
         <p>
-          GA4 receives a fixed vocabulary of low-cardinality product events and never receives your
-          script or voice content. Advertising storage, ad user data, ad personalization, and Google
-          signals stay denied. Events never include script text, recognition fragments, filenames,
-          microphone labels, clipboard contents, or raw error messages.
+          Self-hosted Umami (analytics.sabya.pm) records page views and a fixed vocabulary of
+          low-cardinality product events. Google Analytics 4 is included only when the operator
+          configures a measurement ID. Neither receives your script or voice content. When GA4 is
+          present, advertising storage, ad user data, ad personalization, and Google signals stay
+          denied. Events never include script text, recognition fragments, filenames, microphone
+          labels, clipboard contents, or raw error messages.
         </p>
         <h2>Network requests</h2>
         <p>

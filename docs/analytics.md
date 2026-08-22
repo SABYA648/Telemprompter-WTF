@@ -1,12 +1,14 @@
 # Analytics
 
-Usage analytics are optional, consent gated, and GA4 only. There is no other analytics, diagnostics, or session-recording integration.
+Usage analytics are optional and consent gated. There is no diagnostics or session-recording integration.
 
-GA4 is included only when a valid `PUBLIC_GA_MEASUREMENT_ID` exists at build time. Without it, the output contains no GA code at all and the application is identical. With it, no Google resource is requested until the visitor makes a single opt-in choice, which is saved in versioned browser-local state.
+The default tracker is self-hosted Umami at `https://analytics.sabya.pm/script.js`, included when a valid website ID is present at build time. Optional Google Analytics 4 is included only when a valid `PUBLIC_GA_MEASUREMENT_ID` exists. Set `PUBLIC_UMAMI_WEBSITE_ID` to empty to omit Umami. Without either identifier, the output contains no analytics code at all.
 
-GA4 is configured with IP anonymization, no advertising storage, no advertising user data, no Google Signals, and no user-provided data collection.
+No Umami or Google resource is requested until the visitor makes a single opt-in choice, which is saved in versioned browser-local state.
 
-GA events pass through the typed `Analytics` abstraction in `src/domain/analytics.ts`. Direct `gtag()` calls outside that module are not allowed.
+When GA4 is present it is configured with IP anonymization, no advertising storage, no advertising user data, no Google Signals, and no user-provided data collection.
+
+Events pass through the typed `Analytics` abstraction in `src/domain/analytics.ts`. Direct `gtag()` or `umami.track()` calls outside that module are not allowed.
 
 ## Event taxonomy
 
@@ -60,7 +62,7 @@ Two mechanisms enforce the contract in code, not by convention:
 
 ## Canary tests
 
-Playwright end-to-end tests inject known canary strings into the script editor and the voice path, then assert that those strings never appear in any application-generated outgoing URL or request body. Tests run against one build with a test measurement ID and one without it, and assert that GA is absent before consent and absent entirely when no ID is configured.
+Playwright end-to-end tests inject known canary strings into the script editor and the voice path, then assert that those strings never appear in any application-generated outgoing URL or request body. Tests run against one build with test analytics identifiers and one without them, and assert that Umami and GA are absent before consent and absent entirely when no identifier is configured.
 
 ## GA4 custom dimensions to register manually
 
@@ -84,8 +86,8 @@ Do not register custom equivalents of dimensions GA4 already provides. Landing p
 
 Playwright tests assert that:
 
-1. GA is absent before consent.
+1. Umami and GA are absent before consent.
 2. Rejecting consent loads nothing.
-3. GA loads only after the opt-in choice.
-4. No consent UI or third-party request exists without a configured measurement ID.
+3. Umami and GA load only after the opt-in choice.
+4. No consent UI or third-party request exists without a configured analytics identifier.
 5. Script and voice canaries never occur in an application-generated outgoing URL or body.
