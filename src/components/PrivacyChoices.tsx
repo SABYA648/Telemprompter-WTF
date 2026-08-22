@@ -51,6 +51,12 @@ export default function PrivacyChoices(): preact.JSX.Element | null {
     const next = { decided: true, usageAnalytics };
     setConsent(next);
     setOpen(false);
+    if (usageAnalytics) {
+      persistConsent(next);
+      analytics.track('allowed_usage_analytics');
+      return;
+    }
+    if (analytics.isEnabled) analytics.track('declined_usage_analytics');
     persistConsent(next);
   };
 

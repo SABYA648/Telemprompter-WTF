@@ -62,8 +62,8 @@ Build an instant browser utility that:
 Distribution is organic search; measurement is GA4 plus Search Console, both operating inside the privacy contract in [docs/analytics.md](docs/analytics.md).
 
 - **Acquisition:** Search Console impressions, clicks, CTR, and position per query and landing page.
-- **Activation:** `teleprompter_start` per landing page and per content cluster, via the funnel exploration in [docs/growth-analytics.md](docs/growth-analytics.md).
-- **Completion and adoption:** `teleprompter_complete`, voice mode mix, recording and Picture in Picture usage, and `private_precision_fallback` reasons.
+- **Activation:** `started_teleprompter` per landing page and per content cluster, via the funnel exploration in [docs/growth-analytics.md](docs/growth-analytics.md).
+- **Completion and adoption:** `finished_teleprompter`, voice mode mix, recording and Picture in Picture usage, and `private_precision_fell_back` reasons.
 - **Retention:** GA4 new versus returning users. No custom user ID is collected, by design, so retention numbers are directional.
 
 Monetization is deferred until organic usage is validated; the scenario model for that future decision is in [docs/monetization-readiness.md](docs/monetization-readiness.md).

@@ -186,7 +186,7 @@ export default function VoiceTrackingControls({
         workerBusyRef.current = false;
         if (data.type === 'error') {
           setMessage('Private Precision could not process that audio. Smart Pace is still active.');
-          analytics.track('private_precision_fallback', { reason: fallbackReason(data.category) });
+          analytics.track('private_precision_fell_back', { reason: fallbackReason(data.category) });
           window.dispatchEvent(
             new CustomEvent('teleprompter:precision-error', {
               detail: { category: data.category },
@@ -209,7 +209,7 @@ export default function VoiceTrackingControls({
         workerBusyRef.current = false;
         setModelState('ready');
         setMessage('Private Precision could not start on this device. Smart Pace is still active.');
-        analytics.track('private_precision_fallback', { reason: 'runtime_error' });
+        analytics.track('private_precision_fell_back', { reason: 'runtime_error' });
         window.dispatchEvent(
           new CustomEvent('teleprompter:precision-error', {
             detail: { category: 'worker-start-failed' },
@@ -233,7 +233,7 @@ export default function VoiceTrackingControls({
       try {
         await speech.start();
         setFollowEngine('speech');
-        analytics.track('smart_pace_enable', { result: 'started' });
+        analytics.track('enabled_smart_pace');
         if (options?.auto) setOpen(false);
         else close();
         return;
@@ -244,7 +244,7 @@ export default function VoiceTrackingControls({
           setFollowEngine('off');
           setState('denied');
           setMessage('Microphone access was blocked. Manual scrolling still works.');
-          analytics.track('smart_pace_enable', { result: 'mic_blocked' });
+          analytics.track('smart_pace_microphone_blocked');
           onModeChange('manual');
           onMultiplier(1);
           if (!options?.auto) setOpen(true);
@@ -269,8 +269,8 @@ export default function VoiceTrackingControls({
     try {
       await session.start();
       setFollowEngine(nextMode === 'precision' ? 'precision' : 'pace');
-      if (nextMode === 'smart') analytics.track('smart_pace_enable', { result: 'started' });
-      else analytics.track('private_precision_enable');
+      if (nextMode === 'smart') analytics.track('enabled_smart_pace');
+      else analytics.track('enabled_private_precision');
       if (options?.auto) setOpen(false);
       else close();
     } catch (error) {
@@ -285,9 +285,11 @@ export default function VoiceTrackingControls({
           : 'Voice tracking could not start. Manual scrolling still works.',
       );
       if (nextMode === 'smart') {
-        analytics.track('smart_pace_enable', {
-          result: microphoneErrorState(error) === 'denied' ? 'mic_blocked' : 'unavailable',
-        });
+        analytics.track(
+          microphoneErrorState(error) === 'denied'
+            ? 'smart_pace_microphone_blocked'
+            : 'smart_pace_unavailable',
+        );
       }
       onModeChange('manual');
       onMultiplier(1);
@@ -308,21 +310,23 @@ export default function VoiceTrackingControls({
   const chooseManual = () => {
     stopVoice();
     onModeChange('manual');
+    analytics.track('chose_manual_scrolling');
   };
 
   const download = async () => {
     setModelState('downloading');
     setMessage('');
-    analytics.track('private_precision_download_start', { model_id: LOCAL_MODEL_ID });
+    analytics.track('started_voice_model_download', { model_id: LOCAL_MODEL_ID });
     try {
       await downloadLocalModel(({ percent }) => setDownloadProgress(Math.round(percent * 100)));
       setModelState('ready');
-      analytics.track('private_precision_download_complete', {
+      analytics.track('finished_voice_model_download', {
         model_id: LOCAL_MODEL_ID,
         size_bucket: PRIVATE_PRECISION_SIZE_BUCKET,
       });
     } catch {
       setModelState('error');
+      analytics.track('failed_voice_model_download');
       setMessage('The model could not be downloaded. Check your connection and try again.');
     }
   };
@@ -334,6 +338,7 @@ export default function VoiceTrackingControls({
     setDownloadProgress(0);
     onModeChange('manual');
     setMessage('Downloaded model removed from this browser.');
+    analytics.track('removed_voice_model');
   };
 
   const totalSizeMb = Math.round(TOTAL_FIRST_USE_BYTES / 1_000_000);
@@ -351,7 +356,10 @@ export default function VoiceTrackingControls({
       <button
         ref={triggerRef}
         class={`control-button voice-trigger ${isActive ? 'voice-trigger--active' : ''}`}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          analytics.track('opened_voice_tracking_panel');
+          setOpen(true);
+        }}
         aria-label={`Voice tracking. ${statusLabel(state, mode, followEngine)}`}
       >
         <span aria-hidden="true">{isActive ? '●' : '○'}</span>

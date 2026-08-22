@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'preact/hooks';
+import { analytics } from '../domain/analytics';
 import { durationSeconds, formatDuration } from '../domain/calculations';
 
 const PACES = [100, 120, 130, 150, 180] as const;
 
 export default function WordsToMinutes(): preact.JSX.Element {
   const [words, setWords] = useState(1000);
+  const trackedInputRef = useRef(false);
   const rows = useMemo(
     () => PACES.map((wpm) => ({ wpm, duration: durationSeconds(words, wpm) })),
     [words],
@@ -21,7 +23,13 @@ export default function WordsToMinutes(): preact.JSX.Element {
             max="100000"
             inputMode="numeric"
             value={words}
-            onInput={(event) => setWords(Math.max(0, Number(event.currentTarget.value)))}
+            onInput={(event) => {
+              if (!trackedInputRef.current) {
+                trackedInputRef.current = true;
+                analytics.track('used_speaking_time_tool');
+              }
+              setWords(Math.max(0, Number(event.currentTarget.value)));
+            }}
           />
           <span>words</span>
         </span>

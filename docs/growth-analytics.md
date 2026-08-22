@@ -12,9 +12,9 @@ Technique: Free form.
 
 - Rows: Landing page
 - Columns: Session source/medium (filter to organic sources), Country, Device category
-- Values: Sessions, Active users, Engaged sessions, Views, Event count for `teleprompter_start`, Event count for `teleprompter_complete`
+- Values: Sessions, Active users, Engaged sessions, Views, Event count for `started_teleprompter`, Event count for `finished_teleprompter`
 
-Steps: create a Free form exploration, add the dimensions and metrics, add a filter for Session medium matches `organic`, and sort by Sessions descending. Read the ratio of `teleprompter_start` to Sessions per landing page as a rough activation rate.
+Steps: create a Free form exploration, add the dimensions and metrics, add a filter for Session medium matches `organic`, and sort by Sessions descending. Read the ratio of `started_teleprompter` to Sessions per landing page as a rough activation rate.
 
 ## 2. Content-to-teleprompter funnel
 
@@ -25,9 +25,9 @@ Technique: Funnel exploration.
 Steps, in order:
 
 1. Page view on a content page (Page path matches `/guides/` or `/tools/` or `/features`)
-2. `use_teleprompter_cta`
-3. `teleprompter_start`
-4. `teleprompter_complete`
+2. `clicked_open_teleprompter`
+3. `started_teleprompter`
+4. `finished_teleprompter`
 
 Breakdown dimension: `content_cluster` (custom dimension; requires the manual GA4 registration step). Add Landing page and Device category as additional breakdowns. A step with a large drop indicates either weak CTA placement (step 1 to 2) or a product problem after arrival (step 3 to 4).
 
@@ -38,9 +38,9 @@ Question answered: do visitors choose Manual, Smart Pace, or Private Precision B
 Technique: Free form.
 
 - Rows: `voice_mode` (custom dimension)
-- Values: Event count for `teleprompter_start`, Event count for `teleprompter_complete`, Event count for `teleprompter_exit`, Event count for `private_precision_fallback`
+- Values: Event count for `started_teleprompter`, Event count for `finished_teleprompter`, Event count for `left_teleprompter_early`, Event count for `private_precision_fell_back`
 
-Read completion per start by mode. A high `private_precision_fallback` count relative to `teleprompter_start` with `voice_mode = private_precision` suggests device or environment friction worth investigating; the `reason` parameter on `private_precision_fallback` (alignment_low, runtime_error, unsupported, memory, user_switch) shows why.
+Read completion per start by mode. A high `private_precision_fell_back` count relative to `started_teleprompter` with `voice_mode = private_precision` suggests device or environment friction worth investigating; the `reason` parameter on `private_precision_fell_back` (alignment_low, runtime_error, unsupported, memory, user_switch) shows why.
 
 ## 4. Retention
 
@@ -49,7 +49,7 @@ Question answered: do people come back, and which content produces returning use
 Technique: Free form.
 
 - Rows: New vs returning (built-in dimension)
-- Values: Active users, Sessions, Engaged sessions, Event count for `teleprompter_start`
+- Values: Active users, Sessions, Engaged sessions, Event count for `started_teleprompter`
 
 Add Landing page as a secondary dimension to see which pages produce returning users. Returning-user share and repeat teleprompter starts are the primary health signals.
 

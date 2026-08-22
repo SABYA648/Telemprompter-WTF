@@ -107,6 +107,7 @@ export default function RecordingControl(): preact.JSX.Element | null {
     const selectedMimeType = supportedMimeType();
     if (!selectedMimeType) {
       setMessage('This browser does not expose a supported recording format.');
+      analytics.track('recording_start_failed', { reason: 'unavailable' });
       return;
     }
     try {
@@ -144,7 +145,7 @@ export default function RecordingControl(): preact.JSX.Element | null {
         // Only a genuine stop (user or normal end of capture) counts as a completion;
         // capture errors are reported through onerror instead.
         if (!captureFailedRef.current) {
-          analytics.track('record_complete', {
+          analytics.track('finished_recording', {
             recording_type: mode,
             duration_bucket: durationBucket(secondsRef.current),
           });
@@ -163,10 +164,16 @@ export default function RecordingControl(): preact.JSX.Element | null {
         secondsRef.current += 1;
         setSeconds(secondsRef.current);
       }, 1000);
-      analytics.track('record_start', { recording_type: mode, microphone_included: includeMic });
+      analytics.track('started_recording', {
+        recording_type: mode,
+        microphone_included: includeMic,
+      });
     } catch (error) {
       cleanupCapture();
       const cancelled = error instanceof DOMException && error.name === 'NotAllowedError';
+      analytics.track('recording_start_failed', {
+        reason: cancelled ? 'permission_blocked' : 'unavailable',
+      });
       setMessage(
         cancelled
           ? 'Recording was cancelled or permission was blocked.'
@@ -182,12 +189,19 @@ export default function RecordingControl(): preact.JSX.Element | null {
     link.href = previewUrl;
     link.download = `teleprompter-recording-${new Date().toISOString().slice(0, 10)}.${extension}`;
     link.click();
-    analytics.track('record_save', { recording_type: mode });
+    analytics.track('saved_recording', { recording_type: mode });
   };
 
   return (
     <>
-      <button ref={triggerRef} class="control-button" onClick={() => setOpen(true)}>
+      <button
+        ref={triggerRef}
+        class="control-button"
+        onClick={() => {
+          analytics.track('opened_recording_panel');
+          setOpen(true);
+        }}
+      >
         {recording ? `Recording ${formatTimer(seconds)}` : 'Record'}
       </button>
       {recording && (
@@ -285,6 +299,7 @@ export default function RecordingControl(): preact.JSX.Element | null {
                     onClick={() => {
                       URL.revokeObjectURL(previewUrl);
                       setPreviewUrl('');
+                      analytics.track('discarded_recording', { recording_type: mode });
                     }}
                   >
                     Discard

@@ -12,10 +12,12 @@ import Layout from '../layouts/Layout.astro';
     <h1>That page is off script.</h1>
     <p>The link may be outdated, but the teleprompter is ready.</p>
     <div>
-      <a class="button button--primary" href="/">Open teleprompter</a><a
-        class="button button--quiet"
-        href="/guides">Browse guides</a
-      >
+      <a
+        class="button button--primary"
+        href="/"
+        data-analytics-cta="header"
+        data-page-type="not_found">Open teleprompter</a
+      ><a class="button button--quiet" href="/guides">Browse guides</a>
     </div>
   </section>
 </Layout>

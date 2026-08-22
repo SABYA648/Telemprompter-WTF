@@ -102,8 +102,8 @@ export default function TeleprompterApp(): preact.JSX.Element {
   const updatePreferences = (next: PresenterPreferences, setting?: SettingName) => {
     setPreferences(next);
     // Continuous slider drags call this without a setting; only discrete selections
-    // (and slider commits) carry one, so setting_change stays low cardinality.
-    if (setting) analytics.track('setting_change', { setting });
+    // (and slider commits) carry one, so changed_presenter_setting stays low cardinality.
+    if (setting) analytics.track('changed_presenter_setting', { setting });
   };
 
   const clearScript = () => {
@@ -115,7 +115,7 @@ export default function TeleprompterApp(): preact.JSX.Element {
     }
     setScript('');
     setNotice('Script cleared.');
-    analytics.track('script_clear');
+    analytics.track('cleared_script');
   };
 
   const clearEverything = () => {
@@ -133,6 +133,7 @@ export default function TeleprompterApp(): preact.JSX.Element {
     setPrivacyConsent(clean.privacyConsent);
     setNotice('Local script and preferences cleared.');
     setSaveStatus('Local data cleared');
+    analytics.track('cleared_local_data');
     window.dispatchEvent(new CustomEvent('teleprompter:local-data-cleared'));
   };
 
@@ -152,7 +153,7 @@ export default function TeleprompterApp(): preact.JSX.Element {
       if (text.includes('\u0000')) throw new Error('Binary content');
       setScript(text);
       setNotice('Text file imported.');
-      analytics.track('script_import', { source_type: 'txt' });
+      analytics.track('imported_plain_text_script', { source_type: 'txt' });
     } catch {
       setNotice('That file could not be read as plain text.');
     } finally {
@@ -177,7 +178,9 @@ export default function TeleprompterApp(): preact.JSX.Element {
       } else {
         setNotice(`Share this link: ${url}`);
       }
-      analytics.track('share_tool', { method: capabilities.webShare ? 'native' : 'clipboard' });
+      analytics.track('shared_teleprompter_link', {
+        method: capabilities.webShare ? 'native' : 'clipboard',
+      });
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       setNotice(`Share this link: ${url}`);

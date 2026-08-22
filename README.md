@@ -73,7 +73,7 @@ Optional usage analytics can be enabled by the visitor and never load before opt
 
 Analytics are optional and consent gated. Self-hosted Umami is included by default. Optional GA4 is included only when a valid `PUBLIC_GA_MEASUREMENT_ID` exists at build time. Set `PUBLIC_UMAMI_WEBSITE_ID` to empty to omit Umami. Without either identifier the output contains no analytics code at all.
 
-The analytics boundary accepts a fixed event allowlist and filters content-shaped properties. Direct `gtag()` or `umami.track()` calls outside the domain module are not allowed. Script, transcript, voice, filenames, clipboard contents, microphone labels, and raw error messages are prohibited. The full event taxonomy and privacy contract live in [docs/analytics.md](docs/analytics.md).
+The analytics boundary accepts a fixed verb-first event allowlist and filters content-shaped properties. Direct `gtag()` or `umami.track()` calls outside the domain module are not allowed. Script, transcript, voice, filenames, clipboard contents, microphone labels, and raw error messages are prohibited. The full event taxonomy and privacy contract live in [docs/analytics.md](docs/analytics.md).
 
 ## Architecture
 

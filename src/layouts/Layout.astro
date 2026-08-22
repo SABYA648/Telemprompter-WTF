@@ -54,13 +54,14 @@ const bingVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
     {noindex && <meta name="robots" content="noindex,follow" />}
     {schema && <script is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />}
     <script>
-      import { analytics } from '../domain/analytics';
+      import { analytics, bindOpenTeleprompterCtas } from '../domain/analytics';
       import { loadLocalState } from '../domain/localState';
       // Apply a previously stored consent choice on every page, so Umami page views,
       // GA page views, and content-to-product events work site-wide. Undecided or denied
       // means nothing loads.
       const consent = loadLocalState().privacyConsent;
       if (consent.decided && consent.usageAnalytics) analytics.allow();
+      bindOpenTeleprompterCtas();
     </script>
   </head>
   <body>

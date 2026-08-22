@@ -147,7 +147,7 @@ export default function Presenter({
     const markComplete = () => {
       if (completedRef.current) return;
       completedRef.current = true;
-      analytics.track('teleprompter_complete');
+      analytics.track('finished_teleprompter');
     };
     const controller = new TimeBasedScrollController({
       element,
@@ -163,10 +163,11 @@ export default function Presenter({
     });
     controllerRef.current = controller;
     const startTimer = setTimeout(() => controller.start(), 350);
-    analytics.track('teleprompter_start', {
+    analytics.track('started_teleprompter', {
       voice_mode: voiceModeParam(preferences.voiceMode),
       script_size_bucket: scriptSizeBucket(words),
       entry_context: entryContext,
+      script_kind: guide.kind === 'guided' ? 'production' : 'plain',
     });
 
     return () => {
@@ -238,7 +239,11 @@ export default function Presenter({
   ]);
 
   useEffect(() => {
-    const onFullscreen = () => setFullscreen(Boolean(document.fullscreenElement));
+    const onFullscreen = () => {
+      const next = Boolean(document.fullscreenElement);
+      setFullscreen(next);
+      analytics.track(next ? 'entered_fullscreen' : 'exited_fullscreen');
+    };
     document.addEventListener('fullscreenchange', onFullscreen);
     return () => document.removeEventListener('fullscreenchange', onFullscreen);
   }, []);
@@ -261,15 +266,15 @@ export default function Presenter({
     revealControls();
   }, [playing, settingsOpen, shortcutsOpen]);
 
-  const togglePlay = () => {
+  const togglePlay = (controlSource: 'button' | 'keyboard' = 'button') => {
     if (playing) {
       controllerRef.current?.pause();
-      analytics.track('teleprompter_pause');
+      analytics.track('paused_teleprompter', { control_source: controlSource });
       setControlsVisible(true);
     } else {
       if (progress >= 0.999) controllerRef.current?.restart();
       controllerRef.current?.start();
-      analytics.track('teleprompter_resume');
+      analytics.track('resumed_teleprompter', { control_source: controlSource });
       revealControls();
     }
   };
@@ -322,7 +327,7 @@ export default function Presenter({
     // Exit only fires when the session did not complete, so it never doubles with
     // teleprompter_complete.
     if (!completedRef.current) {
-      analytics.track('teleprompter_exit', {
+      analytics.track('left_teleprompter_early', {
         progress_bucket: progressBucket(progressRef.current),
         duration_bucket: durationBucket((Date.now() - startedAtRef.current) / 1000),
         voice_mode: voiceModeParam(preferences.voiceMode),
@@ -383,7 +388,7 @@ export default function Presenter({
       const key = event.key.toLowerCase();
       if (event.code === 'Space') {
         event.preventDefault();
-        togglePlay();
+        togglePlay('keyboard');
       } else if (event.key === 'ArrowUp') {
         event.preventDefault();
         changeSpeed(1);
@@ -401,6 +406,7 @@ export default function Presenter({
       } else if (event.key === 'Home') {
         event.preventDefault();
         controllerRef.current?.restart();
+        analytics.track('restarted_teleprompter', { control_source: 'keyboard' });
       }
       revealControls();
     };
@@ -410,6 +416,7 @@ export default function Presenter({
 
   const restart = () => {
     controllerRef.current?.restart();
+    analytics.track('restarted_teleprompter', { control_source: 'button' });
     revealControls();
   };
 
@@ -568,14 +575,20 @@ export default function Presenter({
         <button
           ref={settingsButtonRef}
           class="control-button"
-          onClick={() => setSettingsOpen(true)}
+          onClick={() => {
+            analytics.track('opened_appearance_panel');
+            setSettingsOpen(true);
+          }}
         >
           Appearance
         </button>
         <button
           ref={shortcutsButtonRef}
           class="control-button"
-          onClick={() => setShortcutsOpen(true)}
+          onClick={() => {
+            analytics.track('opened_shortcuts_panel');
+            setShortcutsOpen(true);
+          }}
         >
           Shortcuts
         </button>

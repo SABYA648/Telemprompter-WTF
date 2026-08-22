@@ -120,7 +120,7 @@ export default function PictureInPictureControl({
       if (capabilities.documentPictureInPicture && documentPip) {
         const child = await documentPip.requestWindow({ width: 640, height: 420 });
         setUpChild(child, 'document');
-        analytics.track('pip_open', { pip_mode: 'document' });
+        analytics.track('opened_picture_in_picture', { pip_mode: 'document' });
         return;
       }
 
@@ -141,14 +141,14 @@ export default function PictureInPictureControl({
         setActiveMode('video');
         timerRef.current = setInterval(drawCanvas, 100);
         video.addEventListener('leavepictureinpicture', () => close());
-        analytics.track('pip_open', { pip_mode: 'video' });
+        analytics.track('opened_picture_in_picture', { pip_mode: 'video' });
         return;
       }
 
       const child = window.open('', 'teleprompter-wtf-popout', 'popup,width=640,height=420');
       if (!child) throw new Error('popout-blocked');
       setUpChild(child, 'popout');
-      analytics.track('pip_open', { pip_mode: 'popout' });
+      analytics.track('opened_picture_in_picture', { pip_mode: 'popout' });
     } catch {
       setMessage('The compact presenter could not open. Your main presenter still works.');
     }

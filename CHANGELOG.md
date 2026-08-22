@@ -6,7 +6,12 @@ All notable changes to this project are documented in this file. The format is b
 
 ### Added
 
-- Consent-gated self-hosted Umami (`https://analytics.sabya.pm/script.js`) for page views and the existing product event taxonomy, loaded only after the visitor allows analytics.
+- Consent-gated self-hosted Umami (`https://analytics.sabya.pm/script.js`) for page views and product events, loaded only after the visitor allows analytics.
+- Sitewide `clicked_open_teleprompter` conversion tracking via `data-analytics-cta` attributes, plus first-use events for the speed calculator and words-to-minutes tool.
+
+### Changed
+
+- Product analytics now use a verb-first event taxonomy (`started_teleprompter`, `finished_recording`, `opened_picture_in_picture`, and the rest of the allowlist in [docs/analytics.md](docs/analytics.md)). Retired names such as `teleprompter_start` and `use_teleprompter_cta` are rejected.
 
 ## [1.0.0] - 2026-08-09
 

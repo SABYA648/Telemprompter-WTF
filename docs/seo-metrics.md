@@ -15,20 +15,20 @@ What the owner monitors, weekly and monthly. Sources: Google Search Console (acq
 
 - Organic users and sessions
 - Engaged organic sessions
-- Teleprompter starts (event count for `teleprompter_start`) and starts per active user
-- `use_teleprompter_cta` conversion from content pages
-- `teleprompter_complete` count and the complete-per-start ratio
+- Teleprompter starts (event count for `started_teleprompter`) and starts per active user
+- `clicked_open_teleprompter` conversion from content pages
+- `finished_teleprompter` count and the complete-per-start ratio
 
 ### Product quality
 
-- `private_precision_fallback` rate relative to Private Precision Beta starts, broken down by `reason`
-- `smart_pace_enable` results: the `mic_blocked` and `unavailable` share indicates permission and capability friction
+- `private_precision_fell_back` rate relative to Private Precision Beta starts, broken down by `reason`
+- `smart_pace_microphone_blocked` and `smart_pace_unavailable` relative to `enabled_smart_pace` indicate permission and capability friction
 
 ## Monthly
 
 - Returning-user share in GA4 (New vs returning dimension)
-- Voice mode mix across `teleprompter_start`: manual versus Smart Pace versus Private Precision Beta
-- Recording and Picture in Picture adoption (`record_start`, `pip_open`)
+- Voice mode mix across `started_teleprompter`: manual versus Smart Pace versus Private Precision Beta
+- Recording and Picture in Picture adoption (`started_recording`, `opened_picture_in_picture`)
 - Browser capability mix: which advanced features fire `unavailable` fallbacks on which device categories
 - Core Web Vitals from Search Console field data, plus a Lighthouse pass against production after any performance-relevant change
 - Query review for accidental intent overlap between pages, per the page ownership map in [docs/seo-research.md](docs/seo-research.md)

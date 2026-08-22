@@ -79,21 +79,11 @@ const schema = [
     <aside class="callout">
       <div><p class="eyebrow">Pace decided?</p><h2>Take the script to the presenter.</h2></div><a
         class="button button--primary"
-        href="/">Start teleprompter</a
+        href="/"
+        data-analytics-cta="end"
+        data-page-type="tool"
+        data-content-cluster="speed">Start teleprompter</a
       >
     </aside>
   </article>
 </Layout>
-
-<script>
-  import { analytics } from '../../domain/analytics';
-
-  const cta = document.querySelector<HTMLAnchorElement>('.callout a[href="/"]');
-  cta?.addEventListener('click', () => {
-    analytics.track('use_teleprompter_cta', {
-      page_type: 'tool',
-      content_cluster: 'speed',
-      cta_location: 'end',
-    });
-  });
-</script>

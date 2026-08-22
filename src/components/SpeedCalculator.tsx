@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'preact/hooks';
+import { analytics, type CalculatorMode } from '../domain/analytics';
 import {
   durationSeconds,
   formatDuration,
@@ -8,13 +9,32 @@ import {
 
 type Mode = 'find-pace' | 'find-time';
 
+const toCalculatorMode = (mode: Mode): CalculatorMode =>
+  mode === 'find-pace' ? 'find_pace' : 'find_time';
+
 export default function SpeedCalculator(): preact.JSX.Element {
   const [mode, setMode] = useState<Mode>('find-pace');
   const [words, setWords] = useState(750);
   const [minutes, setMinutes] = useState(5);
   const [wpm, setWpm] = useState(130);
+  const trackedInputRef = useRef(false);
   const calculatedWpm = useMemo(() => requiredWpm(words, minutes * 60), [words, minutes]);
   const calculatedTime = useMemo(() => durationSeconds(words, wpm), [words, wpm]);
+
+  const trackUse = (calculatorMode: CalculatorMode) => {
+    analytics.track('used_speed_calculator', { calculator_mode: calculatorMode });
+  };
+
+  const chooseMode = (next: Mode) => {
+    setMode(next);
+    trackUse(toCalculatorMode(next));
+  };
+
+  const markFirstInput = () => {
+    if (trackedInputRef.current) return;
+    trackedInputRef.current = true;
+    trackUse(toCalculatorMode(mode));
+  };
 
   return (
     <section class="tool-card" aria-labelledby="calculator-heading">
@@ -22,14 +42,14 @@ export default function SpeedCalculator(): preact.JSX.Element {
         <button
           role="tab"
           aria-selected={mode === 'find-pace'}
-          onClick={() => setMode('find-pace')}
+          onClick={() => chooseMode('find-pace')}
         >
           Find my pace
         </button>
         <button
           role="tab"
           aria-selected={mode === 'find-time'}
-          onClick={() => setMode('find-time')}
+          onClick={() => chooseMode('find-time')}
         >
           Find my time
         </button>
@@ -46,7 +66,10 @@ export default function SpeedCalculator(): preact.JSX.Element {
                 max="100000"
                 inputMode="numeric"
                 value={words}
-                onInput={(event) => setWords(Math.max(0, Number(event.currentTarget.value)))}
+                onInput={(event) => {
+                  markFirstInput();
+                  setWords(Math.max(0, Number(event.currentTarget.value)));
+                }}
               />
               <span>words</span>
             </span>
@@ -62,7 +85,10 @@ export default function SpeedCalculator(): preact.JSX.Element {
                   step="0.5"
                   inputMode="decimal"
                   value={minutes}
-                  onInput={(event) => setMinutes(Math.max(0, Number(event.currentTarget.value)))}
+                  onInput={(event) => {
+                    markFirstInput();
+                    setMinutes(Math.max(0, Number(event.currentTarget.value)));
+                  }}
                 />
                 <span>minutes</span>
               </span>
@@ -77,7 +103,10 @@ export default function SpeedCalculator(): preact.JSX.Element {
                   max="400"
                   inputMode="numeric"
                   value={wpm}
-                  onInput={(event) => setWpm(Math.max(0, Number(event.currentTarget.value)))}
+                  onInput={(event) => {
+                    markFirstInput();
+                    setWpm(Math.max(0, Number(event.currentTarget.value)));
+                  }}
                 />
                 <span>WPM</span>
               </span>

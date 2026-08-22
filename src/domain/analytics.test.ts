@@ -24,8 +24,8 @@ describe('analytics abstraction', () => {
     expect(isAllowedAnalyticsEvent('voice_mode_change')).toBe(false);
   });
 
-  it('documents the final taxonomy', () => {
-    expect(ANALYTICS_EVENTS).toEqual([
+  it('rejects the retired event names', () => {
+    for (const event of [
       'teleprompter_start',
       'teleprompter_pause',
       'teleprompter_resume',
@@ -45,6 +45,51 @@ describe('analytics abstraction', () => {
       'script_clear',
       'setting_change',
       'use_teleprompter_cta',
+    ]) {
+      expect(isAllowedAnalyticsEvent(event)).toBe(false);
+    }
+  });
+
+  it('documents the final taxonomy', () => {
+    expect(ANALYTICS_EVENTS).toEqual([
+      'started_teleprompter',
+      'paused_teleprompter',
+      'resumed_teleprompter',
+      'finished_teleprompter',
+      'left_teleprompter_early',
+      'restarted_teleprompter',
+      'opened_appearance_panel',
+      'opened_shortcuts_panel',
+      'entered_fullscreen',
+      'exited_fullscreen',
+      'enabled_smart_pace',
+      'smart_pace_microphone_blocked',
+      'smart_pace_unavailable',
+      'opened_voice_tracking_panel',
+      'chose_manual_scrolling',
+      'started_voice_model_download',
+      'finished_voice_model_download',
+      'failed_voice_model_download',
+      'enabled_private_precision',
+      'private_precision_fell_back',
+      'removed_voice_model',
+      'started_recording',
+      'finished_recording',
+      'saved_recording',
+      'discarded_recording',
+      'recording_start_failed',
+      'opened_recording_panel',
+      'opened_picture_in_picture',
+      'imported_plain_text_script',
+      'cleared_script',
+      'cleared_local_data',
+      'changed_presenter_setting',
+      'shared_teleprompter_link',
+      'clicked_open_teleprompter',
+      'allowed_usage_analytics',
+      'declined_usage_analytics',
+      'used_speed_calculator',
+      'used_speaking_time_tool',
     ]);
   });
 
@@ -91,37 +136,44 @@ describe('analytics abstraction', () => {
 
   it('keeps only schema-approved properties with enum values', () => {
     expect(
-      validateEventProperties('teleprompter_start', {
+      validateEventProperties('started_teleprompter', {
         voice_mode: 'smart_pace',
         script_size_bucket: '301_750',
         entry_context: 'restored_script',
+        script_kind: 'plain',
         speed: 5,
       }),
     ).toEqual({
       voice_mode: 'smart_pace',
       script_size_bucket: '301_750',
       entry_context: 'restored_script',
+      script_kind: 'plain',
     });
     expect(
-      validateEventProperties('teleprompter_start', {
+      validateEventProperties('started_teleprompter', {
         voice_mode: 'shouty',
         script_size_bucket: '301_750',
         entry_context: 'restored_script',
+        script_kind: 'plain',
       }),
-    ).toEqual({ script_size_bucket: '301_750', entry_context: 'restored_script' });
+    ).toEqual({
+      script_size_bucket: '301_750',
+      entry_context: 'restored_script',
+      script_kind: 'plain',
+    });
     expect(
-      validateEventProperties('record_start', {
+      validateEventProperties('started_recording', {
         recording_type: 'screen',
         microphone_included: true,
       }),
     ).toEqual({ recording_type: 'screen', microphone_included: true });
     expect(
-      validateEventProperties('record_start', {
+      validateEventProperties('started_recording', {
         recording_type: 'screen',
         microphone_included: 'yes',
       }),
     ).toEqual({ recording_type: 'screen' });
-    expect(validateEventProperties('teleprompter_complete', { sneaky: 'value' })).toEqual({});
+    expect(validateEventProperties('finished_teleprompter', { sneaky: 'value' })).toEqual({});
   });
 
   it('buckets script sizes at the documented boundaries', () => {

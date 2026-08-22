@@ -1,25 +1,44 @@
 import type { VoiceMode } from './types';
 
 export const ANALYTICS_EVENTS = [
-  'teleprompter_start',
-  'teleprompter_pause',
-  'teleprompter_resume',
-  'teleprompter_complete',
-  'teleprompter_exit',
-  'smart_pace_enable',
-  'private_precision_download_start',
-  'private_precision_download_complete',
-  'private_precision_enable',
-  'private_precision_fallback',
-  'record_start',
-  'record_complete',
-  'record_save',
-  'pip_open',
-  'share_tool',
-  'script_import',
-  'script_clear',
-  'setting_change',
-  'use_teleprompter_cta',
+  'started_teleprompter',
+  'paused_teleprompter',
+  'resumed_teleprompter',
+  'finished_teleprompter',
+  'left_teleprompter_early',
+  'restarted_teleprompter',
+  'opened_appearance_panel',
+  'opened_shortcuts_panel',
+  'entered_fullscreen',
+  'exited_fullscreen',
+  'enabled_smart_pace',
+  'smart_pace_microphone_blocked',
+  'smart_pace_unavailable',
+  'opened_voice_tracking_panel',
+  'chose_manual_scrolling',
+  'started_voice_model_download',
+  'finished_voice_model_download',
+  'failed_voice_model_download',
+  'enabled_private_precision',
+  'private_precision_fell_back',
+  'removed_voice_model',
+  'started_recording',
+  'finished_recording',
+  'saved_recording',
+  'discarded_recording',
+  'recording_start_failed',
+  'opened_recording_panel',
+  'opened_picture_in_picture',
+  'imported_plain_text_script',
+  'cleared_script',
+  'cleared_local_data',
+  'changed_presenter_setting',
+  'shared_teleprompter_link',
+  'clicked_open_teleprompter',
+  'allowed_usage_analytics',
+  'declined_usage_analytics',
+  'used_speed_calculator',
+  'used_speaking_time_tool',
 ] as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
@@ -36,7 +55,10 @@ export const SCRIPT_SIZE_BUCKETS = [
 export const ENTRY_CONTEXTS = ['new_script', 'restored_script'] as const;
 export const PROGRESS_BUCKETS = ['0_25', '25_50', '50_75', '75_95', '95_100'] as const;
 export const DURATION_BUCKETS = ['under_1m', '1_5m', '5_15m', '15m_plus'] as const;
-export const SMART_PACE_RESULTS = ['started', 'mic_blocked', 'unavailable'] as const;
+export const SCRIPT_KINDS = ['plain', 'production'] as const;
+export const CONTROL_SOURCES = ['button', 'keyboard'] as const;
+export const CALCULATOR_MODES = ['find_pace', 'find_time'] as const;
+export const RECORDING_FAIL_REASONS = ['permission_blocked', 'unavailable'] as const;
 export const PRECISION_MODEL_IDS = ['whisper-tiny-v1'] as const;
 export const FALLBACK_REASONS = [
   'alignment_low',
@@ -62,7 +84,16 @@ export const SETTING_NAMES = [
   'speakingWpm',
   'voiceMode',
 ] as const;
-export const PAGE_TYPES = ['guide', 'tool', 'feature'] as const;
+export const PAGE_TYPES = [
+  'guide',
+  'tool',
+  'feature',
+  'listing',
+  'about',
+  'privacy',
+  'not_found',
+  'voice_docs',
+] as const;
 export const CONTENT_CLUSTERS = [
   'youtube',
   'recording',
@@ -72,8 +103,10 @@ export const CONTENT_CLUSTERS = [
   'speed',
   'speaking_time',
   'getting_started',
+  'features',
+  'privacy',
 ] as const;
-export const CTA_LOCATIONS = ['inline', 'end', 'header'] as const;
+export const CTA_LOCATIONS = ['inline', 'end', 'header', 'callout'] as const;
 // True first-use transfer of Private Precision (12 model files plus the ONNX runtime WASM and loader, all in the managed download)
 // expressed as a decimal MB bucket, keeping the event low cardinality.
 export const MODEL_SIZE_BUCKETS = ['65_70_mb'] as const;
@@ -83,7 +116,10 @@ export type ScriptSizeBucket = (typeof SCRIPT_SIZE_BUCKETS)[number];
 export type EntryContext = (typeof ENTRY_CONTEXTS)[number];
 export type ProgressBucket = (typeof PROGRESS_BUCKETS)[number];
 export type DurationBucket = (typeof DURATION_BUCKETS)[number];
-export type SmartPaceResult = (typeof SMART_PACE_RESULTS)[number];
+export type ScriptKind = (typeof SCRIPT_KINDS)[number];
+export type ControlSource = (typeof CONTROL_SOURCES)[number];
+export type CalculatorMode = (typeof CALCULATOR_MODES)[number];
+export type RecordingFailReason = (typeof RECORDING_FAIL_REASONS)[number];
 export type PrecisionModelId = (typeof PRECISION_MODEL_IDS)[number];
 export type ModelSizeBucket = (typeof MODEL_SIZE_BUCKETS)[number];
 export type FallbackReason = (typeof FALLBACK_REASONS)[number];
@@ -99,40 +135,60 @@ export type CtaLocation = (typeof CTA_LOCATIONS)[number];
 export const PRIVATE_PRECISION_SIZE_BUCKET: ModelSizeBucket = '65_70_mb';
 
 export interface AnalyticsEventProperties {
-  teleprompter_start: {
+  started_teleprompter: {
     voice_mode: VoiceModeParam;
     script_size_bucket: ScriptSizeBucket;
     entry_context: EntryContext;
+    script_kind: ScriptKind;
   };
-  teleprompter_pause: Record<string, never>;
-  teleprompter_resume: Record<string, never>;
-  teleprompter_complete: Record<string, never>;
-  teleprompter_exit: {
+  paused_teleprompter: { control_source: ControlSource };
+  resumed_teleprompter: { control_source: ControlSource };
+  finished_teleprompter: Record<string, never>;
+  left_teleprompter_early: {
     progress_bucket: ProgressBucket;
     duration_bucket: DurationBucket;
     voice_mode: VoiceModeParam;
   };
-  smart_pace_enable: { result: SmartPaceResult };
-  private_precision_download_start: { model_id: PrecisionModelId };
-  private_precision_download_complete: {
+  restarted_teleprompter: { control_source: ControlSource };
+  opened_appearance_panel: Record<string, never>;
+  opened_shortcuts_panel: Record<string, never>;
+  entered_fullscreen: Record<string, never>;
+  exited_fullscreen: Record<string, never>;
+  enabled_smart_pace: Record<string, never>;
+  smart_pace_microphone_blocked: Record<string, never>;
+  smart_pace_unavailable: Record<string, never>;
+  opened_voice_tracking_panel: Record<string, never>;
+  chose_manual_scrolling: Record<string, never>;
+  started_voice_model_download: { model_id: PrecisionModelId };
+  finished_voice_model_download: {
     model_id: PrecisionModelId;
     size_bucket: ModelSizeBucket;
   };
-  private_precision_enable: Record<string, never>;
-  private_precision_fallback: { reason: FallbackReason };
-  record_start: { recording_type: RecordingType; microphone_included: boolean };
-  record_complete: { recording_type: RecordingType; duration_bucket: DurationBucket };
-  record_save: { recording_type: RecordingType };
-  pip_open: { pip_mode: PipMode };
-  share_tool: { method: ShareMethod };
-  script_import: { source_type: ImportSourceType };
-  script_clear: Record<string, never>;
-  setting_change: { setting: SettingName };
-  use_teleprompter_cta: {
+  failed_voice_model_download: Record<string, never>;
+  enabled_private_precision: Record<string, never>;
+  private_precision_fell_back: { reason: FallbackReason };
+  removed_voice_model: Record<string, never>;
+  started_recording: { recording_type: RecordingType; microphone_included: boolean };
+  finished_recording: { recording_type: RecordingType; duration_bucket: DurationBucket };
+  saved_recording: { recording_type: RecordingType };
+  discarded_recording: { recording_type: RecordingType };
+  recording_start_failed: { reason: RecordingFailReason };
+  opened_recording_panel: Record<string, never>;
+  opened_picture_in_picture: { pip_mode: PipMode };
+  imported_plain_text_script: { source_type: ImportSourceType };
+  cleared_script: Record<string, never>;
+  cleared_local_data: Record<string, never>;
+  changed_presenter_setting: { setting: SettingName };
+  shared_teleprompter_link: { method: ShareMethod };
+  clicked_open_teleprompter: {
     page_type: PageType;
     content_cluster?: ContentCluster;
     cta_location: CtaLocation;
   };
+  allowed_usage_analytics: Record<string, never>;
+  declined_usage_analytics: Record<string, never>;
+  used_speed_calculator: { calculator_mode: CalculatorMode };
+  used_speaking_time_tool: Record<string, never>;
 }
 
 export function scriptSizeBucket(wordCount: number): ScriptSizeBucket {
@@ -181,40 +237,60 @@ export function isAllowedAnalyticsEvent(value: string): value is AnalyticsEvent 
 type PropertyRule = readonly string[] | 'boolean';
 
 const EVENT_PROPERTY_SCHEMA: Record<AnalyticsEvent, Record<string, PropertyRule>> = {
-  teleprompter_start: {
+  started_teleprompter: {
     voice_mode: VOICE_MODE_PARAMS,
     script_size_bucket: SCRIPT_SIZE_BUCKETS,
     entry_context: ENTRY_CONTEXTS,
+    script_kind: SCRIPT_KINDS,
   },
-  teleprompter_pause: {},
-  teleprompter_resume: {},
-  teleprompter_complete: {},
-  teleprompter_exit: {
+  paused_teleprompter: { control_source: CONTROL_SOURCES },
+  resumed_teleprompter: { control_source: CONTROL_SOURCES },
+  finished_teleprompter: {},
+  left_teleprompter_early: {
     progress_bucket: PROGRESS_BUCKETS,
     duration_bucket: DURATION_BUCKETS,
     voice_mode: VOICE_MODE_PARAMS,
   },
-  smart_pace_enable: { result: SMART_PACE_RESULTS },
-  private_precision_download_start: { model_id: PRECISION_MODEL_IDS },
-  private_precision_download_complete: {
+  restarted_teleprompter: { control_source: CONTROL_SOURCES },
+  opened_appearance_panel: {},
+  opened_shortcuts_panel: {},
+  entered_fullscreen: {},
+  exited_fullscreen: {},
+  enabled_smart_pace: {},
+  smart_pace_microphone_blocked: {},
+  smart_pace_unavailable: {},
+  opened_voice_tracking_panel: {},
+  chose_manual_scrolling: {},
+  started_voice_model_download: { model_id: PRECISION_MODEL_IDS },
+  finished_voice_model_download: {
     model_id: PRECISION_MODEL_IDS,
     size_bucket: MODEL_SIZE_BUCKETS,
   },
-  private_precision_enable: {},
-  private_precision_fallback: { reason: FALLBACK_REASONS },
-  record_start: { recording_type: RECORDING_TYPES, microphone_included: 'boolean' },
-  record_complete: { recording_type: RECORDING_TYPES, duration_bucket: DURATION_BUCKETS },
-  record_save: { recording_type: RECORDING_TYPES },
-  pip_open: { pip_mode: PIP_MODES },
-  share_tool: { method: SHARE_METHODS },
-  script_import: { source_type: IMPORT_SOURCE_TYPES },
-  script_clear: {},
-  setting_change: { setting: SETTING_NAMES },
-  use_teleprompter_cta: {
+  failed_voice_model_download: {},
+  enabled_private_precision: {},
+  private_precision_fell_back: { reason: FALLBACK_REASONS },
+  removed_voice_model: {},
+  started_recording: { recording_type: RECORDING_TYPES, microphone_included: 'boolean' },
+  finished_recording: { recording_type: RECORDING_TYPES, duration_bucket: DURATION_BUCKETS },
+  saved_recording: { recording_type: RECORDING_TYPES },
+  discarded_recording: { recording_type: RECORDING_TYPES },
+  recording_start_failed: { reason: RECORDING_FAIL_REASONS },
+  opened_recording_panel: {},
+  opened_picture_in_picture: { pip_mode: PIP_MODES },
+  imported_plain_text_script: { source_type: IMPORT_SOURCE_TYPES },
+  cleared_script: {},
+  cleared_local_data: {},
+  changed_presenter_setting: { setting: SETTING_NAMES },
+  shared_teleprompter_link: { method: SHARE_METHODS },
+  clicked_open_teleprompter: {
     page_type: PAGE_TYPES,
     content_cluster: CONTENT_CLUSTERS,
     cta_location: CTA_LOCATIONS,
   },
+  allowed_usage_analytics: {},
+  declined_usage_analytics: {},
+  used_speed_calculator: { calculator_mode: CALCULATOR_MODES },
+  used_speaking_time_tool: {},
 };
 
 export function validateEventProperties(
@@ -241,9 +317,12 @@ const PROHIBITED_PROPERTY_PATTERN =
 const SAFE_TAXONOMY_KEYS = new Set([
   'voice_mode',
   'script_size_bucket',
+  'script_kind',
   'microphone_included',
   'content_cluster',
   'entry_context',
+  'control_source',
+  'calculator_mode',
 ]);
 
 export function filterSafeProperties(properties: SafeAnalyticsProperties): SafeAnalyticsProperties {
@@ -428,3 +507,33 @@ export const analytics = new Analytics(
   umamiWebsiteId,
   import.meta.env.PUBLIC_UMAMI_SCRIPT_URL ?? DEFAULT_UMAMI_SCRIPT_SRC,
 );
+
+export function isPageType(value: string | undefined): value is PageType {
+  return Boolean(value && (PAGE_TYPES as readonly string[]).includes(value));
+}
+
+export function isCtaLocation(value: string | undefined): value is CtaLocation {
+  return Boolean(value && (CTA_LOCATIONS as readonly string[]).includes(value));
+}
+
+export function isContentCluster(value: string | undefined): value is ContentCluster {
+  return Boolean(value && (CONTENT_CLUSTERS as readonly string[]).includes(value));
+}
+
+/** Bind conversion CTAs marked with data-analytics-cta across static pages. */
+export function bindOpenTeleprompterCtas(): void {
+  if (typeof document === 'undefined') return;
+  document.querySelectorAll<HTMLElement>('[data-analytics-cta]').forEach((element) => {
+    element.addEventListener('click', () => {
+      const pageType = element.dataset.pageType;
+      const location = element.dataset.analyticsCta;
+      const cluster = element.dataset.contentCluster;
+      if (!isPageType(pageType) || !isCtaLocation(location)) return;
+      analytics.track('clicked_open_teleprompter', {
+        page_type: pageType,
+        cta_location: location,
+        ...(isContentCluster(cluster) ? { content_cluster: cluster } : {}),
+      });
+    });
+  });
+}

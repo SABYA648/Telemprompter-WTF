@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { analytics } from '../domain/analytics';
 import { clearLocalState } from '../domain/localState';
 import { isLocalModelReady, removeLocalModel } from '../domain/modelManager';
 
@@ -20,6 +21,7 @@ export default function PrivacyActions(): preact.JSX.Element {
     }
     clearLocalState();
     setMessage('Local script and preferences cleared on this device.');
+    analytics.track('cleared_local_data');
     window.dispatchEvent(new CustomEvent('teleprompter:local-data-cleared'));
   };
 
@@ -27,6 +29,7 @@ export default function PrivacyActions(): preact.JSX.Element {
     await removeLocalModel();
     setModelReady(false);
     setMessage('Downloaded voice model removed from this browser.');
+    analytics.track('removed_voice_model');
   };
 
   return (

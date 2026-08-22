@@ -110,8 +110,12 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
           <p class="eyebrow">Put it into practice</p><h2>Your script, full screen in seconds.</h2><p
           >
             No account and no upload. Paste the words and start.
-          </p><a class="button button--primary" href="/" data-cta-cluster={guide.cluster}
-            >Open teleprompter</a
+          </p><a
+            class="button button--primary"
+            href="/"
+            data-analytics-cta="inline"
+            data-page-type="guide"
+            data-content-cluster={guide.cluster}>Open teleprompter</a
           >
         </aside>
       </div>
@@ -137,20 +141,3 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
     </section>
   </article>
 </Layout>
-
-<script>
-  import { analytics } from '../../domain/analytics';
-  import type { GuideCluster } from '../../content/guides';
-
-  const inlineCta = document.querySelector<HTMLAnchorElement>('.inline-cta a[data-cta-cluster]');
-  if (inlineCta) {
-    const cluster = inlineCta.dataset.ctaCluster as GuideCluster;
-    inlineCta.addEventListener('click', () => {
-      analytics.track('use_teleprompter_cta', {
-        page_type: 'guide',
-        content_cluster: cluster,
-        cta_location: 'inline',
-      });
-    });
-  }
-</script>
