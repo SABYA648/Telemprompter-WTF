@@ -231,3 +231,5 @@ Use GitHub private vulnerability reporting as described in [SECURITY.md](SECURIT
 ## License
 
 Application source is available under the [MIT License](LICENSE). Model and runtime attribution is documented separately in [docs/model-licenses.md](docs/model-licenses.md).
+
+.
