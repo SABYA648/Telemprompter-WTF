@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "astro dev",
     "assets:prepare": "node scripts/prepare-runtime-assets.mjs",
+    "assets:verify": "node scripts/verify-illustration-pack.mjs",
     "models:fetch": "node scripts/fetch-local-model.mjs",
     "build": "npm run assets:prepare && astro build && node scripts/prune-build.mjs",
     "preview": "astro preview",
@@ -24,7 +25,7 @@
     "test:inference": "PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 node scripts/verify-local-inference.mjs",
     "test:seo-crawl": "node scripts/seo-crawl-check.mjs",
     "revenue:estimate": "node scripts/revenue-estimate.mjs",
-    "check": "npm run typecheck && npm run lint && npm run content:lint && npm run format:check && npm run test && npm run build"
+    "check": "npm run assets:verify && npm run typecheck && npm run lint && npm run content:lint && npm run format:check && npm run test && npm run build"
   },
   "dependencies": {
     "@astrojs/preact": "^6.0.2",
