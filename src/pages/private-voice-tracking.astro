@@ -1,17 +1,17 @@
 ---
 import Layout from '../layouts/Layout.astro';
 
-const title = 'Private Voice-Activated Teleprompter | teleprompter.wtf';
+const title = 'Private Voice-Activated Teleprompter Architecture | teleprompter.wtf';
 const description =
   'How Smart Pace and Private Precision Beta follow your voice locally without sending scripts, microphone audio, or recognition fragments to a server.';
 const schema = [
   {
     '@context': 'https://schema.org',
     '@type': 'Article',
-    headline: 'Private voice tracking for a browser teleprompter',
+    headline: 'Private voice tracking architecture for a browser teleprompter',
     description,
     datePublished: '2026-08-09',
-    dateModified: '2026-08-09',
+    dateModified: '2026-08-23',
     author: { '@type': 'Organization', name: 'teleprompter.wtf' },
     mainEntityOfPage: 'https://www.teleprompter.wtf/private-voice-tracking',
   },
@@ -40,8 +40,9 @@ const schema = [
       <p class="eyebrow">Voice that stays local</p>
       <h1>A teleprompter can follow you without a speech server.</h1>
       <p>
-        Manual, Smart Pace, and Private Precision Beta offer three levels of control. None sends
-        your script or microphone audio to teleprompter.wtf.
+        Manual, Smart Pace, and Private Precision Beta offer three distinct levels of presentation
+        control. None sends your script, microphone audio, or recognition fragments to
+        teleprompter.wtf.
       </p>
       <a
         class="button button--primary"
@@ -52,62 +53,74 @@ const schema = [
       >
     </header>
     <div class="prose-body prose-body--wide">
-      <h2>Manual is the foundation</h2>
+      <h2>Level 1: Manual is the resilient baseline</h2>
       <p>
-        Manual uses a steady, elapsed-time scroll with an adjustable speed. It never requests the
-        microphone and keeps working when every advanced browser capability is unavailable.
+        Manual scrolling uses an elapsed-time scroll engine with adjustable speed (1 to 10). It
+        never requests microphone permission and continues working seamlessly when advanced browser
+        capabilities or network connections are unavailable.
       </p>
-      <h2>Smart Pace follows rhythm, not words</h2>
+      <h2>Level 2: Smart Pace follows rhythm without transcription</h2>
       <p>
-        Smart Pace samples the local microphone signal through Web Audio. It calibrates to the room,
-        estimates speech activity, smooths cadence changes, and gradually stops during a meaningful
-        pause. It does not turn speech into text, needs no download, and works in any language. It
-        is the recommended default for most setups.
+        Smart Pace samples the local microphone signal through the browser's Web Audio AnalyserNode.
+        It calibrates to your room's noise floor, detects speech activity, smooths cadence changes,
+        and gradually slows and stops during a pause. Because it measures audio signal energy rather
+        than transcribing words, it requires no model download, operates with zero latency, and
+        works across any spoken language. It is the zero-download default voice mode.
       </p>
-      <h2>Private Precision Beta follows your place</h2>
+      <h2>Level 3: Private Precision Beta follows your place with on-device speech recognition</h2>
       <p>
-        Private Precision Beta downloads a quantized multilingual Whisper Tiny model from this site.
-        A browser worker recognizes short audio windows locally, then a deterministic alignment
-        engine compares the temporary fragment with a bounded region of the script. High-confidence
-        matches gently correct position. Low-confidence matches fall back to Smart Pace.
+        Private Precision Beta downloads a quantized multilingual Whisper Tiny ONNX model directly
+        from this site. A dedicated Web Worker executes speech recognition locally using ONNX
+        Runtime Web WASM, transcribing short 6-second audio windows into temporary text fragments. A
+        deterministic script alignment engine then matches those fragments against a bounded window
+        of your known script tokens.
       </p>
       <p>
-        It is still in beta, and results can differ across devices, accents, and environments. There
-        is no cloud speech processing and no script or audio upload: everything the model hears
-        stays on this device. If it does not track well in your setting, Smart Pace and Manual
-        remain available.
+        High-confidence matches gently correct the scroll position toward the current spoken word.
+        If confidence is low (such as during an unscripted aside, loud room noise, or a cough), the
+        system holds position and gracefully falls back to Smart Pace cadence tracking.
       </p>
       <div class="privacy-flow" aria-label="Private Precision Beta processing flow">
-        <span>Microphone</span><b aria-hidden="true">→</b><span>Local model</span><b
+        <span>Microphone PCM</span><b aria-hidden="true">→</b><span>Dedicated Web Worker</span><b
           aria-hidden="true">→</b
-        ><span>Temporary fragment</span><b aria-hidden="true">→</b><span>Local alignment</span><b
+        ><span>Whisper Tiny WASM</span><b aria-hidden="true">→</b><span>Temporary fragment</span><b
           aria-hidden="true">→</b
-        ><span>Smooth correction</span>
+        ><span>Deterministic alignment</span><b aria-hidden="true">→</b><span
+          >Smooth scroll correction</span
+        >
       </div>
-      <h2>The model download</h2>
+      <h2>The on-device model download</h2>
       <p>
-        The local model and its runtime total about 67 MB on first download. Nothing downloads on
-        the normal homepage or when presenter mode opens. Download begins only after you select
-        Private Precision Beta and press the download button. The versioned files are kept in this
-        browser and can be removed from the same panel or the privacy page.
+        The local Whisper Tiny model and its ONNX WASM runtime total approximately 67 MB (66,874,154
+        bytes) on first download. Nothing downloads on the homepage or when presenter mode opens in
+        Manual or Smart Pace. Download begins only after you explicitly select Private Precision
+        Beta and press the download button. The versioned files are stored in browser Cache Storage
+        and can be inspected or cleared at any time from the voice panel or the <a href="/privacy"
+          >privacy page</a
+        >.
       </p>
-      <h2>What is temporary</h2>
+      <h2>What is temporary vs. what is stored</h2>
       <p>
-        Microphone samples and recognition fragments exist only while voice tracking is active. They
-        are not written to local storage, IndexedDB, URLs, analytics, diagnostics, or application
-        logs. Closing the presenter stops media tracks and disposes of the worker.
+        Microphone PCM buffers and temporary recognition fragments exist only in volatile browser
+        memory while voice tracking is active. They are never written to localStorage, IndexedDB,
+        page URLs, analytics events, or server diagnostics. Closing presenter mode immediately stops
+        all media tracks, closes the AudioContext, and terminates the Web Worker.
       </p>
-      <h2>Browser and device differences</h2>
+      <h2>Browser capability & hardware requirements</h2>
       <p>
-        Smart Pace needs microphone access and Web Audio. Private Precision Beta also needs
-        WebAssembly, a Worker, storage space, and enough memory for local inference. The interface
-        reports a coarse device recommendation, but initialization success is the final capability
-        check. When precision cannot start, Manual and Smart Pace remain available.
+        Smart Pace requires standard microphone access and the Web Audio API (supported across 98%+
+        of modern browsers). Private Precision Beta also requires WebAssembly, a Web Worker, Cache
+        Storage, and sufficient device RAM (at least 4 GB recommended for smooth inference). For
+        detailed browser compatibility tables and fallback paths, see our <a href="/compatibility"
+          >Browser & Device Compatibility Matrix</a
+        >.
       </p>
       <p>
-        For a practical comparison of voice-follow methods, read <a
-          href="/guides/voice-activated-teleprompters">the voice-activated teleprompter guide</a
-        >. For the complete data boundary, see the <a href="/privacy">privacy page</a>.
+        To learn more about how voice tracking compares to fixed-speed scrolling for different
+        production formats, read our guide on <a
+          href="/guides/manual-vs-voice-activated-teleprompter"
+          >Manual vs. Voice-Activated Teleprompting</a
+        >.
       </p>
     </div>
   </article>

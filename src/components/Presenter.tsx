@@ -538,7 +538,7 @@ export default function Presenter({
       </header>
 
       <div class="presenter__controls">
-        <button class="control-button control-button--primary" onClick={togglePlay}>
+        <button class="control-button control-button--primary" onClick={() => togglePlay('button')}>
           {playing ? 'Pause' : progress >= 1 ? 'Play again' : 'Resume'}
           <kbd>Space</kbd>
         </button>

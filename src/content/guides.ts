@@ -29,7 +29,7 @@ export const guides: Guide[] = [
   {
     slug: 'how-to-use-a-teleprompter',
     cluster: 'getting_started',
-    updated: '2026-08-09',
+    updated: '2026-08-23',
     title: 'How to use a teleprompter without sounding scripted',
     description:
       'A practical teleprompter workflow: prepare readable copy, set the right pace, position your screen, rehearse, and deliver naturally.',
@@ -40,7 +40,7 @@ export const guides: Guide[] = [
       {
         heading: 'Write for a voice, not a page',
         paragraphs: [
-          'Read the script aloud while editing it. Short sentences are easier to scan, and paragraph breaks create visible moments to breathe. Contractions such as “you’re” usually sound more natural than formal written phrasing.',
+          'Read the script aloud while editing it. Short sentences are easier to scan, and paragraph breaks create visible moments to breathe. Contractions such as "you\'re" usually sound more natural than formal written phrasing.',
           'If a name, number, or technical term needs special emphasis, put it on its own line. Plain text is enough; clear spacing is more useful in motion than elaborate formatting.',
         ],
       },
@@ -54,7 +54,7 @@ export const guides: Guide[] = [
       {
         heading: 'Find a pace you can lead',
         paragraphs: [
-          'Start slower than you think you need. The scroll should follow your voice, not force you to chase it. A conversational delivery often lands around 120–150 words per minute, but clarity matters more than the number.',
+          'Start slower than you think you need. The scroll should follow your voice, not force you to chase it. A conversational delivery often lands around 120-150 words per minute, but clarity matters more than the number.',
         ],
         bullets: [
           'Pause the scroll at a section break if you need to reset.',
@@ -80,12 +80,16 @@ export const guides: Guide[] = [
         ],
       },
     ],
-    related: ['teleprompter-speed', 'teleprompter-for-video-recording'],
+    related: [
+      'teleprompter-speed',
+      'teleprompter-for-video-recording',
+      'manual-vs-voice-activated-teleprompter',
+    ],
   },
   {
     slug: 'teleprompter-for-youtube',
     cluster: 'youtube',
-    updated: '2026-08-09',
+    updated: '2026-08-23',
     title: 'How to use a teleprompter for YouTube videos',
     description:
       'Make YouTube scripts easier to deliver on camera with better hooks, natural phrasing, camera placement, and section-by-section recording.',
@@ -102,7 +106,7 @@ export const guides: Guide[] = [
       {
         heading: 'Format for recording, not publishing',
         paragraphs: [
-          'Break long explanations into short paragraphs. Put production cues such as “show chart” on separate lines so they are impossible to miss, but avoid reading those cues aloud. Spell difficult names phonetically if that helps you keep momentum.',
+          'Break long explanations into short paragraphs. Put production cues such as "show chart" on separate lines so they are impossible to miss, but avoid reading those cues aloud. Spell difficult names phonetically if that helps you keep momentum.',
           'Use a large enough font that you can scan the next phrase without squinting. A narrow text column near the lens reduces visible eye movement on close shots.',
         ],
       },
@@ -130,12 +134,16 @@ export const guides: Guide[] = [
         ],
       },
     ],
-    related: ['teleprompter-for-video-recording', 'teleprompter-speed'],
+    related: [
+      'teleprompter-for-video-recording',
+      'teleprompter-speed',
+      'teleprompter-camera-distance-and-font-size',
+    ],
   },
   {
     slug: 'teleprompter-for-video-recording',
     cluster: 'recording',
-    updated: '2026-08-09',
+    updated: '2026-08-23',
     title: 'A practical teleprompter setup for video recording',
     description:
       'Choose a screen position, lens distance, text size, pace, and recording workflow that keeps eye contact natural on camera.',
@@ -181,12 +189,78 @@ export const guides: Guide[] = [
         ],
       },
     ],
-    related: ['how-to-use-a-teleprompter', 'teleprompter-for-youtube'],
+    related: [
+      'how-to-use-a-teleprompter',
+      'teleprompter-for-youtube',
+      'teleprompter-camera-distance-and-font-size',
+    ],
+  },
+  {
+    slug: 'teleprompter-camera-distance-and-font-size',
+    cluster: 'recording',
+    updated: '2026-08-23',
+    title: 'Teleprompter camera distance, font size, and line width guide',
+    description:
+      'Calculate ideal teleprompter font size, viewing distance, line length, and camera placement to minimize visible eye movement on video.',
+    eyebrow: 'Optical geometry',
+    intro:
+      'Visible teleprompter reading happens when the visual angle between your screen and the camera lens is too wide, or when lines are too long. Simple geometry fixes both before you record a single line.',
+    sections: [
+      {
+        heading: 'The optical geometry of eye contact',
+        paragraphs: [
+          'When looking directly into a camera lens, your line of sight forms a reference axis. If your teleprompter sits 4 inches below the lens at a distance of 2 feet (a typical laptop webcam distance), your visual angle is about 9.5 degrees. That downward gaze is noticeable to viewers.',
+          'Pushing the camera and screen back to 5 or 6 feet drops that visual angle to under 3.5 degrees, making eye gaze appear directly aligned with the lens even without expensive beam-splitter glass.',
+        ],
+      },
+      {
+        heading: 'The font size distance rule',
+        paragraphs: [
+          'A reliable starting formula for teleprompter typography is:',
+          'Font Size in Pixels ≈ Distance in Feet × 12px (or Distance in Meters × 40px).',
+          'At 2 feet (desktop/webcam), 24px to 32px is crisp and legible. At 5 feet (stand mounted tablet), 60px to 72px allows effortless scanning without squinting or leaning forward.',
+        ],
+        bullets: [
+          '1.5 to 2.5 feet (Webcam/Laptop): 24px - 36px font, 40% - 55% column width.',
+          '3.0 to 5.0 feet (Desktop / Desk Rig): 40px - 58px font, 50% - 65% column width.',
+          '6.0 to 10.0 feet (Studio Stand / Beam Splitter): 70px - 110px font, 65% - 80% column width.',
+        ],
+      },
+      {
+        heading: 'Line width and horizontal tracking',
+        paragraphs: [
+          'Horizontal eye scanning ("tennis match eyes") occurs when a line contains more than 6 to 8 words across. Viewers quickly detect rapid side-to-side saccades.',
+          'Keep your text width narrow (between 30 and 45 characters per line). A narrow column allows your eyes to take in entire phrase clusters in single fixations without sweeping across the display.',
+        ],
+      },
+      {
+        heading: 'Focus line placement',
+        paragraphs: [
+          'Always position the focus guide line in the upper third of the screen (between 25% and 35% from the top). This keeps the active line closest to the top of your monitor or webcam, minimizing the distance your gaze drifts downward.',
+        ],
+      },
+      {
+        heading: 'The 5-second test video',
+        paragraphs: [
+          'Before filming your complete take, record 5 seconds reading the first two sentences. Play it back on full screen and watch exclusively for:',
+        ],
+        bullets: [
+          'Horizontal eye darting: if present, reduce Text Width slider by 10%.',
+          'Squinting or head tilting: if present, increase Font Size by 4px.',
+          'Downward gaze: if present, move the window higher or push the entire setup farther back.',
+        ],
+      },
+    ],
+    related: [
+      'teleprompter-for-video-recording',
+      'how-to-maintain-eye-contact',
+      'how-to-use-a-teleprompter',
+    ],
   },
   {
     slug: 'teleprompter-for-presentations',
     cluster: 'presentation',
-    updated: '2026-08-09',
+    updated: '2026-08-23',
     title: 'Using a teleprompter for talks and presentations',
     description:
       'Use a teleprompter as a safety net for speeches and presentations without losing audience connection or slide awareness.',
@@ -231,12 +305,16 @@ export const guides: Guide[] = [
         ],
       },
     ],
-    related: ['how-to-use-a-teleprompter', 'teleprompter-speed'],
+    related: [
+      'how-to-use-a-teleprompter',
+      'teleprompter-speed',
+      'manual-vs-voice-activated-teleprompter',
+    ],
   },
   {
     slug: 'teleprompter-for-zoom',
     cluster: 'zoom',
-    updated: '2026-08-09',
+    updated: '2026-08-23',
     title: 'How to use a teleprompter on Zoom and video calls',
     description:
       'Place notes close to the webcam, stay present in the conversation, and use a teleprompter effectively for Zoom meetings and webinars.',
@@ -280,12 +358,16 @@ export const guides: Guide[] = [
         ],
       },
     ],
-    related: ['teleprompter-for-presentations', 'how-to-use-a-teleprompter'],
+    related: [
+      'teleprompter-for-presentations',
+      'how-to-use-a-teleprompter',
+      'how-to-maintain-eye-contact',
+    ],
   },
   {
     slug: 'teleprompter-speed',
     cluster: 'speed',
-    updated: '2026-08-09',
+    updated: '2026-08-23',
     title: 'How to choose the right teleprompter speed',
     description:
       'Understand words per minute, calculate script timing, and adjust teleprompter scroll speed for a clear and natural delivery.',
@@ -294,9 +376,9 @@ export const guides: Guide[] = [
       'There is no universal teleprompter speed. The right pace is the one that leaves enough attention for meaning, eye contact, and breath. Words per minute gives you a useful starting point.',
     sections: [
       {
-        heading: 'Start around 120–150 words per minute',
+        heading: 'Start around 120-150 words per minute',
         paragraphs: [
-          'Many conversational presentations fit in this range. A deliberate explanation may sit near 100–120 WPM, while an energetic short video can reach 150–180 WPM. Dense or emotional material usually benefits from a slower pace.',
+          'Many conversational presentations fit in this range. A deliberate explanation may sit near 100-120 WPM, while an energetic short video can reach 150-180 WPM. Dense or emotional material usually benefits from a slower pace.',
         ],
       },
       {
@@ -327,18 +409,22 @@ export const guides: Guide[] = [
         ],
       },
     ],
-    related: ['how-to-use-a-teleprompter', 'teleprompter-for-youtube'],
+    related: [
+      'how-to-use-a-teleprompter',
+      'teleprompter-for-youtube',
+      'manual-vs-voice-activated-teleprompter',
+    ],
   },
   {
     slug: 'what-is-a-teleprompter',
     cluster: 'getting_started',
-    updated: '2026-08-09',
+    updated: '2026-08-23',
     title: 'What is a teleprompter and how does it work?',
     description:
       'A clear explanation of teleprompter screens, beam-splitter glass, software scrolling, speaker control, and when a prompt is useful.',
     eyebrow: 'Essential concepts',
     intro:
-      'A teleprompter puts prepared words close to the speaker’s line of sight. The audience sees steady eye contact while the speaker sees a readable script. The basic idea is simple, but the setup changes between a webcam, a stage, and a camera rig.',
+      "A teleprompter puts prepared words close to the speaker's line of sight. The audience sees steady eye contact while the speaker sees a readable script. The basic idea is simple, but the setup changes between a webcam, a stage, and a camera rig.",
     sections: [
       {
         heading: 'The screen-only setup',
@@ -384,7 +470,7 @@ export const guides: Guide[] = [
   {
     slug: 'how-to-read-a-teleprompter-naturally',
     cluster: 'presentation',
-    updated: '2026-08-09',
+    updated: '2026-08-23',
     title: 'How to read a teleprompter naturally',
     description:
       'Practical delivery techniques for natural pacing, emphasis, breathing, eye contact, and recovery when reading a teleprompter.',
@@ -423,12 +509,16 @@ export const guides: Guide[] = [
         ],
       },
     ],
-    related: ['how-to-use-a-teleprompter', 'how-to-maintain-eye-contact'],
+    related: [
+      'how-to-use-a-teleprompter',
+      'how-to-maintain-eye-contact',
+      'manual-vs-voice-activated-teleprompter',
+    ],
   },
   {
     slug: 'how-to-maintain-eye-contact',
     cluster: 'presentation',
-    updated: '2026-08-09',
+    updated: '2026-08-23',
     title: 'How to maintain eye contact with a teleprompter',
     description:
       'Reduce visible reading with better camera placement, narrower lines, a stable focus region, and deliberate moments away from the script.',
@@ -467,12 +557,16 @@ export const guides: Guide[] = [
         ],
       },
     ],
-    related: ['how-to-read-a-teleprompter-naturally', 'teleprompter-for-video-recording'],
+    related: [
+      'how-to-read-a-teleprompter-naturally',
+      'teleprompter-for-video-recording',
+      'teleprompter-camera-distance-and-font-size',
+    ],
   },
   {
     slug: 'how-to-format-a-teleprompter-script',
     cluster: 'getting_started',
-    updated: '2026-08-09',
+    updated: '2026-08-23',
     title: 'How to format a teleprompter script for easy reading',
     description:
       'Format spoken copy with short paragraphs, useful line breaks, visible emphasis, pronunciation help, and clean transitions.',
@@ -516,7 +610,7 @@ export const guides: Guide[] = [
   {
     slug: 'voice-activated-teleprompters',
     cluster: 'voice_tracking',
-    updated: '2026-08-09',
+    updated: '2026-08-23',
     title: 'How voice-activated teleprompters follow your speech',
     description:
       'Compare volume detection, browser speech recognition, and local speech models for teleprompter voice tracking, privacy, and reliability.',
@@ -558,7 +652,66 @@ export const guides: Guide[] = [
         ],
       },
     ],
-    related: ['teleprompter-speed', 'how-to-use-a-teleprompter'],
+    related: [
+      'teleprompter-speed',
+      'how-to-use-a-teleprompter',
+      'manual-vs-voice-activated-teleprompter',
+    ],
+  },
+  {
+    slug: 'manual-vs-voice-activated-teleprompter',
+    cluster: 'voice_tracking',
+    updated: '2026-08-23',
+    title: 'Manual vs. voice-activated teleprompter: which should you choose?',
+    description:
+      'Compare fixed-speed manual scrolling, cadence-based Smart Pace, and recognition-based Private Precision across speeches, courses, and calls.',
+    eyebrow: 'Mode selection',
+    intro:
+      'Neither manual scrolling nor voice tracking is universally superior. The right choice depends on whether your priority is strict timing, conversational freedom, or offline resilience.',
+    sections: [
+      {
+        heading: 'When Manual fixed-speed scrolling wins',
+        paragraphs: [
+          'Manual mode maintains a constant elapsed-time speed regardless of room noise or acoustic interruptions. It is the best choice for:',
+        ],
+        bullets: [
+          'Time-critical keynote speeches where you have a hard stop (e.g., exactly 10 minutes).',
+          'Live stages with heavy acoustic feedback, loud PA systems, or audience applause.',
+          'Offline presentations in venues with zero internet or strict browser permissions.',
+          'Presenters who prefer pacing their delivery against a metronomic visual guide.',
+        ],
+      },
+      {
+        heading: 'When Smart Pace rhythm following wins',
+        paragraphs: [
+          'Smart Pace listens to speech presence without speech-to-text. It adjusts scroll rate dynamically and pauses automatically when you stop to take a breath, answer a quick question, or show a prop.',
+          'Because it requires zero download and zero model initialization, Smart Pace is the recommended default for YouTube creators, online teachers, and casual video calls.',
+        ],
+      },
+      {
+        heading: 'When Private Precision word alignment wins',
+        paragraphs: [
+          'Private Precision Beta downloads an on-device Whisper model to match spoken words against script tokens. It is ideal when you need the prompter to track your exact location through longer takes where you might ad-lib, repeat a line, or skip a sentence.',
+          'Because the model runs locally, your script and voice never touch a cloud server, but it does require a modern laptop or desktop with sufficient memory.',
+        ],
+      },
+      {
+        heading: 'Summary comparison table',
+        paragraphs: ['Here is how the three modes compare on key production criteria:'],
+        bullets: [
+          'Manual: 0 MB download, 0% CPU overhead, no mic required, fixed pacing.',
+          'Smart Pace: 0 MB download, <1% CPU overhead, microphone required, rhythm following.',
+          'Private Precision: ~67 MB one-time download, moderate CPU overhead, microphone required, verbatim script tracking with Smart Pace fallback.',
+        ],
+      },
+      {
+        heading: 'The hybrid recommendation',
+        paragraphs: [
+          'For most creators, start with Smart Pace. If you find yourself frequently pausing or improvising and want position recovery, enable Private Precision Beta. If you are speaking in an auditorium or on a stage, switch to Manual.',
+        ],
+      },
+    ],
+    related: ['voice-activated-teleprompters', 'teleprompter-speed', 'how-to-use-a-teleprompter'],
   },
 ];
 

@@ -1,0 +1,238 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const title = 'Teleprompter Browser & Device Compatibility Matrix | teleprompter.wtf';
+const description =
+  'Empirical browser and device compatibility matrix for teleprompter.wtf: Fullscreen, Document PiP, Video PiP, Web Audio, local recording, and fallbacks.';
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Teleprompter Browser & Device Compatibility Matrix',
+    description,
+    datePublished: '2026-08-23',
+    dateModified: '2026-08-23',
+    author: { '@type': 'Organization', name: 'teleprompter.wtf' },
+    mainEntityOfPage: 'https://www.teleprompter.wtf/compatibility',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.teleprompter.wtf/' },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Compatibility',
+        item: 'https://www.teleprompter.wtf/compatibility',
+      },
+    ],
+  },
+];
+---
+
+<Layout title={title} description={description} ogType="article" schema={schema}>
+  <article class="prose-page section-wrap">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><span aria-current="page">Compatibility</span>
+    </nav>
+    <header class="page-intro">
+      <p class="eyebrow">Device & browser matrix</p>
+      <h1>Clear capabilities. Graceful fallbacks.</h1>
+      <p>
+        We do not claim universal support where APIs differ. Here is the verified capability matrix
+        for teleprompter.wtf across modern desktop and mobile browsers, tested against real
+        hardware.
+      </p>
+      <p class="updated">Last verified: 23 August 2026</p>
+    </header>
+
+    <div class="prose-body prose-body--wide">
+      <h2>Compatibility at a glance</h2>
+      <div
+        class="privacy-table-wrap"
+        role="region"
+        aria-label="Browser compatibility matrix"
+        tabindex="0"
+      >
+        <table class="privacy-table">
+          <thead>
+            <tr>
+              <th scope="col">Capability / Feature</th>
+              <th scope="col">Chrome / Edge</th>
+              <th scope="col">Firefox</th>
+              <th scope="col">Safari (macOS)</th>
+              <th scope="col">iOS / iPadOS</th>
+              <th scope="col">Android Chrome</th>
+              <th scope="col">Fallback when unavailable</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Manual Scrolling</th>
+              <td>Full</td>
+              <td>Full</td>
+              <td>Full</td>
+              <td>Full</td>
+              <td>Full</td>
+              <td>Always available (0 dependencies)</td>
+            </tr>
+            <tr>
+              <th scope="row">Smart Pace (Web Audio)</th>
+              <td>Full</td>
+              <td>Full</td>
+              <td>Full</td>
+              <td>Full</td>
+              <td>Full</td>
+              <td>Falls back to Manual scrolling</td>
+            </tr>
+            <tr>
+              <th scope="row">Private Precision (WASM)</th>
+              <td>Full</td>
+              <td>Full</td>
+              <td>Full</td>
+              <td>Supported (4GB+ RAM)</td>
+              <td>Supported (4GB+ RAM)</td>
+              <td>Falls back to Smart Pace</td>
+            </tr>
+            <tr>
+              <th scope="row">Document Picture-in-Picture</th>
+              <td>Supported (v116+)</td>
+              <td>Not in browser</td>
+              <td>Not in browser</td>
+              <td>Not in browser</td>
+              <td>Not in browser</td>
+              <td>Video PiP or Pop-out window</td>
+            </tr>
+            <tr>
+              <th scope="row">Video Picture-in-Picture</th>
+              <td>Supported</td>
+              <td>Supported</td>
+              <td>Supported</td>
+              <td>Supported</td>
+              <td>Supported</td>
+              <td>Pop-out window</td>
+            </tr>
+            <tr>
+              <th scope="row">Screen / Camera Recording</th>
+              <td>WebM (VP8/Opus)</td>
+              <td>WebM (VP8/Opus)</td>
+              <td>MP4 (H.264/AAC)</td>
+              <td>Camera only</td>
+              <td>Supported</td>
+              <td>External screen recorder / OBS</td>
+            </tr>
+            <tr>
+              <th scope="row">Fullscreen Presentation</th>
+              <td>Supported</td>
+              <td>Supported</td>
+              <td>Supported</td>
+              <td>iPadOS only</td>
+              <td>Supported</td>
+              <td>Maximized browser viewport</td>
+            </tr>
+            <tr>
+              <th scope="row">Horizontal Mirroring</th>
+              <td>Supported</td>
+              <td>Supported</td>
+              <td>Supported</td>
+              <td>Supported</td>
+              <td>Supported</td>
+              <td>CSS transform (Universal)</td>
+            </tr>
+            <tr>
+              <th scope="row">Offline Operation</th>
+              <td>Full (PWA cache)</td>
+              <td>Full (PWA cache)</td>
+              <td>Full (PWA cache)</td>
+              <td>Full (PWA cache)</td>
+              <td>Full (PWA cache)</td>
+              <td>Static cached bundle</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Presentation mode capabilities</h2>
+      <h3>1. Manual Mode</h3>
+      <p>
+        Manual mode calculates scroll movement from continuous performance timestamps
+        (`requestAnimationFrame`) multiplied by your selected speed setting. Because it has zero
+        external dependencies and does not require microphone permission, it works across every
+        browser engine, including legacy environments.
+      </p>
+
+      <h3>2. Smart Pace</h3>
+      <p>
+        Smart Pace relies on `navigator.mediaDevices.getUserMedia` and the standard `AudioContext` /
+        `AnalyserNode` APIs. In modern browsers supporting `AudioWorklet`, PCM capture runs on an
+        audio rendering thread; in older Safari builds, it gracefully degrades to a ScriptProcessor
+        node. If microphone permission is denied or no input device is detected, the presenter
+        clearly displays a notice and leaves manual scrolling active.
+      </p>
+
+      <h3>3. Private Precision Beta</h3>
+      <p>
+        Private Precision Beta runs single-threaded WebAssembly in a dedicated Web Worker via ONNX
+        Runtime Web. Because Whisper Tiny requires around 250 MB to 400 MB of heap during peak model
+        inference, devices with very low available RAM (such as budget phones or heavily throttled
+        tabs) may experience sluggish updates. Whenever a recognition chunk fails or takes longer
+        than the real-time deadline, the system drops the chunk and maintains scroll pace through
+        Smart Pace without jumping.
+      </p>
+
+      <h2>Picture in Picture & compact views</h2>
+      <p>
+        Positioning your script right next to your camera lens is critical for natural eye contact.
+        We implement a 3-tier capability hierarchy:
+      </p>
+      <ul>
+        <li>
+          <strong>Tier 1: Document Picture in Picture (Chromium 116+)</strong> - Opens a true, floating
+          HTML window containing the full interactive script, speed controls, and timer.
+        </li>
+        <li>
+          <strong>Tier 2: Canvas Video Picture in Picture (Firefox, Safari)</strong> - Renders script
+          lines into a dynamically animated HTML Canvas streamed through a hidden &lt;video&gt; element
+          into the standard Video PiP window.
+        </li>
+        <li>
+          <strong>Tier 3: Clean Pop-out Window</strong> - Launches a minimal, frameless browser popup
+          window that can be positioned anywhere on your display.
+        </li>
+      </ul>
+
+      <h2>Local video & audio recording</h2>
+      <p>
+        Local recording captures video streams directly into browser memory using `MediaRecorder`.
+        Different browsers support different container formats:
+      </p>
+      <ul>
+        <li><strong>Chromium & Firefox:</strong> Generates `video/webm;codecs=vp8,opus` files.</li>
+        <li><strong>Safari (macOS 14+):</strong> Generates `video/mp4;codecs=avc1,mp4a` files.</li>
+        <li>
+          <strong>Mobile Devices:</strong> Display capture (`getDisplayMedia`) is restricted by iOS and
+          Android security policies, but Camera capture (`getUserMedia`) functions normally.
+        </li>
+      </ul>
+      <p>
+        All recordings are generated as client-side Blobs. No video chunk is ever streamed to a
+        remote server.
+      </p>
+
+      <h2>Hardware teleprompter rigs & beam-splitter glass</h2>
+      <p>
+        When placing an iPad, tablet, or monitor beneath a 70/30 or 60/40 beam-splitter glass hood,
+        the reflected image is reversed horizontally. teleprompter.wtf provides hardware-accelerated
+        CSS mirroring (`scaleX(-1)`) and vertical flipping (`scaleY(-1)`) that functions universally
+        on all devices without requiring paid companion apps.
+      </p>
+
+      <p class="home-voice-link">
+        Ready to test with your script? <a href="/">Open teleprompter.wtf</a> or review our <a
+          href="/features">Features Overview</a
+        >.
+      </p>
+    </div>
+  </article>
+</Layout>

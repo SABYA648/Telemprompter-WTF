@@ -4,6 +4,21 @@ import Layout from '../../layouts/Layout.astro';
 const title = 'Teleprompter Guides | teleprompter.wtf';
 const description =
   'Practical teleprompter guides for setup, natural delivery, eye contact, script formatting, videos, presentations, voice tracking, and scroll speed.';
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.teleprompter.wtf/' },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Guides',
+        item: 'https://www.teleprompter.wtf/guides',
+      },
+    ],
+  },
+];
 const groups = [
   {
     title: 'Get started',
@@ -14,10 +29,11 @@ const groups = [
     ],
   },
   {
-    title: 'Recording and video',
+    title: 'Recording and camera setup',
     slugs: [
       'teleprompter-for-youtube',
       'teleprompter-for-video-recording',
+      'teleprompter-camera-distance-and-font-size',
       'teleprompter-for-zoom',
     ],
   },
@@ -29,15 +45,25 @@ const groups = [
       'how-to-maintain-eye-contact',
     ],
   },
-  { title: 'Voice and pace', slugs: ['voice-activated-teleprompters', 'teleprompter-speed'] },
+  {
+    title: 'Voice tracking and pacing',
+    slugs: [
+      'voice-activated-teleprompters',
+      'manual-vs-voice-activated-teleprompter',
+      'teleprompter-speed',
+    ],
+  },
 ].map((group) => ({
   ...group,
   guides: group.slugs.map((slug) => guides.find((guide) => guide.slug === slug)).filter(Boolean),
 }));
 ---
 
-<Layout title={title} description={description}>
+<Layout title={title} description={description} schema={schema}>
   <section class="listing-page section-wrap">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><span aria-current="page">Guides</span>
+    </nav>
     <header class="page-intro">
       <p class="eyebrow">Practical field notes</p>
       <h1>Use a teleprompter well.</h1>
@@ -82,7 +108,7 @@ const groups = [
     <p class="guide-voice-link">
       Looking for the privacy details behind voice follow? <a href="/private-voice-tracking"
         >Read how local voice tracking works</a
-      >.
+      >, or inspect our <a href="/compatibility">Browser & Device Compatibility Matrix</a>.
     </p>
     <aside class="callout">
       <div><p class="eyebrow">Skip the reading</p><h2>Put your script on screen.</h2></div><a

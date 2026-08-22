@@ -8,6 +8,7 @@ teleprompter.wtf is a free, open-source teleprompter that runs in the browser. P
 
 - [Open the teleprompter](https://www.teleprompter.wtf/)
 - [Features](https://www.teleprompter.wtf/features)
+- [Browser & device compatibility](https://www.teleprompter.wtf/compatibility)
 - [Private voice tracking](https://www.teleprompter.wtf/private-voice-tracking)
 - [Privacy](https://www.teleprompter.wtf/privacy)
 - [About the project](https://www.teleprompter.wtf/about)
@@ -24,8 +25,10 @@ teleprompter.wtf is a free, open-source teleprompter that runs in the browser. P
 - [How to use a teleprompter](https://www.teleprompter.wtf/guides/how-to-use-a-teleprompter)
 - [Teleprompter for YouTube videos](https://www.teleprompter.wtf/guides/teleprompter-for-youtube)
 - [Teleprompter setup for video recording](https://www.teleprompter.wtf/guides/teleprompter-for-video-recording)
+- [Camera distance, font size, and line width](https://www.teleprompter.wtf/guides/teleprompter-camera-distance-and-font-size)
 - [Teleprompter for talks and presentations](https://www.teleprompter.wtf/guides/teleprompter-for-presentations)
 - [Teleprompter on Zoom and video calls](https://www.teleprompter.wtf/guides/teleprompter-for-zoom)
+- [Manual vs voice-activated teleprompter](https://www.teleprompter.wtf/guides/manual-vs-voice-activated-teleprompter)
 - [Choosing teleprompter speed](https://www.teleprompter.wtf/guides/teleprompter-speed)
 - [What is a teleprompter](https://www.teleprompter.wtf/guides/what-is-a-teleprompter)
 - [How to read a teleprompter naturally](https://www.teleprompter.wtf/guides/how-to-read-a-teleprompter-naturally)

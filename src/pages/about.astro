@@ -1,11 +1,30 @@
 ---
 import Layout from '../layouts/Layout.astro';
-const title = 'About the project | teleprompter.wtf';
-const description = 'Why teleprompter.wtf is free, private, open-source, and intentionally simple.';
+const title = 'About teleprompter.wtf: Free, Private, Open Source Teleprompter';
+const description =
+  'Why teleprompter.wtf is free, private, open-source, and intentionally simple. Paste your script and present without an account or cloud database.';
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.teleprompter.wtf/' },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'About',
+        item: 'https://www.teleprompter.wtf/about',
+      },
+    ],
+  },
+];
 ---
 
-<Layout title={title} description={description}>
+<Layout title={title} description={description} schema={schema}>
   <article class="prose-page section-wrap">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><span aria-current="page">About</span>
+    </nav>
     <header class="page-intro">
       <p class="eyebrow">About the project</p>
       <h1>A teleprompter should not need onboarding.</h1>
@@ -19,24 +38,24 @@ const description = 'Why teleprompter.wtf is free, private, open-source, and int
       <div class="prose-body">
         <h2>Why this exists</h2>
         <p>
-          Many teleprompters begin with account creation, pricing decisions, or feature-heavy
-          dashboards. Those things get in the way of the moment when you simply need readable words
-          moving at the right pace.
+          Many teleprompters begin with mandatory account creation, pricing tiers, paywalls, or
+          feature-heavy dashboards. Those things get in the way of the moment when you simply need
+          readable words moving at the right pace.
         </p>
         <p>
           This project treats speed, typography, privacy, accessibility, and predictable controls as
-          the product, not as premium extras.
+          the product itself, not as premium extras.
         </p>
         <h2>Open source on purpose</h2>
         <p>
-          The code is available so anyone can inspect how local storage and analytics work, report
-          an issue, improve accessibility, or self-host the tool. The core application does not need
-          a database or a script-storage service.
+          The code is completely open source so anyone can inspect how local storage, microphone
+          input, and analytics work, report an issue, improve accessibility, or self-host the tool.
+          The core application does not need a database or a script-storage service.
         </p>
         <p>
           Local voice tracking is documented in detail, including the pinned model, temporary
           recognition state, and fallback behavior. <a href="/private-voice-tracking"
-            >Read how it works</a
+            >Read how local voice tracking works</a
           >.
         </p>
         <p>
@@ -47,8 +66,15 @@ const description = 'Why teleprompter.wtf is free, private, open-source, and int
         <h2>What it will not do</h2>
         <p>
           teleprompter.wtf will not put scripts in public links, require an account for the basic
-          presenter, sell attention to advertisers, or claim your words need a cloud database to
-          scroll on your screen.
+          presenter, sell attention to advertisers, watermark your video recordings, or claim your
+          words need a cloud database to scroll on your screen.
+        </p>
+        <h2>Tested across real browsers</h2>
+        <p>
+          We test and document exact browser capabilities and fallback states. For details on
+          desktop and mobile browser support, inspect our <a href="/compatibility"
+            >Browser & Device Compatibility Matrix</a
+          >.
         </p>
         <h2>Use it, then tell us what hurt</h2>
         <p>
