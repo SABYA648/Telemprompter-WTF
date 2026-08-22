@@ -497,15 +497,10 @@ export class Analytics {
   }
 }
 
-const umamiWebsiteId =
-  import.meta.env.PUBLIC_UMAMI_WEBSITE_ID === undefined
-    ? 'c5952a2b-b192-46fe-8a3d-04ad673ffd6d'
-    : import.meta.env.PUBLIC_UMAMI_WEBSITE_ID;
-
 export const analytics = new Analytics(
   import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? '',
-  umamiWebsiteId,
-  import.meta.env.PUBLIC_UMAMI_SCRIPT_URL ?? DEFAULT_UMAMI_SCRIPT_SRC,
+  'c5952a2b-b192-46fe-8a3d-04ad673ffd6d',
+  'https://analytics.sabya.pm/script.js',
 );
 
 export function isPageType(value: string | undefined): value is PageType {
