@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { analytics, type EntryContext, type SettingName } from '../domain/analytics';
-import { countWords, durationSeconds, formatDuration } from '../domain/calculations';
+import { durationSeconds, formatDuration } from '../domain/calculations';
 import { detectBrowserCapabilities } from '../domain/capabilities';
 import {
   clearLocalState,
@@ -9,6 +9,8 @@ import {
   saveLocalState,
 } from '../domain/localState';
 import { SETTING_LIMITS } from '../domain/settings';
+import { compileScriptGuide } from '../domain/scriptGuide';
+import { primeBrowserSpeechInUserGesture } from '../domain/browserSpeech';
 import type { PresenterPreferences, PrivacyConsent } from '../domain/types';
 import Presenter from './Presenter';
 
@@ -27,7 +29,11 @@ export default function TeleprompterApp(): preact.JSX.Element {
   const importRef = useRef<HTMLInputElement>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const entryContextRef = useRef<EntryContext>('new_script');
-  const words = useMemo(() => countWords(script), [script]);
+  const guide = useMemo(
+    () => compileScriptGuide(script, preferences.speakingWpm),
+    [script, preferences.speakingWpm],
+  );
+  const words = guide.spokenWordCount;
   const duration = useMemo(
     () => durationSeconds(words, preferences.speakingWpm),
     [words, preferences.speakingWpm],
@@ -180,6 +186,7 @@ export default function TeleprompterApp(): preact.JSX.Element {
 
   const start = () => {
     if (!script.trim()) return;
+    if (preferences.voiceMode === 'smart') primeBrowserSpeechInUserGesture();
     setPresenting(true);
   };
 
@@ -202,8 +209,14 @@ export default function TeleprompterApp(): preact.JSX.Element {
           </div>
           <div class="script-stats" aria-live="polite">
             <span>
-              <b>{words.toLocaleString()}</b> {words === 1 ? 'word' : 'words'}
+              <b>{words.toLocaleString()}</b>{' '}
+              {guide.kind === 'guided' ? 'spoken' : words === 1 ? 'word' : 'words'}
             </span>
+            {guide.kind === 'guided' && (
+              <span>
+                <b>{guide.sections.length}</b> {guide.sections.length === 1 ? 'beat' : 'beats'}
+              </span>
+            )}
             <span>
               <b>{formatDuration(duration)}</b> at {preferences.speakingWpm} WPM
             </span>
@@ -284,6 +297,9 @@ export default function TeleprompterApp(): preact.JSX.Element {
         </div>
         <p class="editor-notice" role="status" aria-live="polite">
           {notice}
+          {!notice && guide.kind === 'guided'
+            ? 'Production script detected. Visual cues stay off the reading line.'
+            : ''}
         </p>
 
         <details class="local-data-details">

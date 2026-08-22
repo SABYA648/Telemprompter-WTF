@@ -70,7 +70,7 @@ export class TimeBasedScrollController implements ScrollController {
 
   moveToward(scrollTop: number, strength: number): void {
     const target = Math.min(this.maxScroll(), Math.max(0, scrollTop));
-    const safeStrength = Math.min(0.35, Math.max(0, strength));
+    const safeStrength = Math.min(0.85, Math.max(0, strength));
     this.element.scrollTop += (target - this.element.scrollTop) * safeStrength;
     this.lastTimestamp = null;
     this.emit();

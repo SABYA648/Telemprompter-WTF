@@ -19,6 +19,30 @@ describe('Private Precision script alignment', () => {
     ]);
   });
 
+  it('jumps to a distinctive later sentence from the start', () => {
+    const localScript = [
+      'Opening remarks stay near the start of this rehearsal.',
+      'A middle section talks about calm breathing and a steady camera.',
+      'The recovery paragraph mentions purple lanterns and cedar smoke.',
+      'Closing thoughts thank the crew and end the take.',
+    ].join('\n\n');
+    const engine = new ScriptAlignmentEngine(localScript);
+    const result = engine.align('The recovery paragraph mentions purple lanterns and cedar smoke.');
+    expect(result.movement).not.toBe('hold');
+    expect(
+      localScript.slice(Math.max(0, result.characterIndex - 80), result.characterIndex + 40),
+    ).toMatch(/recovery|purple|lanterns|Closing/i);
+  });
+
+  it('aligns a single live word to the next script token', () => {
+    const engine = new ScriptAlignmentEngine(script);
+    const first = engine.align('Welcome');
+    expect(first.movement).toBe('gentle');
+    expect(first.tokenIndex).toBe(0);
+    const second = engine.align('to');
+    expect(second.tokenIndex).toBe(1);
+  });
+
   it('aligns exact and imperfect fragments', () => {
     const engine = new ScriptAlignmentEngine(script);
     const exact = engine.align('start with a simple idea about clear communication');

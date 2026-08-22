@@ -129,6 +129,8 @@ test('capture representative visual states', async ({ page }) => {
       configurable: true,
       value: { requestWindow: async () => frame.contentWindow },
     });
+    Reflect.deleteProperty(window, 'SpeechRecognition');
+    Reflect.deleteProperty(window, 'webkitSpeechRecognition');
   });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
@@ -141,10 +143,12 @@ test('capture representative visual states', async ({ page }) => {
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await expect(
     page.getByRole('button', {
-      name: /Following your pace|Learning room sound|Requesting microphone/,
+      name: /Following your pace|Following your voice|Learning room sound|Requesting microphone/,
     }),
   ).toBeVisible({ timeout: 4000 });
-  await expect(page.getByRole('button', { name: /Following your pace/ })).toBeVisible({
+  await expect(
+    page.getByRole('button', { name: /Following your pace|Following your voice/ }),
+  ).toBeVisible({
     timeout: 4000,
   });
   await expect(page.locator('.script-word--live').first()).toBeVisible({ timeout: 4000 });
@@ -161,7 +165,9 @@ test('capture representative visual states', async ({ page }) => {
   const appearanceDialog = page.getByRole('dialog', { name: 'Appearance' });
   await page.screenshot({ path: `${artifactDir}/375-presenter-settings.png` });
   await appearanceDialog.getByRole('button', { name: 'Done' }).click();
-  await page.getByRole('button', { name: /Following your pace|Voice tracking|Manual/ }).click();
+  await page
+    .getByRole('button', { name: /Following your pace|Following your voice|Voice tracking|Manual/ })
+    .click();
   await page.screenshot({ path: `${artifactDir}/375-voice-settings.png` });
   await expect(page.getByRole('button', { name: 'Listening' })).toBeVisible();
   await page.screenshot({ path: `${artifactDir}/375-smart-pace-listening.png` });

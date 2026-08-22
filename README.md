@@ -43,7 +43,7 @@ The editor restores local scripts after refresh, handles corrupt state safely, i
 
 ### Smart Pace
 
-Smart Pace requests the microphone only after a button press. It uses local Web Audio signal analysis, room calibration, adaptive thresholds, speech activity, silence timing, and smoothing. It never creates a transcript and downloads no model.
+Smart Pace requests the microphone when you start presenting. It uses the browser's speech-to-text API when available, aligns recognized words to the known script, and scrolls the live word to the focus line. If speech recognition is unavailable, it falls back to local Web Audio signal analysis (room calibration, speech activity, and silence timing) that matches scroll speed to your rhythm without a model download.
 
 ### Private Precision Beta
 

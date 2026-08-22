@@ -1,3 +1,4 @@
+import { hasBrowserSpeechRecognition } from './browserSpeech';
 import type { BrowserCapabilities } from './types';
 
 export function detectBrowserCapabilities(): BrowserCapabilities {
@@ -27,6 +28,7 @@ export function detectBrowserCapabilities(): BrowserCapabilities {
     webAudio: 'AudioContext' in window || 'webkitAudioContext' in window,
     audioWorklet: Boolean(audioContext?.prototype && 'audioWorklet' in audioContext.prototype),
     microphone: typeof nav.mediaDevices?.getUserMedia === 'function',
+    speechRecognition: hasBrowserSpeechRecognition(),
     worker: typeof Worker === 'function',
     webAssembly: typeof WebAssembly === 'object',
     webGpu: Boolean(nav.gpu),

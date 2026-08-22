@@ -83,9 +83,39 @@ export function highlightWindowAround(
 }
 
 /**
- * Estimate which script character sits on the focus line using caret hit-testing
- * when available, falling back to scroll progress.
+ * Scroll offset that places the spoken character on the focus line.
  */
+export function scrollOffsetForCharacter(
+  scroller: HTMLElement,
+  scriptElement: HTMLElement,
+  characterIndex: number,
+  focusPositionPercent: number,
+): number | null {
+  const words = scriptElement.querySelectorAll<HTMLElement>('[data-script-word]');
+  if (!words.length) return null;
+
+  let target: HTMLElement | null = null;
+  for (const word of words) {
+    const start = Number(word.dataset.start);
+    const end = Number(word.dataset.end);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+    if (characterIndex >= start && characterIndex < end) {
+      target = word;
+      break;
+    }
+    if (start >= characterIndex) {
+      target = word;
+      break;
+    }
+  }
+  target ??= words[words.length - 1] ?? null;
+  if (!target) return null;
+
+  const scrollerRect = scroller.getBoundingClientRect();
+  const wordRect = target.getBoundingClientRect();
+  const focusY = scrollerRect.top + (focusPositionPercent / 100) * scrollerRect.height;
+  return scroller.scrollTop + (wordRect.top - focusY);
+}
 export function estimateFocusCharacterIndex(
   scroller: HTMLElement,
   scriptElement: HTMLElement,

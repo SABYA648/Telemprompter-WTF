@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { ScriptAlignmentEngine } from '../domain/alignment';
 import { analytics, PRIVATE_PRECISION_SIZE_BUCKET, type FallbackReason } from '../domain/analytics';
+import {
+  BrowserSpeechSession,
+  hasBrowserSpeechRecognition,
+  speechErrorState,
+} from '../domain/browserSpeech';
 import { detectBrowserCapabilities, precisionCapability } from '../domain/capabilities';
 import {
   downloadLocalModel,
@@ -30,6 +35,7 @@ interface Props {
   }) => void;
 }
 
+type FollowEngine = 'off' | 'speech' | 'pace' | 'precision';
 type ModelState = 'checking' | 'missing' | 'downloading' | 'ready' | 'preparing' | 'error';
 
 // Maps internal precision-worker error categories to the low-cardinality analytics enum.
@@ -41,11 +47,13 @@ const fallbackReason = (category: string): FallbackReason => {
   return 'runtime_error';
 };
 
-const statusLabel = (state: SmartPaceState, mode: VoiceMode): string => {
+const statusLabel = (state: SmartPaceState, mode: VoiceMode, engine: FollowEngine): string => {
   if (state === 'requesting') return 'Requesting microphone';
   if (state === 'calibrating') return 'Learning room sound';
-  if (state === 'listening')
+  if (state === 'listening') {
+    if (engine === 'speech') return 'Following your voice';
     return mode === 'precision' ? 'Following your place' : 'Following your pace';
+  }
   if (state === 'paused') return 'Waiting for speech';
   if (state === 'denied') return 'Microphone blocked';
   if (state === 'unavailable') return 'Microphone unavailable';
@@ -69,7 +77,7 @@ export default function VoiceTrackingControls({
   const doneRef = useRef<HTMLButtonElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
-  const sessionRef = useRef<LocalAudioSession | null>(null);
+  const sessionRef = useRef<{ stop: () => void } | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const workerBusyRef = useRef(false);
   const autoStartAttemptedRef = useRef(false);
@@ -78,6 +86,7 @@ export default function VoiceTrackingControls({
   const alignment = useMemo(() => new ScriptAlignmentEngine(script), [script]);
   const isActive = state === 'calibrating' || state === 'listening' || state === 'paused';
   const [speechActive, setSpeechActive] = useState(false);
+  const [followEngine, setFollowEngine] = useState<FollowEngine>('off');
 
   useEffect(() => {
     void isLocalModelReady().then((ready) => setModelState(ready ? 'ready' : 'missing'));
@@ -133,6 +142,7 @@ export default function VoiceTrackingControls({
     workerBusyRef.current = false;
     onMultiplier(1);
     setSpeechActive(false);
+    setFollowEngine('off');
     setState('off');
   };
 
@@ -209,6 +219,40 @@ export default function VoiceTrackingControls({
       worker.postMessage({ type: 'init' });
     }
 
+    if (nextMode === 'smart' && hasBrowserSpeechRecognition()) {
+      const speech = new BrowserSpeechSession({
+        onPace: handlePace,
+        onTranscript: (reading) => {
+          const result = alignment.align(reading.text, reading.confidence);
+          if (result.movement === 'hold') return;
+          const token = alignment.tokens[result.tokenIndex];
+          onAlignment(result.characterIndex, result.confidence, token?.end);
+        },
+      });
+      sessionRef.current = speech;
+      try {
+        await speech.start();
+        setFollowEngine('speech');
+        analytics.track('smart_pace_enable', { result: 'started' });
+        if (options?.auto) setOpen(false);
+        else close();
+        return;
+      } catch (error) {
+        speech.stop();
+        sessionRef.current = null;
+        if (speechErrorState(error) === 'denied') {
+          setFollowEngine('off');
+          setState('denied');
+          setMessage('Microphone access was blocked. Manual scrolling still works.');
+          analytics.track('smart_pace_enable', { result: 'mic_blocked' });
+          onModeChange('manual');
+          onMultiplier(1);
+          if (!options?.auto) setOpen(true);
+          return;
+        }
+      }
+    }
+
     const session = new LocalAudioSession({
       onPace: handlePace,
       ...(nextMode === 'precision'
@@ -224,6 +268,7 @@ export default function VoiceTrackingControls({
     sessionRef.current = session;
     try {
       await session.start();
+      setFollowEngine(nextMode === 'precision' ? 'precision' : 'pace');
       if (nextMode === 'smart') analytics.track('smart_pace_enable', { result: 'started' });
       else analytics.track('private_precision_enable');
       if (options?.auto) setOpen(false);
@@ -255,7 +300,7 @@ export default function VoiceTrackingControls({
   useEffect(() => {
     if (autoStartAttemptedRef.current) return;
     if (mode !== 'smart') return;
-    if (!capabilities.microphone) return;
+    if (!capabilities.microphone && !hasBrowserSpeechRecognition()) return;
     autoStartAttemptedRef.current = true;
     void begin('smart', { auto: true });
   }, [mode, capabilities.microphone]);
@@ -307,10 +352,10 @@ export default function VoiceTrackingControls({
         ref={triggerRef}
         class={`control-button voice-trigger ${isActive ? 'voice-trigger--active' : ''}`}
         onClick={() => setOpen(true)}
-        aria-label={`Voice tracking. ${statusLabel(state, mode)}`}
+        aria-label={`Voice tracking. ${statusLabel(state, mode, followEngine)}`}
       >
         <span aria-hidden="true">{isActive ? '●' : '○'}</span>
-        {statusLabel(state, mode)}
+        {statusLabel(state, mode, followEngine)}
       </button>
       {open && (
         <div class="presenter__scrim" onClick={close} onKeyDown={handleDialogKey}>
@@ -351,8 +396,10 @@ export default function VoiceTrackingControls({
                   <p class="voice-option__tag">Default. Fully local.</p>
                   <h3>Smart Pace</h3>
                   <p>
-                    Starts with you. Matches scrolling to your speaking rhythm and faintly
-                    highlights the live reading zone so you stay in sync. No transcription.
+                    Starts with you. Uses this browser&apos;s microphone speech-to-text to follow
+                    your place in the script. If recognition is unavailable, it matches scroll to
+                    your speaking rhythm instead. Audio is processed in the browser; nothing is
+                    stored.
                   </p>
                 </div>
                 <button

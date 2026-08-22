@@ -111,7 +111,8 @@ export class ScriptAlignmentEngine {
       confidence: 0,
       movement: 'hold',
     });
-    if (fragment.length < 2 || !this.tokens.length) return hold();
+    if (!this.tokens.length || fragment.length < 1) return hold();
+    if (fragment.length === 1) return this.alignNextWord(fragment[0] ?? '', hold);
 
     const expected = Math.min(
       this.tokens.length - 1,
@@ -139,6 +140,28 @@ export class ScriptAlignmentEngine {
 
   setPosition(tokenIndex: number): void {
     this.position = Math.min(this.tokens.length - 1, Math.max(0, Math.round(tokenIndex)));
+  }
+
+  private alignNextWord(word: string, hold: () => AlignmentResult): AlignmentResult {
+    if (!word) return hold();
+    const limit = Math.min(this.tokens.length, this.position + 24);
+    let bestIndex = -1;
+    let bestScore = 0;
+    for (let index = this.position; index < limit; index += 1) {
+      const score = editSimilarity(word, this.tokens[index]?.value ?? '');
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    }
+    if (bestIndex < 0 || bestScore < 0.86) return hold();
+    this.position = bestIndex;
+    return {
+      tokenIndex: bestIndex,
+      characterIndex: this.tokens[bestIndex]?.start ?? 0,
+      confidence: bestScore,
+      movement: 'gentle',
+    };
   }
 
   private search(

@@ -21,6 +21,9 @@ async function installMicrophoneMock(page: Page, denied = false) {
       getFloatTimeDomainData(values: Float32Array) {
         values.fill(0.06);
       }
+      getByteTimeDomainData(values: Uint8Array) {
+        values.fill(136);
+      }
     }
     class FakeAudioContext {
       sampleRate = 48000;
@@ -58,6 +61,8 @@ async function installMicrophoneMock(page: Page, denied = false) {
         },
       },
     });
+    Reflect.deleteProperty(window, 'SpeechRecognition');
+    Reflect.deleteProperty(window, 'webkitSpeechRecognition');
   }, denied);
 }
 
@@ -73,10 +78,12 @@ test('Smart Pace auto-starts on presenter open, follows pace, and cleans up', as
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await expect(
     page.getByRole('button', {
-      name: /Learning room sound|Following your pace|Requesting microphone/,
+      name: /Learning room sound|Following your pace|Following your voice|Requesting microphone/,
     }),
   ).toBeVisible();
-  await expect(page.getByRole('button', { name: /Following your pace/ })).toBeVisible({
+  await expect(
+    page.getByRole('button', { name: /Following your pace|Following your voice/ }),
+  ).toBeVisible({
     timeout: 4000,
   });
   await expect(page.locator('.script-word--live').first()).toBeVisible({ timeout: 4000 });
@@ -89,6 +96,78 @@ test('Smart Pace auto-starts on presenter open, follows pace, and cleans up', as
       ),
     ),
   ).toBe(true);
+});
+
+test('browser speech-to-text follows the spoken script position', async ({ page }) => {
+  const uniqueLine = 'The recovery paragraph mentions purple lanterns and cedar smoke.';
+  const script = [
+    'Opening remarks stay near the start of this rehearsal.',
+    'A middle section talks about calm breathing and a steady camera.',
+    uniqueLine,
+    'Closing thoughts thank the crew and end the take.',
+  ].join('\n\n');
+  await page.addInitScript((transcript) => {
+    class FakeSpeechRecognition {
+      continuous = false;
+      interimResults = false;
+      lang = '';
+      maxAlternatives = 1;
+      processLocally = false;
+      timer: ReturnType<typeof setInterval> | undefined;
+      onresult: ((event: unknown) => void) | null = null;
+      onstart: ((event: Event) => void) | null = null;
+      onend: ((event: Event) => void) | null = null;
+      onerror: ((event: { error: string }) => void) | null = null;
+      onspeechstart: ((event: Event) => void) | null = null;
+      onspeechend: ((event: Event) => void) | null = null;
+      onaudiostart = null;
+      onaudioend = null;
+      start() {
+        this.onstart?.(new Event('start'));
+        this.onspeechstart?.(new Event('speechstart'));
+        const emit = () => {
+          this.onresult?.({
+            resultIndex: 0,
+            results: {
+              length: 1,
+              0: {
+                isFinal: true,
+                length: 1,
+                0: { transcript, confidence: 0.94 },
+              },
+            },
+          });
+        };
+        emit();
+        this.timer = setInterval(emit, 400);
+      }
+      stop() {
+        clearInterval(this.timer);
+        this.onend?.(new Event('end'));
+      }
+      abort() {
+        clearInterval(this.timer);
+        this.onend?.(new Event('end'));
+      }
+    }
+    Object.defineProperty(window, 'SpeechRecognition', {
+      configurable: true,
+      value: FakeSpeechRecognition,
+    });
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      configurable: true,
+      value: FakeSpeechRecognition,
+    });
+  }, uniqueLine);
+  await openFreshEditor(page);
+  await page.getByLabel('Teleprompter script').fill(script);
+  await page.getByRole('button', { name: /Start teleprompter/ }).click();
+  await expect(page.getByRole('button', { name: /Following your voice/ })).toBeVisible({
+    timeout: 4000,
+  });
+  await expect
+    .poll(async () => (await page.locator('.script-word--live').allTextContents()).join(' '))
+    .toMatch(/purple|lanterns|cedar|recovery|Closing|thoughts/i);
 });
 
 test('microphone denial leaves Manual available and offers retry', async ({ page }) => {
@@ -144,7 +223,9 @@ test('Private Precision model download is explicit, progress reaches ready, and 
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   expect(requests).toEqual([]);
   // Auto-started Smart Pace should not download model assets.
-  await page.getByRole('button', { name: /Following your pace|Voice tracking|Manual/ }).click();
+  await page
+    .getByRole('button', { name: /Following your pace|Following your voice|Voice tracking|Manual/ })
+    .click();
   expect(requests).toEqual([]);
   await expect(page.getByRole('heading', { name: 'Private Precision, beta' })).toBeVisible();
   await expect(page.getByText(/About 67 MB first download/)).toBeVisible();
@@ -268,4 +349,30 @@ test('recording cancellation shows a local error and preserves presenter control
   await page.getByRole('button', { name: 'Start recording' }).click();
   await expect(page.getByText('Recording was cancelled or permission was blocked.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Exit presenter' })).toBeAttached();
+});
+
+test('production script keeps VO on the reading line and cues on the rail', async ({ page }) => {
+  const productionScript = `## 0:00–0:04 — Hook
+
+**VISUAL**
+Fast cuts of a broken button.
+
+**VOICEOVER**
+Your AI can fix the bug in seconds.
+
+**ON SCREEN**
+Feedback is still stuck in screenshots.
+`;
+  await openFreshEditor(page);
+  await page.getByLabel('Teleprompter script').fill(productionScript);
+  await expect(page.getByText(/spoken/)).toBeVisible();
+  await expect(page.getByText(/1 beat/)).toBeVisible();
+  await expect(
+    page.getByText('Production script detected. Visual cues stay off the reading line.'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: /Start teleprompter/ }).click();
+  await expect(page.getByText('Your AI can fix the bug in seconds.')).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Production cues' })).toBeVisible();
+  await expect(page.getByTestId('guide-beat')).toContainText('Hook');
+  await expect(page.getByText(/Fast cuts of a broken button/)).toBeVisible();
 });

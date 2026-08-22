@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   analytics,
   durationBucket,
@@ -9,10 +9,17 @@ import {
   type SettingName,
 } from '../domain/analytics';
 import { countWords, durationSeconds, formatDuration } from '../domain/calculations';
+import {
+  compileScriptGuide,
+  cueSummary,
+  firstCueLine,
+  sectionAtSpokenOffset,
+} from '../domain/scriptGuide';
 import { detectBrowserCapabilities } from '../domain/capabilities';
 import {
   estimateFocusCharacterIndex,
   highlightWindowAround,
+  scrollOffsetForCharacter,
   segmentScript,
   type HighlightWindow,
 } from '../domain/scriptHighlight';
@@ -75,7 +82,12 @@ export default function Presenter({
   const voiceMultiplierRef = useRef(1);
   const scriptElementRef = useRef<HTMLDivElement>(null);
   const precisionAnchorRef = useRef<number | null>(null);
-  const segments = useMemo(() => segmentScript(script), [script]);
+  const guide = useMemo(
+    () => compileScriptGuide(script, preferences.speakingWpm),
+    [script, preferences.speakingWpm],
+  );
+  const displayScript = guide.kind === 'guided' ? guide.spokenText : script;
+  const segments = useMemo(() => segmentScript(displayScript), [displayScript]);
   const segmentsRef = useRef(segments);
   const focusPositionRef = useRef(preferences.focusPosition);
   segmentsRef.current = segments;
@@ -83,19 +95,30 @@ export default function Presenter({
   settingsOpenRef.current = settingsOpen;
   shortcutsOpenRef.current = shortcutsOpen;
   const capabilities = useRef(detectBrowserCapabilities()).current;
-  const words = countWords(script);
+  const words = guide.kind === 'guided' ? guide.spokenWordCount : countWords(script);
   const estimatedTotal = durationSeconds(words, preferences.speakingWpm);
   const remaining = estimatedTotal * (1 - progress);
+  const activeSection = sectionAtSpokenOffset(
+    guide,
+    precisionAnchorRef.current ?? highlight.liveStart,
+  );
+  const visualCue = cueSummary(activeSection, 'visual');
+  const screenCue = cueSummary(activeSection, 'screen');
 
   const syncHighlightFromScroll = () => {
     const scroller = scrollerRef.current;
     const scriptElement = scriptElementRef.current;
-    if (!scroller || !scriptElement || !script.length) return;
+    if (!scroller || !scriptElement || !displayScript.length) return;
     // Precision anchors temporarily own the live word when speech recognition is confident.
     // Otherwise the focus-line caret estimate keeps Smart Pace and the reader visually aligned.
     const center =
       precisionAnchorRef.current ??
-      estimateFocusCharacterIndex(scroller, scriptElement, focusPositionRef.current, script.length);
+      estimateFocusCharacterIndex(
+        scroller,
+        scriptElement,
+        focusPositionRef.current,
+        displayScript.length,
+      );
     setHighlight(highlightWindowAround(segmentsRef.current, center));
   };
   const syncHighlightRef = useRef(syncHighlightFromScroll);
@@ -109,7 +132,7 @@ export default function Presenter({
     }
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.body.classList.add('presenting');
     const background = document.querySelectorAll<HTMLElement>(
       '.site-header, .site-footer, .home-hero__copy, .editor-shell, .home-content, .privacy-choices, .privacy-preference',
@@ -173,20 +196,29 @@ export default function Presenter({
 
   const applyAlignment = (characterIndex: number, confidence: number, tokenEnd?: number) => {
     const scroller = scrollerRef.current;
-    if (!scroller || !script.length) return;
-    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    const target = (characterIndex / script.length) * maxScroll;
-    controllerRef.current?.moveToward(target, confidence >= 0.78 ? 0.18 : 0.07);
+    const scriptElement = scriptElementRef.current;
+    if (!scroller || !displayScript.length) return;
+    const focused =
+      scriptElement &&
+      scrollOffsetForCharacter(scroller, scriptElement, characterIndex, focusPositionRef.current);
+    const target =
+      typeof focused === 'number'
+        ? focused
+        : (characterIndex / displayScript.length) *
+          Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    const strength = confidence >= 0.7 ? 0.48 : 0.22;
+    if (controllerRef.current) {
+      controllerRef.current.moveToward(target, strength);
+    } else {
+      const max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+      scroller.scrollTop = Math.min(max, Math.max(0, target));
+    }
     const center =
       typeof tokenEnd === 'number' && tokenEnd > characterIndex
         ? Math.round((characterIndex + tokenEnd) / 2)
         : characterIndex;
     precisionAnchorRef.current = center;
     setHighlight(highlightWindowAround(segmentsRef.current, center, 6, 3));
-    window.setTimeout(() => {
-      // Resume focus-line tracking after a short precision hold so scroll and highlight stay glued.
-      if (precisionAnchorRef.current === center) precisionAnchorRef.current = null;
-    }, 1800);
   };
 
   const handleVoiceActivity = (activity: { listening: boolean; speechActive: boolean }) => {
@@ -407,6 +439,22 @@ export default function Presenter({
         </div>
       )}
 
+      {guide.kind === 'guided' && activeSection && (
+        <aside class="guide-rail" aria-label="Production cues">
+          {(visualCue || screenCue) && (
+            <>
+              {visualCue && (
+                <p class="guide-rail__cue">
+                  <span>Visual</span>
+                  {firstCueLine(visualCue)}
+                </p>
+              )}
+              {screenCue && <p class="guide-rail__super">{firstCueLine(screenCue)}</p>}
+            </>
+          )}
+        </aside>
+      )}
+
       <div
         ref={scrollerRef}
         class="presenter__scroll"
@@ -447,7 +495,13 @@ export default function Presenter({
                   ? 'script-word script-word--trail'
                   : 'script-word';
               return (
-                <span key={`w-${segment.start}`} class={className} data-script-word="true">
+                <span
+                  key={`w-${segment.start}`}
+                  class={className}
+                  data-script-word="true"
+                  data-start={segment.start}
+                  data-end={segment.end}
+                >
                   {segment.text}
                 </span>
               );
@@ -463,6 +517,13 @@ export default function Presenter({
         <div class="presenter__readout" aria-live="polite">
           <span>{Math.round(progress * 100)}%</span>
           <span>about {formatDuration(remaining)} left</span>
+          {guide.kind === 'guided' && activeSection && (
+            <span data-testid="guide-beat">
+              {activeSection.timecodeLabel ? `${activeSection.timecodeLabel} · ` : ''}
+              {activeSection.title}
+              {activeSection.fit === 'tight' ? ' · tight' : ''}
+            </span>
+          )}
         </div>
         <button class="control-button control-button--exit" onClick={() => void exit()}>
           Exit presenter
@@ -490,7 +551,7 @@ export default function Presenter({
           Restart
         </button>
         <VoiceTrackingControls
-          script={script}
+          script={displayScript}
           mode={preferences.voiceMode}
           onModeChange={(voiceMode) => updatePreference('voiceMode', voiceMode)}
           onMultiplier={updateVoiceMultiplier}
@@ -499,7 +560,7 @@ export default function Presenter({
         />
         <RecordingControl />
         <PictureInPictureControl
-          script={script}
+          script={displayScript}
           progress={progress}
           playing={playing}
           onTogglePlay={togglePlay}

@@ -150,6 +150,9 @@ export class LocalAudioSession {
     this.analyserNode.fftSize = 1024;
     this.analyserNode.smoothingTimeConstant = 0.25;
     this.source.connect(this.analyserNode);
+    // Analyser nodes that are not connected through to a destination can yield
+    // silence in Chromium, which made Smart Pace freeze after calibration.
+    this.analyserNode.connect(this.ensureSilentOutput());
     this.analyzer.reset();
 
     if (this.options.onPcmChunk) await this.startPcmCapture();
@@ -175,29 +178,55 @@ export class LocalAudioSession {
     this.pcmLength = 0;
   }
 
+  private ensureSilentOutput(): GainNode {
+    if (this.mutedGain) return this.mutedGain;
+    if (!this.context) throw new Error('audio-context-unavailable');
+    this.mutedGain = this.context.createGain();
+    this.mutedGain.gain.value = 0;
+    this.mutedGain.connect(this.context.destination);
+    return this.mutedGain;
+  }
+
+  private rmsFromAnalyser(): number {
+    if (!this.analyserNode) return 0;
+    const size = this.analyserNode.fftSize;
+    if (typeof this.analyserNode.getFloatTimeDomainData === 'function') {
+      const values = new Float32Array(size);
+      this.analyserNode.getFloatTimeDomainData(values);
+      let energy = 0;
+      for (const value of values) energy += value * value;
+      return Math.sqrt(energy / values.length);
+    }
+    if (typeof this.analyserNode.getByteTimeDomainData === 'function') {
+      const bytes = new Uint8Array(size);
+      this.analyserNode.getByteTimeDomainData(bytes);
+      let energy = 0;
+      for (const value of bytes) {
+        const centered = (value - 128) / 128;
+        energy += centered * centered;
+      }
+      return Math.sqrt(energy / bytes.length);
+    }
+    return 0;
+  }
+
   private readonly sample = (): void => {
     if (!this.analyserNode) return;
-    const values = new Float32Array(this.analyserNode.fftSize);
-    this.analyserNode.getFloatTimeDomainData(values);
-    let energy = 0;
-    for (const value of values) energy += value * value;
-    const reading = this.analyzer.process(Math.sqrt(energy / values.length), performance.now());
+    const reading = this.analyzer.process(this.rmsFromAnalyser(), performance.now());
     this.options.onPace(reading);
     this.animationFrame = requestAnimationFrame(this.sample);
   };
 
   private async startPcmCapture(): Promise<void> {
     if (!this.context || !this.source || !this.options.onPcmChunk) return;
-    this.mutedGain = this.context.createGain();
-    this.mutedGain.gain.value = 0;
-    this.mutedGain.connect(this.context.destination);
+    const sink = this.ensureSilentOutput();
 
     if (this.context.audioWorklet) {
       await this.context.audioWorklet.addModule('/audio/pcm-capture-worklet.js');
       const worklet = new AudioWorkletNode(this.context, 'pcm-capture');
       worklet.port.onmessage = (event: MessageEvent<Float32Array>) => this.collectPcm(event.data);
       this.source.connect(worklet);
-      worklet.connect(this.mutedGain);
+      worklet.connect(sink);
       this.captureNode = worklet;
       return;
     }
@@ -207,7 +236,7 @@ export class LocalAudioSession {
       this.collectPcm(new Float32Array(event.inputBuffer.getChannelData(0)));
     };
     this.source.connect(processor);
-    processor.connect(this.mutedGain);
+    processor.connect(sink);
     this.captureNode = processor;
   }
 

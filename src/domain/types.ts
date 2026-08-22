@@ -71,6 +71,7 @@ export interface BrowserCapabilities {
   webAudio: boolean;
   audioWorklet: boolean;
   microphone: boolean;
+  speechRecognition: boolean;
   worker: boolean;
   webAssembly: boolean;
   webGpu: boolean;
