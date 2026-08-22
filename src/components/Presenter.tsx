@@ -23,6 +23,7 @@ import {
   segmentScript,
   type HighlightWindow,
 } from '../domain/scriptHighlight';
+import { PaceCoach, type PaceHint } from '../domain/paceCoach';
 import { SETTING_LIMITS, clamp, speedToPixelsPerSecond } from '../domain/settings';
 import { TimeBasedScrollController } from '../domain/scrollController';
 import type { PresenterPreferences } from '../domain/types';
@@ -79,9 +80,12 @@ export default function Presenter({
     liveStart: 0,
     liveEnd: 0,
   });
+  const [paceHint, setPaceHint] = useState<PaceHint>('ok');
   const voiceMultiplierRef = useRef(1);
   const scriptElementRef = useRef<HTMLDivElement>(null);
   const precisionAnchorRef = useRef<number | null>(null);
+  const spokenFollowRef = useRef(false);
+  const paceCoachRef = useRef(new PaceCoach(preferences.speakingWpm));
   const guide = useMemo(
     () => compileScriptGuide(script, preferences.speakingWpm),
     [script, preferences.speakingWpm],
@@ -109,16 +113,16 @@ export default function Presenter({
     const scroller = scrollerRef.current;
     const scriptElement = scriptElementRef.current;
     if (!scroller || !scriptElement || !displayScript.length) return;
-    // Precision anchors temporarily own the live word when speech recognition is confident.
-    // Otherwise the focus-line caret estimate keeps Smart Pace and the reader visually aligned.
-    const center =
-      precisionAnchorRef.current ??
-      estimateFocusCharacterIndex(
-        scroller,
-        scriptElement,
-        focusPositionRef.current,
-        displayScript.length,
-      );
+    if (spokenFollowRef.current && precisionAnchorRef.current !== null) {
+      setHighlight(highlightWindowAround(segmentsRef.current, precisionAnchorRef.current, 4, 1));
+      return;
+    }
+    const center = estimateFocusCharacterIndex(
+      scroller,
+      scriptElement,
+      focusPositionRef.current,
+      displayScript.length,
+    );
     setHighlight(highlightWindowAround(segmentsRef.current, center));
   };
   const syncHighlightRef = useRef(syncHighlightFromScroll);
@@ -182,6 +186,10 @@ export default function Presenter({
   }, []);
 
   useEffect(() => {
+    paceCoachRef.current.setTargetWpm(preferences.speakingWpm);
+  }, [preferences.speakingWpm]);
+
+  useEffect(() => {
     controllerRef.current?.setSpeed(
       speedToPixelsPerSecond(preferences.baseScrollSpeed) * voiceMultiplierRef.current,
     );
@@ -194,7 +202,12 @@ export default function Presenter({
     );
   };
 
-  const applyAlignment = (characterIndex: number, confidence: number, tokenEnd?: number) => {
+  const applyAlignment = (
+    characterIndex: number,
+    confidence: number,
+    _tokenEnd?: number,
+    tokenIndex?: number,
+  ) => {
     const scroller = scrollerRef.current;
     const scriptElement = scriptElementRef.current;
     if (!scroller || !displayScript.length) return;
@@ -206,26 +219,30 @@ export default function Presenter({
         ? focused
         : (characterIndex / displayScript.length) *
           Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    const strength = confidence >= 0.7 ? 0.48 : 0.22;
+    const strength = confidence >= 0.7 ? 0.92 : 0.7;
     if (controllerRef.current) {
       controllerRef.current.moveToward(target, strength);
     } else {
       const max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
       scroller.scrollTop = Math.min(max, Math.max(0, target));
     }
-    const center =
-      typeof tokenEnd === 'number' && tokenEnd > characterIndex
-        ? Math.round((characterIndex + tokenEnd) / 2)
-        : characterIndex;
-    precisionAnchorRef.current = center;
-    setHighlight(highlightWindowAround(segmentsRef.current, center, 6, 3));
+    spokenFollowRef.current = true;
+    precisionAnchorRef.current = characterIndex;
+    setHighlight(highlightWindowAround(segmentsRef.current, characterIndex, 4, 1));
+    if (typeof tokenIndex === 'number') {
+      setPaceHint(paceCoachRef.current.observe(tokenIndex));
+    }
   };
 
   const handleVoiceActivity = (activity: { listening: boolean; speechActive: boolean }) => {
     setVoiceListening(activity.listening);
     setSpeechActive(activity.speechActive);
-    if (!activity.listening) precisionAnchorRef.current = null;
-    else requestAnimationFrame(() => syncHighlightRef.current());
+    if (!activity.listening) {
+      precisionAnchorRef.current = null;
+      spokenFollowRef.current = false;
+      paceCoachRef.current.reset();
+      setPaceHint('ok');
+    }
   };
 
   useEffect(() => {
@@ -409,6 +426,10 @@ export default function Presenter({
   }, [playing, preferences, settingsOpen, shortcutsOpen]);
 
   const restart = () => {
+    spokenFollowRef.current = false;
+    precisionAnchorRef.current = null;
+    paceCoachRef.current.reset();
+    setPaceHint('ok');
     controllerRef.current?.restart();
     revealControls();
   };
@@ -437,6 +458,17 @@ export default function Presenter({
         >
           <span />
         </div>
+      )}
+
+      {paceHint !== 'ok' && (
+        <p
+          class={`pace-banner pace-banner--${paceHint}`}
+          style={{ top: `calc(${preferences.focusPosition}% + 1.4rem)` }}
+          data-testid="pace-banner"
+          aria-live="polite"
+        >
+          {paceHint === 'faster' ? 'Go faster' : 'Slow down'}
+        </p>
       )}
 
       {guide.kind === 'guided' && activeSection && (
@@ -522,6 +554,11 @@ export default function Presenter({
               {activeSection.timecodeLabel ? `${activeSection.timecodeLabel} · ` : ''}
               {activeSection.title}
               {activeSection.fit === 'tight' ? ' · tight' : ''}
+            </span>
+          )}
+          {paceHint !== 'ok' && (
+            <span class={`pace-chip pace-chip--${paceHint}`} data-testid="pace-coach">
+              {paceHint === 'faster' ? 'Faster' : 'Slower'}
             </span>
           )}
         </div>

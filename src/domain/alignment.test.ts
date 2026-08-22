@@ -43,6 +43,24 @@ describe('Private Precision script alignment', () => {
     expect(second.tokenIndex).toBe(1);
   });
 
+  it('keeps the caret on the last spoken word of a growing transcript', () => {
+    const engine = new ScriptAlignmentEngine(script);
+    const growing = [
+      'Welcome',
+      'Welcome to',
+      'Welcome to the practical',
+      'Welcome to the practical guide we will start with a simple idea',
+    ];
+    let result = engine.align(growing[0] ?? '');
+    for (const fragment of growing.slice(1)) {
+      result = engine.align(fragment);
+    }
+    expect(result.movement).not.toBe('hold');
+    expect(engine.tokens[result.tokenIndex]?.value).toBe('idea');
+    const next = tokenizeScript(script)[result.tokenIndex + 1];
+    expect(next?.value).toBe('about');
+  });
+
   it('aligns exact and imperfect fragments', () => {
     const engine = new ScriptAlignmentEngine(script);
     const exact = engine.align('start with a simple idea about clear communication');

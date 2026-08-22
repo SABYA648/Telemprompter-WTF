@@ -27,7 +27,12 @@ interface Props {
   mode: VoiceMode;
   onModeChange: (mode: VoiceMode) => void;
   onMultiplier: (multiplier: number) => void;
-  onAlignment: (characterIndex: number, confidence: number, tokenEnd?: number) => void;
+  onAlignment: (
+    characterIndex: number,
+    confidence: number,
+    tokenEnd?: number,
+    tokenIndex?: number,
+  ) => void;
   onVoiceActivity?: (activity: {
     listening: boolean;
     speechActive: boolean;
@@ -202,7 +207,7 @@ export default function VoiceTrackingControls({
         );
         if (result.movement !== 'hold') {
           const token = alignment.tokens[result.tokenIndex];
-          onAlignment(result.characterIndex, result.confidence, token?.end);
+          onAlignment(result.characterIndex, result.confidence, token?.end, result.tokenIndex);
         }
       };
       worker.onerror = () => {
@@ -226,7 +231,7 @@ export default function VoiceTrackingControls({
           const result = alignment.align(reading.text, reading.confidence);
           if (result.movement === 'hold') return;
           const token = alignment.tokens[result.tokenIndex];
-          onAlignment(result.characterIndex, result.confidence, token?.end);
+          onAlignment(result.characterIndex, result.confidence, token?.end, result.tokenIndex);
         },
       });
       sessionRef.current = speech;
