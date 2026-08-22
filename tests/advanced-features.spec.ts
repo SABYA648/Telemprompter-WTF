@@ -350,3 +350,29 @@ test('recording cancellation shows a local error and preserves presenter control
   await expect(page.getByText('Recording was cancelled or permission was blocked.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Exit presenter' })).toBeAttached();
 });
+
+test('production script keeps VO on the reading line and cues on the rail', async ({ page }) => {
+  const productionScript = `## 0:00–0:04 — Hook
+
+**VISUAL**
+Fast cuts of a broken button.
+
+**VOICEOVER**
+Your AI can fix the bug in seconds.
+
+**ON SCREEN**
+Feedback is still stuck in screenshots.
+`;
+  await openFreshEditor(page);
+  await page.getByLabel('Teleprompter script').fill(productionScript);
+  await expect(page.getByText(/spoken/)).toBeVisible();
+  await expect(page.getByText(/1 beat/)).toBeVisible();
+  await expect(
+    page.getByText('Production script detected. Visual cues stay off the reading line.'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: /Start teleprompter/ }).click();
+  await expect(page.getByText('Your AI can fix the bug in seconds.')).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Production cues' })).toBeVisible();
+  await expect(page.getByTestId('guide-beat')).toContainText('Hook');
+  await expect(page.getByText(/Fast cuts of a broken button/)).toBeVisible();
+});

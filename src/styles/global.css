@@ -778,6 +778,47 @@ button {
   text-transform: uppercase;
 }
 
+.guide-rail {
+  position: fixed;
+  z-index: 6;
+  top: max(4.6rem, env(safe-area-inset-top));
+  left: max(1rem, env(safe-area-inset-left));
+  display: grid;
+  gap: 0.45rem;
+  width: min(18rem, 34vw);
+  max-width: calc(100% - 2rem);
+  pointer-events: none;
+}
+
+.guide-rail__cue,
+.guide-rail__super {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 0.7rem;
+  background: rgb(12 12 10 / 0.72);
+  color: rgb(246 240 228 / 0.78);
+  font-size: 0.72rem;
+  font-weight: 560;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+}
+
+.guide-rail__cue span {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #ffb45d;
+  font-size: 0.58rem;
+  font-weight: 760;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.guide-rail__super {
+  color: #fff8ee;
+  font-weight: 700;
+}
+
 .presenter__topbar .control-button {
   justify-self: end;
 }
@@ -1992,8 +2033,16 @@ kbd {
     width: max(var(--text-width), 86%);
   }
 
-  .presenter__readout span:last-child {
+  .presenter__readout span:nth-child(2) {
     display: none;
+  }
+
+  .guide-rail {
+    top: auto;
+    bottom: calc(6.4rem + env(safe-area-inset-bottom));
+    left: max(0.75rem, env(safe-area-inset-left));
+    width: calc(100% - 1.5rem);
+    max-width: 28rem;
   }
 
   .presenter__controls {
