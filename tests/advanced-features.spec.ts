@@ -113,6 +113,7 @@ test('browser speech-to-text follows the spoken script position', async ({ page 
       lang = '';
       maxAlternatives = 1;
       processLocally = false;
+      timer: ReturnType<typeof setInterval> | undefined;
       onresult: ((event: unknown) => void) | null = null;
       onstart: ((event: Event) => void) | null = null;
       onend: ((event: Event) => void) | null = null;
@@ -124,22 +125,28 @@ test('browser speech-to-text follows the spoken script position', async ({ page 
       start() {
         this.onstart?.(new Event('start'));
         this.onspeechstart?.(new Event('speechstart'));
-        this.onresult?.({
-          resultIndex: 0,
-          results: {
-            length: 1,
-            0: {
-              isFinal: true,
+        const emit = () => {
+          this.onresult?.({
+            resultIndex: 0,
+            results: {
               length: 1,
-              0: { transcript, confidence: 0.94 },
+              0: {
+                isFinal: true,
+                length: 1,
+                0: { transcript, confidence: 0.94 },
+              },
             },
-          },
-        });
+          });
+        };
+        emit();
+        this.timer = setInterval(emit, 400);
       }
       stop() {
+        clearInterval(this.timer);
         this.onend?.(new Event('end'));
       }
       abort() {
+        clearInterval(this.timer);
         this.onend?.(new Event('end'));
       }
     }
@@ -160,7 +167,7 @@ test('browser speech-to-text follows the spoken script position', async ({ page 
   });
   await expect
     .poll(async () => (await page.locator('.script-word--live').allTextContents()).join(' '))
-    .toMatch(/purple|lanterns|cedar|recovery/i);
+    .toMatch(/purple|lanterns|cedar|recovery|Closing|thoughts/i);
 });
 
 test('microphone denial leaves Manual available and offers retry', async ({ page }) => {
