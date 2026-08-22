@@ -104,7 +104,7 @@ export class ScriptAlignmentEngine {
   align(fragmentInput: string, recognitionConfidence = 1): AlignmentResult {
     const fragment = tokenizeScript(fragmentInput)
       .map((token) => token.value)
-      .slice(-36);
+      .slice(-16);
     const hold = (): AlignmentResult => ({
       tokenIndex: this.position,
       characterIndex: this.tokens[this.position]?.start ?? 0,
@@ -114,25 +114,26 @@ export class ScriptAlignmentEngine {
     if (!this.tokens.length || fragment.length < 1) return hold();
     if (fragment.length === 1) return this.alignNextWord(fragment[0] ?? '', hold);
 
-    const expected = Math.min(
-      this.tokens.length - 1,
-      this.position + Math.max(1, fragment.length - 2),
-    );
-    let best = this.search(fragment, expected, 90, 260);
-    if (best.confidence < 0.58) best = this.search(fragment, expected, 260, 900);
+    // Live transcripts grow from the start of the current utterance. Score the
+    // last spoken words against a window that ends near the current caret, then
+    // widen only if that local match is weak (skip-ahead / recovery).
+    const expectedStart = Math.max(0, this.position - Math.max(1, fragment.length - 2));
+    let best = this.search(fragment, expectedStart, 16, 32);
+    if (best.confidence < 0.55) best = this.search(fragment, expectedStart, 80, 240);
+    if (best.confidence < 0.52) best = this.search(fragment, this.position, 220, 900);
 
     const confidence = Math.min(1, best.confidence * Math.max(0.45, recognitionConfidence));
     if (confidence < 0.43) return { ...hold(), confidence };
 
-    const nextPosition = Math.min(this.tokens.length - 1, best.start + best.length);
-    const distance = nextPosition - this.position;
+    const spokenIndex = Math.min(this.tokens.length - 1, Math.max(0, best.start + best.length - 1));
+    const distance = spokenIndex - this.position;
     if (distance < -20 && confidence < 0.78) return { ...hold(), confidence };
     if (distance > 180 && confidence < 0.82) return { ...hold(), confidence };
 
-    this.position = nextPosition;
+    this.position = spokenIndex;
     return {
-      tokenIndex: nextPosition,
-      characterIndex: this.tokens[nextPosition]?.start ?? this.tokens.at(-1)?.end ?? 0,
+      tokenIndex: spokenIndex,
+      characterIndex: this.tokens[spokenIndex]?.start ?? this.tokens.at(-1)?.end ?? 0,
       confidence,
       movement: confidence >= 0.78 && Math.abs(distance) > 8 ? 'correct' : 'gentle',
     };
@@ -191,9 +192,11 @@ export class ScriptAlignmentEngine {
         const candidate = this.tokens.slice(start, start + length).map((token) => token.value);
         const similarity = sequenceScore(fragment, candidate);
         if (similarity < 0.25) continue;
-        const distance = Math.abs(start - expected);
+        const matchEnd = start + length - 1;
+        const expectedEnd = Math.min(this.tokens.length - 1, expected + fragment.length - 1);
+        const distance = Math.min(Math.abs(start - expected), Math.abs(matchEnd - expectedEnd));
         const continuity = Math.max(0.78, 1 - distance / Math.max(600, forward * 3));
-        const backwardPenalty = start < this.position ? 0.96 : 1;
+        const backwardPenalty = matchEnd < this.position - 2 ? 0.94 : 1;
         const confidence = similarity * continuity * backwardPenalty;
         if (confidence > best.confidence) best = { start, length, confidence };
       }

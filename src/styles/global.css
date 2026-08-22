@@ -676,8 +676,42 @@ button {
 }
 
 .presenter--speaking .script-word--live {
-  background: rgb(228 73 46 / 0.34);
-  box-shadow: 0 0 0 0.1em rgb(228 73 46 / 0.18);
+  background: rgb(228 73 46 / 0.42);
+  box-shadow: 0 0 0 0.12em rgb(228 73 46 / 0.28);
+}
+
+.pace-chip {
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-weight: 780;
+  letter-spacing: 0.04em;
+}
+
+.pace-chip--faster,
+.pace-banner--faster {
+  color: #d7f3c8;
+  background: rgb(74 140 52 / 0.28);
+}
+
+.pace-chip--slower,
+.pace-banner--slower {
+  color: #ffe0c2;
+  background: rgb(228 73 46 / 0.28);
+}
+
+.pace-banner {
+  position: fixed;
+  z-index: 8;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.38rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 780;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  pointer-events: none;
 }
 
 .presenter--listening .focus-guide span {

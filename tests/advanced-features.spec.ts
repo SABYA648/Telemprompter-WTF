@@ -125,21 +125,24 @@ test('browser speech-to-text follows the spoken script position', async ({ page 
       start() {
         this.onstart?.(new Event('start'));
         this.onspeechstart?.(new Event('speechstart'));
+        const words = String(transcript).split(/\s+/);
+        let spoken = 0;
         const emit = () => {
+          spoken = Math.min(words.length, spoken + 1);
           this.onresult?.({
             resultIndex: 0,
             results: {
               length: 1,
               0: {
-                isFinal: true,
+                isFinal: spoken >= words.length,
                 length: 1,
-                0: { transcript, confidence: 0.94 },
+                0: { transcript: words.slice(0, spoken).join(' '), confidence: 0.94 },
               },
             },
           });
         };
         emit();
-        this.timer = setInterval(emit, 400);
+        this.timer = setInterval(emit, 80);
       }
       stop() {
         clearInterval(this.timer);
@@ -167,7 +170,8 @@ test('browser speech-to-text follows the spoken script position', async ({ page 
   });
   await expect
     .poll(async () => (await page.locator('.script-word--live').allTextContents()).join(' '))
-    .toMatch(/purple|lanterns|cedar|recovery|Closing|thoughts/i);
+    .toMatch(/smoke/i);
+  await expect(page.locator('.script-word--live')).toHaveCount(1);
 });
 
 test('microphone denial leaves Manual available and offers retry', async ({ page }) => {
