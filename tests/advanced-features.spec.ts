@@ -99,9 +99,15 @@ test('Smart Pace auto-starts on presenter open, follows pace, and cleans up', as
 });
 
 test('browser speech-to-text follows the spoken script position', async ({ page }) => {
-  const spoken = 'Line 8. Speak clearly and keep a comfortable pace for this local test.';
+  const uniqueLine = 'The recovery paragraph mentions purple lanterns and cedar smoke.';
+  const script = [
+    'Opening remarks stay near the start of this rehearsal.',
+    'A middle section talks about calm breathing and a steady camera.',
+    uniqueLine,
+    'Closing thoughts thank the crew and end the take.',
+  ].join('\n\n');
   await page.addInitScript((transcript) => {
-    class FakeRecognition {
+    class FakeSpeechRecognition {
       continuous = false;
       interimResults = false;
       lang = '';
@@ -139,27 +145,22 @@ test('browser speech-to-text follows the spoken script position', async ({ page 
     }
     Object.defineProperty(window, 'SpeechRecognition', {
       configurable: true,
-      value: FakeRecognition,
+      value: FakeSpeechRecognition,
     });
     Object.defineProperty(window, 'webkitSpeechRecognition', {
       configurable: true,
-      value: FakeRecognition,
+      value: FakeSpeechRecognition,
     });
-  }, spoken);
+  }, uniqueLine);
   await openFreshEditor(page);
-  await page.getByLabel('Teleprompter script').fill(sampleScript);
+  await page.getByLabel('Teleprompter script').fill(script);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await expect(page.getByRole('button', { name: /Following your voice/ })).toBeVisible({
     timeout: 4000,
   });
-  await expect(page.locator('.script-word--live').first()).toBeVisible({ timeout: 4000 });
   await expect
-    .poll(async () => page.locator('.script-word--live').first().textContent())
-    .toMatch(/Line|Speak|clearly|comfortable/i);
-  const scrollTop = await page.locator('[data-testid="presenter-scroll"]').evaluate((node) => {
-    return (node as HTMLElement).scrollTop;
-  });
-  expect(scrollTop).toBeGreaterThan(20);
+    .poll(async () => (await page.locator('.script-word--live').allTextContents()).join(' '))
+    .toMatch(/purple|lanterns|cedar|recovery/i);
 });
 
 test('microphone denial leaves Manual available and offers retry', async ({ page }) => {

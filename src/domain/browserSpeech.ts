@@ -84,7 +84,18 @@ let primedSpeech: PrimedSpeech | null = null;
 export function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null {
   if (typeof window === 'undefined') return null;
   const speechWindow = window as Window & SpeechWindow;
-  return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
+  const Constructor =
+    speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
+  if (!Constructor) return null;
+  // Playwright's bundled Chromium exposes a native SpeechRecognition that crashes the
+  // renderer on start(). Tests inject a named mock class; real visitors are not webdriver.
+  if (typeof navigator !== 'undefined' && navigator.webdriver) {
+    const name = Constructor.name;
+    if (name === 'SpeechRecognition' || name === 'webkitSpeechRecognition' || name === '') {
+      return null;
+    }
+  }
+  return Constructor;
 }
 
 export function hasBrowserSpeechRecognition(): boolean {
