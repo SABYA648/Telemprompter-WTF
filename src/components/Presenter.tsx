@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   analytics,
   durationBucket,
@@ -110,7 +110,7 @@ export default function Presenter({
     }
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.body.classList.add('presenting');
     const background = document.querySelectorAll<HTMLElement>(
       '.site-header, .site-footer, .home-hero__copy, .editor-shell, .home-content, .privacy-choices, .privacy-preference',
@@ -176,13 +176,21 @@ export default function Presenter({
     const scroller = scrollerRef.current;
     const scriptElement = scriptElementRef.current;
     if (!scroller || !script.length) return;
-    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
     const focused =
       scriptElement &&
       scrollOffsetForCharacter(scroller, scriptElement, characterIndex, focusPositionRef.current);
     const target =
-      typeof focused === 'number' ? focused : (characterIndex / script.length) * maxScroll;
-    controllerRef.current?.moveToward(target, confidence >= 0.7 ? 0.48 : 0.22);
+      typeof focused === 'number'
+        ? focused
+        : (characterIndex / script.length) *
+          Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    const strength = confidence >= 0.7 ? 0.48 : 0.22;
+    if (controllerRef.current) {
+      controllerRef.current.moveToward(target, strength);
+    } else {
+      const max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+      scroller.scrollTop = Math.min(max, Math.max(0, target));
+    }
     const center =
       typeof tokenEnd === 'number' && tokenEnd > characterIndex
         ? Math.round((characterIndex + tokenEnd) / 2)
