@@ -197,10 +197,6 @@ export default function Presenter({
         : characterIndex;
     precisionAnchorRef.current = center;
     setHighlight(highlightWindowAround(segmentsRef.current, center, 6, 3));
-    window.setTimeout(() => {
-      // Resume focus-line tracking after a short precision hold so scroll and highlight stay glued.
-      if (precisionAnchorRef.current === center) precisionAnchorRef.current = null;
-    }, 1800);
   };
 
   const handleVoiceActivity = (activity: { listening: boolean; speechActive: boolean }) => {

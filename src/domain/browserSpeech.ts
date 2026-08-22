@@ -80,6 +80,18 @@ const FATAL_SPEECH_ERRORS = new Set([
 ]);
 
 let primedSpeech: PrimedSpeech | null = null;
+const PRIME_KEY = '__teleprompterPrimedSpeech';
+
+type WindowWithPrime = Window &
+  SpeechWindow & {
+    [PRIME_KEY]?: PrimedSpeech | null;
+  };
+
+const storePrimedSpeech = (primed: PrimedSpeech | null): void => {
+  primedSpeech = primed;
+  if (typeof window === 'undefined') return;
+  (window as WindowWithPrime)[PRIME_KEY] = primed;
+};
 
 export function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null {
   if (typeof window === 'undefined') return null;
@@ -194,21 +206,23 @@ export function primeBrowserSpeechInUserGesture(): void {
   };
   try {
     recognition.start();
-    primedSpeech = primed;
+    storePrimedSpeech(primed);
   } catch {
-    primedSpeech = null;
+    storePrimedSpeech(null);
   }
 }
 
 export function takePrimedSpeechRecognition(): PrimedSpeech | null {
-  const primed = primedSpeech;
-  primedSpeech = null;
+  const fromWindow =
+    typeof window === 'undefined' ? null : ((window as WindowWithPrime)[PRIME_KEY] ?? null);
+  const primed = primedSpeech ?? fromWindow;
+  storePrimedSpeech(null);
   return primed;
 }
 
 export function clearPrimedSpeechRecognition(): void {
   primedSpeech?.recognition.abort();
-  primedSpeech = null;
+  storePrimedSpeech(null);
 }
 
 const listeningPace = (speechActive: boolean): PaceReading => ({
