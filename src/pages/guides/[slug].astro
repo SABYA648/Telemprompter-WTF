@@ -1,5 +1,6 @@
 ---
 import { guideBySlug, guides } from '../../content/guides';
+import TeleprompterEmbed from '../../components/TeleprompterEmbed.astro';
 import Layout from '../../layouts/Layout.astro';
 
 export function getStaticPaths() {
@@ -20,6 +21,9 @@ const schema = [
     author: { '@type': 'Organization', name: 'teleprompter.wtf' },
     publisher: { '@type': 'Organization', name: 'teleprompter.wtf' },
     mainEntityOfPage: canonical,
+    ...(guide.illustration
+      ? { image: `https://www.teleprompter.wtf${guide.illustration.src}` }
+      : {}),
   },
   {
     '@context': 'https://schema.org',
@@ -39,7 +43,13 @@ const schema = [
 const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filter(Boolean);
 ---
 
-<Layout title={title} description={guide.description} ogType="article" schema={schema}>
+<Layout
+  title={title}
+  description={guide.description}
+  ogType="article"
+  schema={schema}
+  rss="/guides/feed.xml"
+>
   <article class="guide-page section-wrap">
     <nav class="breadcrumbs" aria-label="Breadcrumb">
       <a href="/">Home</a><span>/</span><a href="/guides">Guides</a><span>/</span><span
@@ -61,6 +71,20 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
         }
       </p>
     </header>
+    {
+      guide.illustration && (
+        <figure class="guide-hero-art">
+          <img
+            src={guide.illustration.src}
+            width="1024"
+            height="683"
+            alt={guide.illustration.alt}
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
+      )
+    }
     <div class="guide-layout">
       <aside class="guide-toc">
         <p>In this guide</p>
@@ -71,6 +95,13 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
                 <a href={`#section-${index + 1}`}>{section.heading}</a>
               </li>
             ))
+          }
+          {
+            guide.embed && (
+              <li>
+                <a href="#practice">Try it in the teleprompter</a>
+              </li>
+            )
           }
         </ol>
       </aside>
@@ -106,18 +137,18 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
             </p>
           )
         }
-        <aside class="inline-cta">
-          <p class="eyebrow">Put it into practice</p><h2>Your script, full screen in seconds.</h2><p
-          >
-            No account and no upload. Paste the words and start.
-          </p><a
-            class="button button--primary"
-            href="/"
-            data-analytics-cta="inline"
-            data-page-type="guide"
-            data-content-cluster={guide.cluster}>Open teleprompter</a
-          >
-        </aside>
+        {
+          guide.embed && (
+            <div id="practice">
+              <TeleprompterEmbed
+                embedId={`guide-${guide.slug}`}
+                intro={guide.embed.intro}
+                initialScript={guide.embed.sampleScript}
+                {...(guide.embed.preset ? { preset: guide.embed.preset } : {})}
+              />
+            </div>
+          )
+        }
       </div>
     </div>
     <section class="related-guides">

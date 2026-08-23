@@ -1,5 +1,6 @@
 ---
 import WordsToMinutes from '../../components/WordsToMinutes';
+import { guideBySlug } from '../../content/guides';
 import Layout from '../../layouts/Layout.astro';
 const title = 'Words to Minutes Calculator | teleprompter.wtf';
 const description =
@@ -35,6 +36,15 @@ const schema = [
     ],
   },
 ];
+const stories = [
+  'teleprompter-speed',
+  'how-to-format-a-teleprompter-script',
+  'teleprompter-for-presentations',
+  'teleprompter-for-youtube',
+  'teleprompter-for-webinars',
+]
+  .map((slug) => guideBySlug.get(slug))
+  .filter(Boolean);
 ---
 
 <Layout title={title} description={description} schema={schema}>
@@ -79,6 +89,25 @@ const schema = [
         >Calculate the required WPM <span aria-hidden="true">→</span></a
       >
     </div>
+    <section class="related-guides">
+      <p class="eyebrow">Keep reading</p><h2>Related guides</h2>
+      <div data-story-count={stories.length}>
+        {
+          stories.map(
+            (item) =>
+              item && (
+                <a href={`/guides/${item.slug}`}>
+                  <>
+                    <span>{item.eyebrow}</span>
+                    <strong>{item.title}</strong>
+                    <b aria-hidden="true">→</b>
+                  </>
+                </a>
+              ),
+          )
+        }
+      </div>
+    </section>
     <aside class="callout">
       <div><p class="eyebrow">Timing looks good?</p><h2>Open the free teleprompter.</h2></div><a
         class="button button--primary"
