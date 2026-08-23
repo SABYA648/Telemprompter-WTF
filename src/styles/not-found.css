@@ -1,0 +1,103 @@
+/* 404 page layout and decorative motion. The blanket
+   prefers-reduced-motion block in global.css disables these keyframes
+   for visitors who ask for reduced motion. */
+
+.not-found {
+  padding-block: 3rem 4.5rem;
+}
+
+.not-found__split {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 2.75rem;
+  align-items: center;
+}
+
+.not-found__copy > p {
+  color: var(--muted);
+  max-width: 34rem;
+}
+
+.not-found__copy > p a {
+  color: var(--accent-dark);
+  text-underline-offset: 0.15em;
+}
+
+.not-found__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.not-found__art {
+  position: relative;
+  margin: 0;
+}
+
+.not-found__art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.not-found__cue-card {
+  position: absolute;
+  top: -0.9rem;
+  right: 9%;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--indigo);
+  font-size: 0.78rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  animation: not-found-cue-drift 6s ease-in-out infinite;
+}
+
+.not-found__cue-ring {
+  position: absolute;
+  left: 12%;
+  bottom: 10%;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  animation: not-found-cue-pulse 7s ease-out infinite;
+}
+
+@keyframes not-found-cue-drift {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(2deg);
+  }
+}
+
+@keyframes not-found-cue-pulse {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.5;
+  }
+  60%,
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 800px) {
+  .not-found__split {
+    grid-template-columns: 1fr;
+    gap: 2.25rem;
+  }
+}

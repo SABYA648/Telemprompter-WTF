@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://www.teleprompter.wtf/sitemap-index.xml
+Sitemap: https://www.teleprompter.wtf/sitemap-images.xml

@@ -26,6 +26,7 @@ const groups = [
       'what-is-a-teleprompter',
       'how-to-use-a-teleprompter',
       'how-to-format-a-teleprompter-script',
+      'teleprompter-keyboard-shortcuts',
     ],
   },
   {
@@ -35,6 +36,9 @@ const groups = [
       'teleprompter-for-video-recording',
       'teleprompter-camera-distance-and-font-size',
       'teleprompter-for-zoom',
+      'teleprompter-for-online-courses',
+      'teleprompter-for-podcasts',
+      'teleprompter-for-short-form-video',
     ],
   },
   {
@@ -43,7 +47,13 @@ const groups = [
       'teleprompter-for-presentations',
       'how-to-read-a-teleprompter-naturally',
       'how-to-maintain-eye-contact',
+      'teleprompter-for-webinars',
+      'teleprompter-for-interviews',
     ],
+  },
+  {
+    title: 'Phones and hardware',
+    slugs: ['teleprompter-for-phone-and-tablet', 'teleprompter-mirror-mode-glass'],
   },
   {
     title: 'Voice tracking and pacing',
@@ -59,7 +69,7 @@ const groups = [
 }));
 ---
 
-<Layout title={title} description={description} schema={schema}>
+<Layout title={title} description={description} schema={schema} rss="/guides/feed.xml">
   <section class="listing-page section-wrap">
     <nav class="breadcrumbs" aria-label="Breadcrumb">
       <a href="/">Home</a><span>/</span><span aria-current="page">Guides</span>

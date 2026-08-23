@@ -18,6 +18,32 @@ export function defaultState(): PersistedStateV3 {
   };
 }
 
+// Embedded practice workspaces (guides, 404) persist under their own namespace so they
+// never read or overwrite the primary script on the homepage.
+export function embedStorageKey(embedId: string): string {
+  const safe = embedId
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return `${LOCAL_STATE_KEY}:embed:${safe || 'workspace'}`;
+}
+
+// Embeds start from an authored sample script and a contextual preset. They default to
+// manual scrolling so opening a presenter from a guide never surprises anyone with a
+// microphone prompt; every voice mode stays available inside the presenter.
+export function embedInitialState(
+  initialScript = '',
+  preset?: Partial<PersistedStateV3['preferences']>,
+): PersistedStateV3 {
+  const base = defaultState();
+  return {
+    ...base,
+    script: initialScript,
+    preferences: sanitizePreferences({ ...base.preferences, voiceMode: 'manual', ...preset }),
+  };
+}
+
 function validConsent(value: unknown): AnalyticsConsent {
   return value === 'allowed' || value === 'denied' ? value : 'unknown';
 }
@@ -63,9 +89,12 @@ export function migrateState(input: unknown): PersistedStateV3 {
   };
 }
 
-export function loadLocalState(storage: Pick<Storage, 'getItem'> = localStorage): PersistedStateV3 {
+export function loadLocalState(
+  storage: Pick<Storage, 'getItem'> = localStorage,
+  key: string = LOCAL_STATE_KEY,
+): PersistedStateV3 {
   try {
-    const raw = storage.getItem(LOCAL_STATE_KEY);
+    const raw = storage.getItem(key);
     return raw ? migrateState(JSON.parse(raw) as unknown) : defaultState();
   } catch {
     return defaultState();
@@ -75,6 +104,7 @@ export function loadLocalState(storage: Pick<Storage, 'getItem'> = localStorage)
 export function saveLocalState(
   state: Omit<PersistedStateV3, 'version' | 'savedAt'>,
   storage: Pick<Storage, 'setItem'> = localStorage,
+  key: string = LOCAL_STATE_KEY,
 ): PersistedStateV3 {
   const safeState: PersistedStateV3 = {
     version: LOCAL_STATE_VERSION,
@@ -83,10 +113,27 @@ export function saveLocalState(
     privacyConsent: sanitizePrivacyConsent(state.privacyConsent),
     savedAt: Date.now(),
   };
-  storage.setItem(LOCAL_STATE_KEY, JSON.stringify(safeState));
+  storage.setItem(key, JSON.stringify(safeState));
   return safeState;
 }
 
-export function clearLocalState(storage: Pick<Storage, 'removeItem'> = localStorage): void {
-  storage.removeItem(LOCAL_STATE_KEY);
+export function clearLocalState(
+  storage: Pick<Storage, 'removeItem'> & Partial<Storage> = localStorage,
+  key: string = LOCAL_STATE_KEY,
+): void {
+  storage.removeItem(key);
+  // Clearing the primary workspace also clears every embedded workspace namespace.
+  if (
+    key === LOCAL_STATE_KEY &&
+    typeof storage.length === 'number' &&
+    typeof storage.key === 'function'
+  ) {
+    const prefix = `${LOCAL_STATE_KEY}:`;
+    const namespaced: string[] = [];
+    for (let index = 0; index < storage.length; index += 1) {
+      const candidate = storage.key(index);
+      if (candidate && candidate.startsWith(prefix)) namespaced.push(candidate);
+    }
+    namespaced.forEach((candidate) => storage.removeItem(candidate));
+  }
 }

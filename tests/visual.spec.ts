@@ -216,3 +216,43 @@ test('capture representative visual states', async ({ page }) => {
   await page.getByRole('button', { name: /Voice tracking/ }).click();
   await page.screenshot({ path: `${screenshotDir}/private-precision.png` });
 });
+
+test('capture hero, guide embed, and not-found states', async ({ page }) => {
+  test.setTimeout(120_000);
+
+  const dismissConsent = async () => {
+    const noThanks = page.getByRole('button', { name: 'No thanks' });
+    await noThanks.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => undefined);
+    if (await noThanks.isVisible().catch(() => false)) await noThanks.click();
+  };
+
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: width < 600 ? 844 : 900 });
+    await page.goto('/');
+    await dismissConsent();
+    const hero = page.locator('.home-hero');
+    await expect(hero.locator('img[fetchpriority="high"]')).toBeVisible();
+    await hero.screenshot({ path: `${artifactDir}/${width}-home-hero.png` });
+  }
+
+  const embed = page.locator('[data-teleprompter-embed="guide-teleprompter-for-zoom"]');
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: width < 600 ? 844 : 900 });
+    await page.goto('/guides/teleprompter-for-zoom');
+    await embed.scrollIntoViewIfNeeded();
+    await page.waitForFunction(() =>
+      document.querySelector('[data-teleprompter-embed] .editor-shell:not([inert])'),
+    );
+    await embed.screenshot({ path: `${artifactDir}/${width}-guide-embed.png` });
+  }
+
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: width < 600 ? 844 : 900 });
+    const response = await page.goto('/this-page-is-definitely-missing');
+    expect(response?.status()).toBe(404);
+    await page.waitForFunction(() =>
+      document.querySelector('[data-teleprompter-embed] .editor-shell:not([inert])'),
+    );
+    await page.screenshot({ path: `${artifactDir}/${width}-not-found.png`, fullPage: true });
+  }
+});

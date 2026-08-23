@@ -1,0 +1,39 @@
+---
+import type { PresenterPreferences } from '../domain/types';
+import TeleprompterApp from './TeleprompterApp';
+import '../styles/embed.css';
+
+interface Props {
+  embedId: string;
+  intro: string;
+  initialScript: string;
+  preset?: Partial<PresenterPreferences>;
+  eager?: boolean;
+}
+
+const { embedId, intro, initialScript, preset, eager = false } = Astro.props;
+---
+
+<section class="teleprompter-embed" data-teleprompter-embed={embedId}>
+  <p class="teleprompter-embed__intro">{intro}</p>
+  <p class="teleprompter-embed__loading" aria-hidden="true">Loading interactive controls…</p>
+  {
+    eager ? (
+      <TeleprompterApp
+        client:load
+        variant="compact"
+        embedId={embedId}
+        initialScript={initialScript}
+        preset={preset}
+      />
+    ) : (
+      <TeleprompterApp
+        client:visible
+        variant="compact"
+        embedId={embedId}
+        initialScript={initialScript}
+        preset={preset}
+      />
+    )
+  }
+</section>

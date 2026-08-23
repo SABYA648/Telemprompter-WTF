@@ -88,7 +88,7 @@ test('no Microsoft Clarity integration remains', async ({ page }) => {
   await expect(page.locator('[data-clarity-mask]')).toHaveCount(0);
 });
 
-test('analytics interface and network request are absent when no measurement ID exists', async ({
+test('analytics stays dormant until consent even with a configured measurement ID', async ({
   page,
 }) => {
   test.skip(Boolean(process.env.PLAYWRIGHT_BASE_URL), 'The Docker E2E image includes test IDs.');
@@ -96,11 +96,16 @@ test('analytics interface and network request are absent when no measurement ID 
   page.on('request', (request) => {
     if (/google|analytics\.sabya\.pm/.test(request.url())) analyticsRequests.push(request.url());
   });
+  // Umami is configured by default (website ID and script URL are baked into the build),
+  // so the consent control is always offered. The fail-closed guarantee is that no
+  // analytics script loads and no request leaves the browser before an explicit opt-in.
+  await page.route('https://analytics.sabya.pm/**', (route) => route.abort());
+  await page.route('https://www.googletagmanager.com/**', (route) => route.abort());
   await page.goto('http://127.0.0.1:48172/');
   await expect(
-    page.getByRole('heading', { name: 'Free online teleprompter that follows your voice' }),
+    page.getByRole('heading', { name: 'Free online teleprompter that follows your pace' }),
   ).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Allow analytics' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Allow analytics' })).toBeVisible();
   await expect(page.locator('script[data-teleprompter-analytics]')).toHaveCount(0);
   expect(analyticsRequests).toEqual([]);
 });

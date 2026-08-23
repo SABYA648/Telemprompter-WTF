@@ -24,6 +24,7 @@ const schema = [
     description,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     isAccessibleForFree: true,
+    image: 'https://www.teleprompter.wtf/illustrations/teleprompter-og.webp',
     featureList: [
       'Manual elapsed-time scrolling',
       'Smart Pace local microphone cadence following',
@@ -39,19 +40,39 @@ const schema = [
 ];
 ---
 
-<Layout title={title} description={description} schema={schema}>
+<Layout
+  title={title}
+  description={description}
+  image="/illustrations/teleprompter-og.webp"
+  schema={schema}
+>
   <section class="home-hero">
-    <div class="home-hero__copy">
-      <h1>Free online teleprompter that follows your pace</h1>
-      <div class="home-hero__support">
-        <p>
+    <div class="home-hero__split">
+      <div class="home-hero__copy">
+        <p class="eyebrow">Free · No signup · Private by design</p>
+        <h1>Free online teleprompter that follows your pace</h1>
+        <p class="home-hero__lead">
           Paste your script and start. Smart Pace follows your speaking rhythm locally by default,
           while reliable manual scrolling is always available.
         </p>
-        <p class="home-hero__trust">
-          No login · No ads · No watermark · Your script stays on your device
-        </p>
+        <ul class="home-hero__promises">
+          <li>No login</li>
+          <li>No ads</li>
+          <li>No watermark</li>
+          <li>Scripts stay on your device</li>
+        </ul>
       </div>
+      <figure class="home-hero__art">
+        <img
+          src="/illustrations/teleprompter-hero.webp"
+          width="1024"
+          height="683"
+          alt="Blank script cards flowing through teleprompter glass toward a camera lens"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+        />
+      </figure>
     </div>
     <TeleprompterApp client:load />
     <PrivacyChoices client:idle />

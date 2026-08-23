@@ -1,0 +1,62 @@
+/* Embedded practice teleprompter (guides and 404). Shares the site tokens; the editor
+   chrome itself lives in global.css. */
+.teleprompter-embed {
+  margin: clamp(1.75rem, 4vw, 2.75rem) 0;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 6px);
+  background:
+    radial-gradient(120% 90% at 100% 0%, var(--periwinkle-soft) 0%, transparent 45%), var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.teleprompter-embed__intro {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.teleprompter-embed__loading {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.teleprompter-embed:has([data-hydrated]) .teleprompter-embed__loading {
+  display: none;
+}
+
+/* The SSR shell stays visible but inert until hydration removes the inert attribute. */
+.teleprompter-embed .editor-shell[inert] {
+  opacity: 0.72;
+}
+
+.teleprompter-embed .editor-shell {
+  padding: clamp(0.85rem, 2vw, 1.25rem);
+  background: var(--surface);
+}
+
+.editor-shell--compact .editor-heading {
+  margin-bottom: 0.85rem;
+}
+
+.editor-shell--compact .editor-heading h2 {
+  font-size: clamp(1.35rem, 2.4vw, 1.8rem);
+}
+
+.editor-shell--compact .script-editor {
+  min-height: 190px;
+}
+
+.editor-shell--compact .local-data-details {
+  margin-top: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .editor-shell--compact .script-editor {
+    min-height: 170px;
+  }
+}
