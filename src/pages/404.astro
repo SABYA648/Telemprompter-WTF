@@ -1,23 +1,60 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import TeleprompterEmbed from '../components/TeleprompterEmbed.astro';
+import '../styles/not-found.css';
+
+const initialScript = [
+  'Lost your place? Every speaker does.',
+  'Take a breath and find the nearest anchor line.',
+  'Start again from there, not from the very top.',
+  'The audience never noticed the detour.',
+  'Your next line is the one that counts.',
+].join('\n');
 ---
 
 <Layout
   title="Page not found | teleprompter.wtf"
-  description="The requested page could not be found."
+  description="The requested page could not be found. Jump back into the teleprompter or browse the guides."
   noindex
 >
   <section class="not-found section-wrap">
-    <p class="eyebrow">404 · Missed cue</p>
-    <h1>That page is off script.</h1>
-    <p>The link may be outdated, but the teleprompter is ready.</p>
-    <div>
-      <a
-        class="button button--primary"
-        href="/"
-        data-analytics-cta="header"
-        data-page-type="not_found">Open teleprompter</a
-      ><a class="button button--quiet" href="/guides">Browse guides</a>
+    <div class="not-found__split">
+      <div class="not-found__copy">
+        <p class="eyebrow">404 · Lost your place</p>
+        <h1>That page is off script.</h1>
+        <p>
+          The link you followed may be outdated or mistyped. Head back to the
+          <a href="/">homepage</a> to open the teleprompter, or browse the guides to find your footing
+          again.
+        </p>
+        <div class="not-found__actions">
+          <a
+            class="button button--primary"
+            href="/"
+            data-analytics-cta="header"
+            data-page-type="not_found">Open teleprompter</a
+          >
+          <a class="button button--quiet" href="/guides">Browse all guides</a>
+        </div>
+      </div>
+      <figure class="not-found__art">
+        <img
+          src="/illustrations/lost-script-404.webp"
+          width="1024"
+          height="683"
+          alt="A lost script card circling back toward a waiting teleprompter"
+          loading="eager"
+          decoding="async"
+        />
+        <span class="not-found__cue-card" aria-hidden="true">take two</span>
+        <span class="not-found__cue-ring" aria-hidden="true"></span>
+      </figure>
     </div>
+    <TeleprompterEmbed
+      embedId="not-found"
+      eager
+      intro="While you are here, practice a few lines in the real teleprompter; everything stays on this device."
+      initialScript={initialScript}
+    />
   </section>
 </Layout>
