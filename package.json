@@ -24,6 +24,7 @@
     "test:e2e:docker": "PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 playwright test",
     "test:inference": "PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 node scripts/verify-local-inference.mjs",
     "test:seo-crawl": "node scripts/seo-crawl-check.mjs",
+    "test:lighthouse": "node scripts/lighthouse.mjs",
     "revenue:estimate": "node scripts/revenue-estimate.mjs",
     "check": "npm run assets:verify && npm run typecheck && npm run lint && npm run content:lint && npm run format:check && npm run test && npm run build"
   },
@@ -40,8 +41,10 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@types/node": "^24.0.0",
+    "chrome-launcher": "^1.2.1",
     "eslint": "^10.0.0",
     "eslint-plugin-astro": "^1.5.0",
+    "lighthouse": "^13.4.1",
     "prettier": "^3.6.2",
     "prettier-plugin-astro": "^0.14.1",
     "serve": "^14.2.6",
