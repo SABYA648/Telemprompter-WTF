@@ -25,9 +25,17 @@ teleprompter.wtf is a free, open-source teleprompter that runs in the browser. P
 - [How to use a teleprompter](https://www.teleprompter.wtf/guides/how-to-use-a-teleprompter)
 - [Teleprompter for YouTube videos](https://www.teleprompter.wtf/guides/teleprompter-for-youtube)
 - [Teleprompter setup for video recording](https://www.teleprompter.wtf/guides/teleprompter-for-video-recording)
+- [Teleprompter for online courses](https://www.teleprompter.wtf/guides/teleprompter-for-online-courses)
+- [Teleprompter for podcasts](https://www.teleprompter.wtf/guides/teleprompter-for-podcasts)
+- [Teleprompter for short-form video](https://www.teleprompter.wtf/guides/teleprompter-for-short-form-video)
 - [Camera distance, font size, and line width](https://www.teleprompter.wtf/guides/teleprompter-camera-distance-and-font-size)
+- [Mirror mode and beam-splitter glass](https://www.teleprompter.wtf/guides/teleprompter-mirror-mode-glass)
 - [Teleprompter for talks and presentations](https://www.teleprompter.wtf/guides/teleprompter-for-presentations)
+- [Teleprompter for webinars](https://www.teleprompter.wtf/guides/teleprompter-for-webinars)
 - [Teleprompter on Zoom and video calls](https://www.teleprompter.wtf/guides/teleprompter-for-zoom)
+- [Teleprompter for remote interviews](https://www.teleprompter.wtf/guides/teleprompter-for-interviews)
+- [Teleprompter for phones and tablets](https://www.teleprompter.wtf/guides/teleprompter-for-phone-and-tablet)
+- [Teleprompter keyboard shortcuts](https://www.teleprompter.wtf/guides/teleprompter-keyboard-shortcuts)
 - [Manual vs voice-activated teleprompter](https://www.teleprompter.wtf/guides/manual-vs-voice-activated-teleprompter)
 - [Choosing teleprompter speed](https://www.teleprompter.wtf/guides/teleprompter-speed)
 - [What is a teleprompter](https://www.teleprompter.wtf/guides/what-is-a-teleprompter)
@@ -35,6 +43,14 @@ teleprompter.wtf is a free, open-source teleprompter that runs in the browser. P
 - [How to maintain eye contact](https://www.teleprompter.wtf/guides/how-to-maintain-eye-contact)
 - [How to format a teleprompter script](https://www.teleprompter.wtf/guides/how-to-format-a-teleprompter-script)
 - [How voice-activated teleprompters work](https://www.teleprompter.wtf/guides/voice-activated-teleprompters)
+
+Every guide embeds the real teleprompter with a contextual practice script, so each page is usable without leaving the article.
+
+## Feeds and discovery
+
+- [Guides RSS feed](https://www.teleprompter.wtf/guides/feed.xml)
+- [Page sitemap](https://www.teleprompter.wtf/sitemap-index.xml)
+- [Image sitemap](https://www.teleprompter.wtf/sitemap-images.xml)
 
 ## Source
 
