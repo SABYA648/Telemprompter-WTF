@@ -3,8 +3,11 @@ import { analytics, type EntryContext, type SettingName } from '../domain/analyt
 import { durationSeconds, formatDuration } from '../domain/calculations';
 import { detectBrowserCapabilities } from '../domain/capabilities';
 import {
+  LOCAL_STATE_KEY,
   clearLocalState,
   defaultState,
+  embedInitialState,
+  embedStorageKey,
   loadLocalState,
   saveLocalState,
 } from '../domain/localState';
@@ -16,8 +19,26 @@ import Presenter from './Presenter';
 
 const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 
-export default function TeleprompterApp(): preact.JSX.Element {
-  const initial = defaultState();
+interface TeleprompterAppProps {
+  variant?: 'full' | 'compact';
+  embedId?: string;
+  initialScript?: string;
+  preset?: Partial<PresenterPreferences> | undefined;
+}
+
+export default function TeleprompterApp({
+  variant = 'full',
+  embedId,
+  initialScript,
+  preset,
+}: TeleprompterAppProps): preact.JSX.Element {
+  const embedded = Boolean(embedId);
+  const storageKey = embedded ? embedStorageKey(embedId as string) : LOCAL_STATE_KEY;
+  const initial = useMemo(
+    () => (embedded ? embedInitialState(initialScript ?? '', preset) : defaultState()),
+    // The initial workspace state is derived once per mount; later edits come from the user.
+    [],
+  );
   const [script, setScript] = useState(initial.script);
   const [preferences, setPreferences] = useState(initial.preferences);
   const [privacyConsent, setPrivacyConsent] = useState<PrivacyConsent>(initial.privacyConsent);
@@ -27,6 +48,7 @@ export default function TeleprompterApp(): preact.JSX.Element {
   const [notice, setNotice] = useState('');
   const startButtonRef = useRef<HTMLButtonElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLElement>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const entryContextRef = useRef<EntryContext>('new_script');
   const guide = useMemo(
@@ -40,35 +62,45 @@ export default function TeleprompterApp(): preact.JSX.Element {
   );
 
   useEffect(() => {
-    const saved = loadLocalState();
-    let preferences = saved.preferences;
+    const saved = loadLocalState(localStorage, storageKey);
+    const hasSaved = saved.savedAt > 0;
+    let restoredPreferences = saved.preferences;
     // One-shot experience refresh: older installs defaulted to Manual. Promote them to
     // Smart Pace once so the product asks to listen by default. Precision stays put.
+    // Embedded practice workspaces keep their authored manual default instead.
     const experienceKey = 'teleprompter-wtf.experience-v2-smart';
-    try {
-      if (!localStorage.getItem(experienceKey)) {
-        if (preferences.voiceMode === 'manual') {
-          preferences = { ...preferences, voiceMode: 'smart' };
+    if (!embedded) {
+      try {
+        if (!localStorage.getItem(experienceKey)) {
+          if (restoredPreferences.voiceMode === 'manual') {
+            restoredPreferences = { ...restoredPreferences, voiceMode: 'smart' };
+          }
+          localStorage.setItem(experienceKey, '1');
         }
-        localStorage.setItem(experienceKey, '1');
+      } catch {
+        // Storage can be unavailable; the in-memory default still prefers Smart Pace.
       }
-    } catch {
-      // Storage can be unavailable; the in-memory default still prefers Smart Pace.
     }
-    setScript(saved.script);
-    setPreferences(preferences);
+    if (hasSaved) {
+      setScript(saved.script);
+      setPreferences(restoredPreferences);
+    } else if (!embedded) {
+      setScript(saved.script);
+      setPreferences(restoredPreferences);
+    }
     setPrivacyConsent(saved.privacyConsent);
-    setSaveStatus(saved.savedAt ? 'Restored from this device' : 'Saved only on this device');
+    setSaveStatus(hasSaved ? 'Restored from this device' : 'Saved only on this device');
     // Derived once at app start: a non-empty restored script means this session continues
-    // earlier work. It is a one-off enum, never a persistent identifier.
-    entryContextRef.current = saved.script.trim() ? 'restored_script' : 'new_script';
+    // earlier work. It is a one-off enum, never a persistent identifier. An authored embed
+    // sample is new work, not a restored session.
+    entryContextRef.current = hasSaved && saved.script.trim() ? 'restored_script' : 'new_script';
     setHydrated(true);
 
     const onConsent = (event: Event) => {
       setPrivacyConsent((event as CustomEvent<PrivacyConsent>).detail);
     };
     const onCleared = () => {
-      const clean = defaultState();
+      const clean = embedded ? embedInitialState(initialScript ?? '', preset) : defaultState();
       setScript(clean.script);
       setPreferences(clean.preferences);
       setPrivacyConsent(clean.privacyConsent);
@@ -88,7 +120,7 @@ export default function TeleprompterApp(): preact.JSX.Element {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       try {
-        saveLocalState({ script, preferences, privacyConsent });
+        saveLocalState({ script, preferences, privacyConsent }, localStorage, storageKey);
         setSaveStatus('Saved only on this device');
       } catch {
         setSaveStatus('Could not save. Browser storage may be unavailable.');
@@ -97,7 +129,15 @@ export default function TeleprompterApp(): preact.JSX.Element {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [script, preferences, privacyConsent, hydrated]);
+  }, [script, preferences, privacyConsent, hydrated, storageKey]);
+
+  // SSR renders embeds inert so visitors cannot interact with controls before hydration.
+  // Remove the attribute imperatively after mount; the prop itself never changes.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || !embedded || !hydrated) return;
+    root.removeAttribute('inert');
+  }, [hydrated, embedded]);
 
   const updatePreferences = (next: PresenterPreferences, setting?: SettingName) => {
     setPreferences(next);
@@ -121,20 +161,24 @@ export default function TeleprompterApp(): preact.JSX.Element {
   const clearEverything = () => {
     if (
       !window.confirm(
-        'Delete your saved script and all teleprompter.wtf preferences on this device?',
+        embedded
+          ? 'Delete the saved script and preferences for this practice workspace on this device?'
+          : 'Delete your saved script and all teleprompter.wtf preferences on this device?',
       )
     ) {
       return;
     }
-    clearLocalState();
-    const clean = defaultState();
+    clearLocalState(localStorage, storageKey);
+    const clean = embedded ? embedInitialState(initialScript ?? '', preset) : defaultState();
     setScript(clean.script);
     setPreferences(clean.preferences);
     setPrivacyConsent(clean.privacyConsent);
     setNotice('Local script and preferences cleared.');
     setSaveStatus('Local data cleared');
     analytics.track('cleared_local_data');
-    window.dispatchEvent(new CustomEvent('teleprompter:local-data-cleared'));
+    if (!embedded) {
+      window.dispatchEvent(new CustomEvent('teleprompter:local-data-cleared'));
+    }
   };
 
   const importText = async (file: File | undefined) => {
@@ -201,14 +245,20 @@ export default function TeleprompterApp(): preact.JSX.Element {
   return (
     <>
       <section
-        class="editor-shell"
-        aria-labelledby="editor-title"
+        ref={rootRef}
+        class={`editor-shell${variant === 'compact' ? ' editor-shell--compact' : ''}`}
+        aria-labelledby={embedded ? undefined : 'editor-title'}
+        aria-label={embedded ? 'Practice teleprompter' : undefined}
+        aria-busy={embedded && !hydrated ? 'true' : undefined}
+        inert={embedded}
         data-hydrated={hydrated || undefined}
       >
         <div class="editor-heading">
           <div>
-            <p class="eyebrow">Your script</p>
-            <h2 id="editor-title">Ready when you are.</h2>
+            <p class="eyebrow">{embedded ? 'Practice workspace' : 'Your script'}</p>
+            <h2 id={embedded ? undefined : 'editor-title'}>
+              {embedded ? 'Try it here.' : 'Ready when you are.'}
+            </h2>
           </div>
           <div class="script-stats" aria-live="polite">
             <span>
