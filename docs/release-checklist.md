@@ -17,7 +17,7 @@ Version 1.0.0 release gate. Part one is enforced by the repository; part two is 
 - Set the real `PUBLIC_GA_MEASUREMENT_ID` at build time (absent means no GA code at all).
 - Build and deploy the production Docker image.
 - Configure the domain and TLS at the deployment edge; add HSTS only once HTTPS is permanent.
-- Verify the HTTP-to-HTTPS and `www`-to-apex redirects.
+- Verify the HTTP-to-HTTPS and apex-to-`www` permanent redirects (301 or 308).
 - Verify live `/robots.txt`, `/sitemap-index.xml`, and `/llms.txt`.
 - Verify the Google Search Console property and submit the sitemap.
 - Verify Bing Webmaster Tools and submit the sitemap.

@@ -22,11 +22,13 @@ Primary: `https://www.teleprompter.wtf`
 
 Apex: `https://teleprompter.wtf`
 
-Configure Coolify/Traefik so the apex permanently redirects (301 or 308) to the equivalent `www` URL, preserving path and query string:
+Configure Coolify/Traefik (and any DNS/CDN redirect rule in front of it) so the apex permanently redirects with **301 or 308** to the equivalent `www` URL, preserving the path and query string. Do not use 302 or 307: those are temporary redirects and needlessly leave duplicate URLs in the crawl queue.
 
 `https://teleprompter.wtf/anything?x=1` → `https://www.teleprompter.wtf/anything?x=1`
 
-Do not add an application-level apex redirect. Canonical tags, sitemap, robots, schema, and Open Graph already emit `www`.
+The container also enforces the canonical host as a fallback, but the CDN/edge redirect must be permanent because it can respond before traffic reaches the container.
+
+The container redirects `/route/` and `/route/index.html` to `/route` with 308. Do not add a CDN rule that bypasses those origin redirects.
 
 ## Environment variables
 
