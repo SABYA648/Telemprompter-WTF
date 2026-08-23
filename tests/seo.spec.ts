@@ -53,6 +53,15 @@ test('all indexable pages expose complete unique metadata', async ({ page }) => 
   }
 });
 
+test('homepage ships exactly one high-priority hero image', async ({ page }) => {
+  await page.goto('/');
+  const hero = page.locator('img[fetchpriority="high"]');
+  await expect(hero).toHaveCount(1);
+  await expect(hero).toHaveAttribute('src', '/illustrations/teleprompter-hero.webp');
+  await expect(hero).toHaveAttribute('width', '1024');
+  await expect(hero).toHaveAttribute('height', '683');
+});
+
 test('JSON-LD blocks parse as valid JSON', async ({ page }) => {
   for (const path of [
     '/',

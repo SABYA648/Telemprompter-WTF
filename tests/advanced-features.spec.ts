@@ -365,7 +365,7 @@ Feedback is still stuck in screenshots.
 `;
   await openFreshEditor(page);
   await page.getByLabel('Teleprompter script').fill(productionScript);
-  await expect(page.getByText(/spoken/)).toBeVisible();
+  await expect(page.locator('.script-stats').getByText(/spoken/)).toBeVisible();
   await expect(page.getByText(/1 beat/)).toBeVisible();
   await expect(
     page.getByText('Production script detected. Visual cues stay off the reading line.'),
