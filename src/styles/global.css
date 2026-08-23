@@ -7,6 +7,13 @@
   --line: #d7cfc0;
   --accent: #e4492e;
   --accent-dark: #b82e19;
+  --indigo: #2e2a63;
+  --indigo-deep: #211d4d;
+  --periwinkle: #8b93e0;
+  --periwinkle-soft: #e3e6fa;
+  --pale-blue: #bfd4f0;
+  --amber: #e8a33d;
+  --amber-soft: #f7e3c2;
   --presenter: #090a09;
   --presenter-text: #f6f0e4;
   --presenter-muted: #aaa89f;
@@ -182,14 +189,20 @@ button {
 
 .home-hero {
   padding-block: clamp(1.75rem, 4vw, 3.25rem) 1.25rem;
+  /* The hero art halo glows past the figure; keep it from widening the page. */
+  overflow-x: clip;
+}
+
+.home-hero__split {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
 }
 
 .home-hero__copy {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(240px, 0.7fr);
-  align-items: end;
-  gap: 1.25rem 3.5rem;
-  margin-bottom: clamp(1.25rem, 2.5vw, 2rem);
+  max-width: 36rem;
 }
 
 .home-hero h1 {
@@ -201,6 +214,92 @@ button {
   line-height: 0.96;
 }
 
+.home-hero__lead {
+  margin: 1.1rem 0 0;
+  color: var(--muted);
+  font-size: clamp(1.02rem, 1.55vw, 1.18rem);
+  line-height: 1.5;
+}
+
+.home-hero__promises {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 1.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-hero__promises li {
+  position: relative;
+  padding-left: 1.35rem;
+  font-size: 0.88rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+.home-hero__promises li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 830;
+}
+
+.home-hero__art {
+  position: relative;
+  margin: 0;
+}
+
+.home-hero__art::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -7% -5%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    var(--periwinkle-soft) 0%,
+    rgb(191 212 240 / 0.55) 48%,
+    transparent 72%
+  );
+  animation: cue-pulse 6s ease-in-out infinite;
+}
+
+.home-hero__art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: calc(var(--radius) + 10px);
+  box-shadow: 0 28px 70px rgb(33 29 77 / 0.18);
+  animation: hero-float 7s ease-in-out infinite;
+}
+
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes cue-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+
+  50% {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+
 .page-intro h1,
 .guide-header h1,
 .not-found h1 {
@@ -210,28 +309,6 @@ button {
   font-weight: 790;
   letter-spacing: -0.07em;
   line-height: 0.94;
-}
-
-.home-hero__support {
-  display: grid;
-  gap: 0.75rem;
-  margin: 0 0 0.2rem;
-}
-
-.home-hero__support > p:first-child {
-  margin: 0;
-  color: var(--muted);
-  font-size: clamp(1.02rem, 1.55vw, 1.18rem);
-  line-height: 1.5;
-}
-
-.home-hero__trust {
-  margin: 0;
-  color: var(--ink);
-  font-size: 0.86rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  line-height: 1.35;
 }
 
 .editor-shell {
@@ -1783,25 +1860,7 @@ kbd {
   font-weight: 700;
 }
 
-.not-found {
-  display: flex;
-  min-height: 70vh;
-  flex-direction: column;
-  justify-content: center;
-  padding-block: 5rem;
-}
-
-.not-found p:not(.eyebrow) {
-  margin: 1.5rem 0;
-  color: var(--muted);
-  font-size: 1.1rem;
-}
-
-.not-found > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
+/* The 404 page layout lives in src/styles/not-found.css (imported by src/pages/404.astro). */
 
 @media (max-width: 800px) {
   .home-hero__copy,
@@ -1812,8 +1871,16 @@ kbd {
     grid-template-columns: 1fr;
   }
 
-  .home-hero__support {
+  .home-hero__split {
+    grid-template-columns: 1fr;
+  }
+
+  .home-hero__copy {
     max-width: 42rem;
+  }
+
+  .home-hero__art {
+    max-width: 34rem;
   }
 
   .feature-list,
@@ -1949,7 +2016,7 @@ kbd {
     font-size: clamp(2.65rem, 14vw, 4.2rem);
   }
 
-  .home-hero__trust {
+  .home-hero__promises li {
     font-size: 0.8rem;
   }
 
@@ -2656,4 +2723,31 @@ kbd {
   .record-panel {
     max-height: calc(100dvh - 1rem);
   }
+}
+
+/* Guide hero illustrations and embedded practice prompter */
+.guide-hero-art {
+  margin: 2rem 0 0;
+}
+
+.guide-hero-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: calc(var(--radius) + 6px);
+}
+
+#practice {
+  margin-top: clamp(2.5rem, 6vw, 4rem);
+  scroll-margin-top: 5rem;
+}
+
+/* Compact story rail on tool pages */
+.tool-page .related-guides {
+  margin-block: clamp(2.5rem, 6vw, 4rem);
+  padding-top: 2rem;
+}
+
+.tool-page .related-guides a {
+  min-height: 0;
 }

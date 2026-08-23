@@ -8,6 +8,7 @@ interface Props {
   ogType?: string;
   schema?: Record<string, unknown> | Record<string, unknown>[];
   noindex?: boolean;
+  rss?: string;
 }
 
 const {
@@ -17,9 +18,11 @@ const {
   ogType = 'website',
   schema,
   noindex = false,
+  rss,
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://www.teleprompter.wtf');
 const socialImage = new URL(image, Astro.site ?? 'https://www.teleprompter.wtf');
+const socialImageType = image.endsWith('.webp') ? 'image/webp' : 'image/png';
 const googleVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
 const bingVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
 ---
@@ -36,6 +39,7 @@ const bingVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="alternate" type="text/plain" title="LLM-readable site summary" href="/llms.txt" />
     <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content="teleprompter.wtf" />
     <meta property="og:locale" content="en_US" />
@@ -45,6 +49,17 @@ const bingVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
     <meta property="og:image" content={socialImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content={socialImageType} />
+    {
+      rss && (
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="teleprompter.wtf guides"
+          href={rss}
+        />
+      )
+    }
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />

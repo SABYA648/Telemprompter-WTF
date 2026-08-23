@@ -9,7 +9,7 @@ const longScript = Array.from(
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await expect(
-    page.getByRole('heading', { name: 'Free online teleprompter that follows your voice' }),
+    page.getByRole('heading', { name: 'Free online teleprompter that follows your pace' }),
   ).toBeVisible();
 });
 
