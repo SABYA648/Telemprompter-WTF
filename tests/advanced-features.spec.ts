@@ -192,6 +192,10 @@ test('microphone denial leaves Manual available and offers retry', async ({ page
 test('Private Precision model download is explicit, progress reaches ready, and removal works', async ({
   page,
 }) => {
+  // This scenario intentionally streams and persists the complete 67 MB first-use payload.
+  // Give constrained production-equivalent Docker runners enough time without weakening
+  // the timeout for the rest of the browser suite.
+  test.slow();
   const sizes: Record<string, number> = {
     'added_tokens.json': 34604,
     'config.json': 2243,

@@ -54,7 +54,7 @@ try {
     });
   }
 } finally {
-  await chrome.kill();
+  chrome.kill();
 }
 
 writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));

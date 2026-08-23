@@ -157,6 +157,19 @@ for (const url of guideUrls) {
   }
 }
 
+// Every distinct public calculator must retain a useful five-story search cluster.
+const toolUrls = urls.filter((u) => /^\/tools\/[^/]+$/.test(u.replace(base, '')));
+for (const url of toolUrls) {
+  const path = url.replace(base, '');
+  const html = await (await fetch(url)).text();
+  const storyCount = Number(html.match(/data-story-count="(\d+)"/)?.[1] ?? 0);
+  if (storyCount < 5) {
+    fail++;
+    console.log(`FAIL ${path}: related story count ${storyCount} < 5`);
+  }
+}
+console.log(`tool story clusters: ${toolUrls.length} tools, at least 5 stories each`);
+
 // 404 contract
 const nfRes = await fetch(`${base}/this-page-definitely-does-not-exist`);
 const nfHtml = await nfRes.text();

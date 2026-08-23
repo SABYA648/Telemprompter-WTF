@@ -2,6 +2,9 @@
 
 Version 1.0.0 release gate. Part one is enforced by the repository; part two is the production owner's manual runbook.
 
+The latest local production-equivalent evidence is recorded in
+[`release-evidence-2026-08-23.md`](release-evidence-2026-08-23.md).
+
 ## Automated, completed by the repository
 
 - Illustration pack integrity (hashes, dimensions, masters kept out of `public`) via `npm run assets:verify`.

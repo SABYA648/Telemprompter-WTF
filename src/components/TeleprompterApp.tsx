@@ -48,7 +48,6 @@ export default function TeleprompterApp({
   const [notice, setNotice] = useState('');
   const startButtonRef = useRef<HTMLButtonElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
-  const rootRef = useRef<HTMLElement>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const entryContextRef = useRef<EntryContext>('new_script');
   const guide = useMemo(
@@ -130,14 +129,6 @@ export default function TeleprompterApp({
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [script, preferences, privacyConsent, hydrated, storageKey]);
-
-  // SSR renders embeds inert so visitors cannot interact with controls before hydration.
-  // Remove the attribute imperatively after mount; the prop itself never changes.
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root || !embedded || !hydrated) return;
-    root.removeAttribute('inert');
-  }, [hydrated, embedded]);
 
   const updatePreferences = (next: PresenterPreferences, setting?: SettingName) => {
     setPreferences(next);
@@ -245,12 +236,11 @@ export default function TeleprompterApp({
   return (
     <>
       <section
-        ref={rootRef}
         class={`editor-shell${variant === 'compact' ? ' editor-shell--compact' : ''}`}
         aria-labelledby={embedded ? undefined : 'editor-title'}
         aria-label={embedded ? 'Practice teleprompter' : undefined}
         aria-busy={embedded && !hydrated ? 'true' : undefined}
-        inert={embedded}
+        inert={embedded && !hydrated}
         data-hydrated={hydrated || undefined}
       >
         <div class="editor-heading">
