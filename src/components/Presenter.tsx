@@ -195,7 +195,12 @@ export default function Presenter({
     );
   };
 
-  const applyAlignment = (characterIndex: number, confidence: number, tokenEnd?: number) => {
+  const applyAlignment = (
+    characterIndex: number,
+    tokenEnd: number,
+    confidence: number,
+    _wordsPerMinute: number,
+  ) => {
     const scroller = scrollerRef.current;
     const scriptElement = scriptElementRef.current;
     if (!scroller || !displayScript.length) return;
@@ -215,9 +220,7 @@ export default function Presenter({
       scroller.scrollTop = Math.min(max, Math.max(0, target));
     }
     const center =
-      typeof tokenEnd === 'number' && tokenEnd > characterIndex
-        ? Math.round((characterIndex + tokenEnd) / 2)
-        : characterIndex;
+      tokenEnd > characterIndex ? Math.round((characterIndex + tokenEnd) / 2) : characterIndex;
     precisionAnchorRef.current = center;
     setHighlight(highlightWindowAround(segmentsRef.current, center, 6, 3));
   };

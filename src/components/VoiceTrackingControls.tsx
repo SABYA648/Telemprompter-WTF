@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { ScriptAlignmentEngine } from '../domain/alignment';
+import { FollowAligner } from '../domain/followIndex';
 import { analytics, PRIVATE_PRECISION_SIZE_BUCKET, type FallbackReason } from '../domain/analytics';
 import {
   BrowserSpeechSession,
@@ -27,7 +27,12 @@ interface Props {
   mode: VoiceMode;
   onModeChange: (mode: VoiceMode) => void;
   onMultiplier: (multiplier: number) => void;
-  onAlignment: (characterIndex: number, confidence: number, tokenEnd?: number) => void;
+  onAlignment: (
+    characterIndex: number,
+    characterEnd: number,
+    confidence: number,
+    wordsPerMinute: number,
+  ) => void;
   onVoiceActivity?: (activity: {
     listening: boolean;
     speechActive: boolean;
@@ -83,7 +88,7 @@ export default function VoiceTrackingControls({
   const autoStartAttemptedRef = useRef(false);
   const capabilities = useRef(detectBrowserCapabilities()).current;
   const deviceRating = precisionCapability(capabilities);
-  const alignment = useMemo(() => new ScriptAlignmentEngine(script), [script]);
+  const aligner = useMemo(() => new FollowAligner(script), [script]);
   const isActive = state === 'calibrating' || state === 'listening' || state === 'paused';
   const [speechActive, setSpeechActive] = useState(false);
   const [followEngine, setFollowEngine] = useState<FollowEngine>('off');
@@ -154,6 +159,7 @@ export default function VoiceTrackingControls({
 
   const begin = async (nextMode: 'smart' | 'precision', options?: { auto?: boolean }) => {
     stopVoice();
+    aligner.reset();
     setMessage('');
     if (options?.auto) setOpen(false);
     setState('requesting');
@@ -194,15 +200,20 @@ export default function VoiceTrackingControls({
           );
           return;
         }
-        const result = alignment.align(data.text);
+        // Whisper hands back a settled transcript, so it is all committed text.
+        const result = aligner.update(data.text, '', 1, performance.now());
         window.dispatchEvent(
           new CustomEvent('teleprompter:precision-measurement', {
             detail: { confidence: result.confidence, milliseconds: data.milliseconds },
           }),
         );
         if (result.movement !== 'hold') {
-          const token = alignment.tokens[result.tokenIndex];
-          onAlignment(result.characterIndex, result.confidence, token?.end);
+          onAlignment(
+            result.characterIndex,
+            result.characterEnd,
+            result.confidence,
+            result.wordsPerMinute,
+          );
         }
       };
       worker.onerror = () => {
@@ -223,10 +234,19 @@ export default function VoiceTrackingControls({
       const speech = new BrowserSpeechSession({
         onPace: handlePace,
         onTranscript: (reading) => {
-          const result = alignment.align(reading.text, reading.confidence);
+          const result = aligner.update(
+            reading.finalDelta,
+            reading.interim,
+            reading.confidence,
+            performance.now(),
+          );
           if (result.movement === 'hold') return;
-          const token = alignment.tokens[result.tokenIndex];
-          onAlignment(result.characterIndex, result.confidence, token?.end);
+          onAlignment(
+            result.characterIndex,
+            result.characterEnd,
+            result.confidence,
+            result.wordsPerMinute,
+          );
         },
       });
       sessionRef.current = speech;
