@@ -239,6 +239,8 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
         width="1"
         height="1"
         aria-hidden="true"
+        loading="lazy"
+        fetchpriority="low"
         decoding="async"
         referrerpolicy="no-referrer"
       />
