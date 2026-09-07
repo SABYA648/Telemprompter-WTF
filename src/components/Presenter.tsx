@@ -212,7 +212,9 @@ export default function Presenter({
   const evaluateCue = (progressValue: number, isPlaying: boolean) => {
     const now = performance.now();
     const previous = lastTickRef.current;
-    lastTickRef.current = now;
+    // Dropping the mark while paused stops the first tick after a resume from charging the whole
+    // pause to the speaker. A pause is not falling behind.
+    lastTickRef.current = isPlaying ? now : null;
     if (isPlaying && previous !== null) {
       spokenMsRef.current += Math.min(1000, now - previous);
     }
