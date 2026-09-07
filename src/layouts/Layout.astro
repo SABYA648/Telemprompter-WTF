@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import '../styles/author-card.css';
 
 interface Props {
   title: string;
@@ -58,7 +59,6 @@ const personSchema = {
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="alternate" type="text/plain" title="LLM-readable site summary" href="/llms.txt" />
-    <link rel="stylesheet" href="https://sabya.pm/embed/author-card/author-card.css" />
     <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content="teleprompter.wtf" />
     <meta property="og:locale" content="en_US" />
@@ -209,6 +209,8 @@ const personSchema = {
           width="1"
           height="1"
           aria-hidden="true"
+          loading="lazy"
+          fetchpriority="low"
           decoding="async"
           referrerpolicy="no-referrer"
         />

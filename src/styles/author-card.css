@@ -1,0 +1,331 @@
+/* Vendored from https://sabya.pm/embed/author-card/author-card.css so the card never
+   blocks this site's load event on a third-party host. Keep in sync with upstream. */
+/*
+ * Sabyasachi Mishra - author card
+ * https://sabya.pm/embed/author-card/
+ *
+ * One stylesheet, two variants: a pill for a site footer, a fuller box for the
+ * author profile under an article. It is written to be dropped into someone
+ * else's page, so it takes as little as possible from that page and gives
+ * nothing back:
+ *
+ *   - Every selector is namespaced `.sabyacard`. Nothing is styled globally.
+ *   - Type and colour inherit. Text is the host's own colour at reduced
+ *     opacity, and the surface, border, and ring are mixed out of that same
+ *     `currentColor` - so the card is legible on a white page, a black page,
+ *     and a dark footer sitting inside a light page, without being told which
+ *     it is. No `prefers-color-scheme` guess is involved. The one literal
+ *     colour is the accent on the portrait, which is decorative.
+ *   - It reflows by wrapping, not by media query, so it is correct in a
+ *     narrow sidebar on a wide screen as well as on a phone.
+ *   - Every token below is a custom property. Override any of them on
+ *     `.sabyacard` to fit a particular product.
+ *
+ * Each mixed colour is declared twice: a neutral grey first, then the
+ * `color-mix()` value. A browser too old for `color-mix()` keeps the grey,
+ * which is deliberately mid-scale and so reads on either extreme.
+ */
+
+.sabyacard {
+  /* Layout */
+  --sabyacard-avatar: 56px;
+  --sabyacard-gap: 0.95rem;
+  --sabyacard-radius: 14px;
+  --sabyacard-pad-y: 1rem;
+  --sabyacard-pad-x: 1.1rem;
+  --sabyacard-max: 42rem;
+
+  /* Surface - mixed out of the inherited text colour, so it needs no theme */
+  --sabyacard-surface: rgba(128, 128, 128, 0.11);
+  --sabyacard-surface: color-mix(in srgb, currentColor 5%, transparent);
+  --sabyacard-border: rgba(128, 128, 128, 0.42);
+  --sabyacard-border: color-mix(in srgb, currentColor 18%, transparent);
+  --sabyacard-ring: rgba(128, 128, 128, 0.4);
+  --sabyacard-ring: color-mix(in srgb, currentColor 16%, transparent);
+  --sabyacard-accent: #8fbf1f;
+
+  /* Text tiers, as opacity on the inherited colour */
+  --sabyacard-eyebrow-opacity: 0.66;
+  --sabyacard-role-opacity: 0.78;
+  --sabyacard-bio-opacity: 0.75;
+  --sabyacard-link-opacity: 0.78;
+
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--sabyacard-gap);
+  max-width: var(--sabyacard-max);
+  margin: 0;
+  padding: var(--sabyacard-pad-y) var(--sabyacard-pad-x);
+  border: 1px solid var(--sabyacard-border);
+  border-radius: var(--sabyacard-radius);
+  background: var(--sabyacard-surface);
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.sabyacard,
+.sabyacard *,
+.sabyacard *::before,
+.sabyacard *::after {
+  box-sizing: border-box;
+}
+
+.sabyacard p {
+  margin: 0;
+  padding: 0;
+}
+
+/* Portrait ---------------------------------------------------------------- */
+
+.sabyacard__portrait {
+  display: block;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--sabyacard-ring);
+  line-height: 0;
+  text-decoration: none;
+  transition: box-shadow 0.18s ease;
+}
+
+.sabyacard__portrait img {
+  display: block;
+  width: var(--sabyacard-avatar);
+  height: var(--sabyacard-avatar);
+  max-width: none;
+  border: 0;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.sabyacard:hover .sabyacard__portrait,
+.sabyacard:focus-within .sabyacard__portrait {
+  box-shadow: 0 0 0 2px var(--sabyacard-accent);
+}
+
+/* Body -------------------------------------------------------------------- */
+
+.sabyacard__body {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.sabyacard__heading {
+  font-size: 1.02em;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+}
+
+.sabyacard__eyebrow {
+  display: block;
+  margin-bottom: 0.15em;
+  font-size: 0.68em;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  opacity: var(--sabyacard-eyebrow-opacity);
+  text-transform: uppercase;
+}
+
+.sabyacard__role {
+  margin-top: 0.18em;
+  font-size: 0.86em;
+  opacity: var(--sabyacard-role-opacity);
+}
+
+.sabyacard__bio {
+  margin-top: 0.75em;
+  max-width: 52ch;
+  font-size: 0.9em;
+  line-height: 1.5;
+  opacity: var(--sabyacard-bio-opacity);
+}
+
+/* Links ------------------------------------------------------------------- */
+
+.sabyacard a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sabyacard__name {
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.18s ease;
+}
+
+.sabyacard:hover .sabyacard__name,
+.sabyacard__name:focus-visible {
+  border-bottom-color: currentColor;
+}
+
+.sabyacard__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4em 1em;
+  margin-top: 0.8em;
+  font-size: 0.85em;
+}
+
+.sabyacard__link {
+  opacity: var(--sabyacard-link-opacity);
+  transition: opacity 0.18s ease;
+}
+
+.sabyacard__link:hover,
+.sabyacard__link:focus-visible {
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 0.22em;
+}
+
+.sabyacard__icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+}
+
+.sabyacard__icon {
+  display: inline-flex;
+  padding: 5px;
+  border-radius: 6px;
+  opacity: 0.66;
+  transition: opacity 0.18s ease;
+}
+
+.sabyacard__icon:hover,
+.sabyacard__icon:focus-visible {
+  opacity: 1;
+}
+
+.sabyacard__icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.sabyacard :focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* The impression beacon - present, never seen, never in the way. */
+.sabyacard__beacon {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Footer variant - a pill, deliberately quiet ----------------------------- */
+
+.sabyacard[data-sabyacard='footer'] {
+  --sabyacard-avatar: 30px;
+  --sabyacard-gap: 0.6rem;
+  --sabyacard-radius: 999px;
+  --sabyacard-pad-y: 0.34rem;
+  --sabyacard-pad-x: 0.9rem;
+
+  display: inline-flex;
+  /*
+   * The pill keeps the portrait beside the text at every width: a stadium
+   * that has wrapped its own portrait onto a line of its own stops reading
+   * as a pill. Anything that has to give way wraps inside the body instead.
+   */
+  flex-wrap: nowrap;
+  align-items: center;
+  max-width: 100%;
+  padding-left: 0.34rem;
+  font-size: 0.875rem;
+}
+
+.sabyacard[data-sabyacard='footer'] .sabyacard__body {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.7rem;
+}
+
+.sabyacard[data-sabyacard='footer'] .sabyacard__heading {
+  font-size: 1em;
+}
+
+.sabyacard[data-sabyacard='footer'] .sabyacard__eyebrow {
+  display: inline;
+  margin: 0 0.35em 0 0;
+  font-size: 1em;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.sabyacard[data-sabyacard='footer'] .sabyacard__role {
+  margin-top: 0;
+  font-size: 1em;
+}
+
+.sabyacard[data-sabyacard='footer'] .sabyacard__bio {
+  display: none;
+}
+
+.sabyacard[data-sabyacard='footer'] .sabyacard__links {
+  margin-top: 0;
+  font-size: 1em;
+}
+
+/* Themes ------------------------------------------------------------------ */
+
+/*
+ * The accent is the one colour that is not mixed from the host's, so it is
+ * the one thing worth adapting: a deeper lime holds up on a light page, the
+ * portfolio's own signal lime on a dark one. It only ever appears on the
+ * portrait ring, so a page that guesses wrong loses nothing legible.
+ */
+@media (prefers-color-scheme: dark) {
+  .sabyacard {
+    --sabyacard-accent: #c7ff4a;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sabyacard,
+  .sabyacard * {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .sabyacard {
+    border-color: CanvasText;
+  }
+
+  .sabyacard__portrait {
+    box-shadow: none;
+  }
+
+  .sabyacard__icon,
+  .sabyacard__link {
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * teleprompter.wtf local overrides (not upstream).
+ * The eyebrow tier at 0.66 opacity renders 2.74:1 against this site's footer
+ * surface, below WCAG AA. Full opacity gives 5.34:1 and keeps the tier legible
+ * against the bolder name beside it.
+ * ------------------------------------------------------------------------- */
+.sabyacard {
+  --sabyacard-eyebrow-opacity: 1;
+}
