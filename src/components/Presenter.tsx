@@ -8,7 +8,7 @@ import {
   type EntryContext,
   type SettingName,
 } from '../domain/analytics';
-import { countWords, durationSeconds, formatDuration } from '../domain/calculations';
+import { countWords, formatDuration } from '../domain/calculations';
 import {
   compileScriptGuide,
   cueSummary,
@@ -128,8 +128,9 @@ export default function Presenter({
   );
   const planRef = useRef({ words, totalSeconds: planTotalSeconds, cuesOn: preferences.paceCues });
   planRef.current = { words, totalSeconds: planTotalSeconds, cuesOn: preferences.paceCues };
-  const estimatedTotal = durationSeconds(words, preferences.speakingWpm);
-  const remaining = estimatedTotal * (1 - progress);
+  // The readout follows whatever plan is in force, so setting a finish time changes what the
+  // presenter is told is left rather than leaving a stale rate-based estimate on screen.
+  const remaining = planTotalSeconds * (1 - progress);
   const activeSection = sectionAtSpokenOffset(guide, precisionAnchorRef.current ?? liveStart);
   const visualCue = cueSummary(activeSection, 'visual');
   const screenCue = cueSummary(activeSection, 'screen');

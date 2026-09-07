@@ -380,3 +380,201 @@ Feedback is still stuck in screenshots.
   await expect(page.getByTestId('guide-beat')).toContainText('Hook');
   await expect(page.getByText(/Fast cuts of a broken button/)).toBeVisible();
 });
+
+// ---------------------------------------------------------------------------------------------
+// Follow-along sync and pace cues
+// ---------------------------------------------------------------------------------------------
+
+const followScript = [
+  'Opening remarks settle the room before the demonstration begins in earnest.',
+  'The recovery paragraph mentions purple lanterns and cedar smoke drifting over the harbour.',
+  'A middle section talks about calm breathing and a steady camera on the tripod.',
+  'The closing argument thanks the crew and hands the stage back to the compere.',
+].join('\n\n');
+
+interface EmitWindow {
+  __emitSpeech?: (text: string, isFinal?: boolean) => void;
+}
+
+/**
+ * A speech recognizer the test drives by hand. Results accumulate the way the real API's list
+ * does, so the delta path in browserSpeech is exercised rather than bypassed.
+ */
+async function installControllableSpeech(page: Page) {
+  await page.addInitScript(() => {
+    const instances: { onresult: ((event: unknown) => void) | null }[] = [];
+    const results: unknown[] = [];
+
+    class FakeSpeechRecognition {
+      continuous = false;
+      interimResults = false;
+      lang = '';
+      maxAlternatives = 1;
+      processLocally = false;
+      onresult: ((event: unknown) => void) | null = null;
+      onstart: ((event: Event) => void) | null = null;
+      onend: ((event: Event) => void) | null = null;
+      onerror: ((event: { error: string }) => void) | null = null;
+      onspeechstart: ((event: Event) => void) | null = null;
+      onspeechend: ((event: Event) => void) | null = null;
+      onaudiostart = null;
+      onaudioend = null;
+      start() {
+        instances.push(this);
+        this.onstart?.(new Event('start'));
+        this.onspeechstart?.(new Event('speechstart'));
+      }
+      stop() {
+        this.onend?.(new Event('end'));
+      }
+      abort() {
+        this.onend?.(new Event('end'));
+      }
+    }
+
+    (window as typeof window & EmitWindow).__emitSpeech = (text: string, isFinal = true) => {
+      results.push({ isFinal, length: 1, 0: { transcript: text, confidence: 0.95 } });
+      const list: Record<number, unknown> & { length: number } = { length: results.length };
+      results.forEach((result, index) => {
+        list[index] = result;
+      });
+      for (const instance of instances) {
+        instance.onresult?.({ resultIndex: results.length - 1, results: list });
+      }
+    };
+
+    Object.defineProperty(window, 'SpeechRecognition', {
+      configurable: true,
+      value: FakeSpeechRecognition,
+    });
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      configurable: true,
+      value: FakeSpeechRecognition,
+    });
+  });
+}
+
+const say = (page: Page, text: string) =>
+  page.evaluate((line) => (window as typeof window & EmitWindow).__emitSpeech?.(line), text);
+
+async function seedState(page: Page, preferences: Record<string, unknown>, script: string) {
+  await page.addInitScript(
+    ({ prefs, text }) => {
+      window.localStorage.setItem(
+        'teleprompter-wtf.state',
+        JSON.stringify({
+          version: 3,
+          script: text,
+          preferences: prefs,
+          privacyConsent: { decided: true, usageAnalytics: false },
+          savedAt: Date.now(),
+        }),
+      );
+    },
+    { prefs: preferences, text: script },
+  );
+}
+
+test('the live word tracks each spoken line across a long script', async ({ page }) => {
+  await installControllableSpeech(page);
+  await openFreshEditor(page);
+  await page.getByLabel('Teleprompter script').fill(followScript);
+  await page.getByRole('button', { name: /Start teleprompter/ }).click();
+  await expect(page.getByRole('button', { name: /Following your voice/ })).toBeVisible({
+    timeout: 8000,
+  });
+
+  // Deliberately out of order: the second line is spoken before the third, and the aligner has to
+  // land on each one rather than drifting forward at a fixed rate.
+  for (const [line, expected] of [
+    [
+      'The recovery paragraph mentions purple lanterns and cedar smoke drifting',
+      /lanterns|cedar|smoke|drifting|harbour/i,
+    ],
+    [
+      'A middle section talks about calm breathing and a steady camera',
+      /breathing|steady|camera|tripod/i,
+    ],
+    ['The closing argument thanks the crew and hands the stage back', /crew|hands|stage|compere/i],
+  ] as const) {
+    await say(page, line);
+    await expect
+      .poll(async () => (await page.locator('.script-word--live').allTextContents()).join(' '), {
+        timeout: 8000,
+      })
+      .toMatch(expected);
+  }
+});
+
+test('following scrolls continuously rather than jumping between positions', async ({ page }) => {
+  await installControllableSpeech(page);
+  await openFreshEditor(page);
+  await page.getByLabel('Teleprompter script').fill(followScript);
+  await page.getByRole('button', { name: /Start teleprompter/ }).click();
+  await expect(page.getByRole('button', { name: /Following your voice/ })).toBeVisible({
+    timeout: 8000,
+  });
+
+  await say(page, 'The recovery paragraph mentions purple lanterns and cedar smoke drifting');
+
+  const scroller = page.locator('[data-testid="presenter-scroll"]');
+  const samples: number[] = [];
+  for (let sample = 0; sample < 30; sample += 1) {
+    samples.push(await scroller.evaluate((element) => element.scrollTop));
+    await page.waitForTimeout(100);
+  }
+
+  const total = (samples[samples.length - 1] ?? 0) - (samples[0] ?? 0);
+  expect(total).toBeGreaterThan(0);
+
+  let largestStep = 0;
+  for (let index = 1; index < samples.length; index += 1) {
+    largestStep = Math.max(
+      largestStep,
+      Math.abs((samples[index] ?? 0) - (samples[index - 1] ?? 0)),
+    );
+  }
+  // A snap-driven reader puts almost all of its travel into one or two frames. A servo spreads it.
+  expect(largestStep).toBeLessThan(total * 0.5);
+});
+
+test('a speaker running behind the plan gets a pick up cue', async ({ page }) => {
+  const longScript = Array.from(
+    { length: 60 },
+    (_, index) =>
+      `Paragraph ${index} covers its own distinct subject and closes on a deliberate remark.`,
+  ).join('\n\n');
+  // One minute for a script that needs far longer, with no voice, so the plan runs away immediately.
+  await seedState(
+    page,
+    { voiceMode: 'manual', targetDurationSeconds: 60, paceCues: true },
+    longScript,
+  );
+  await page.goto('/');
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
+  await page.getByRole('button', { name: /Start teleprompter/ }).click();
+
+  await expect(page.locator('.focus-guide--push')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.pace-chip')).toHaveText('Pick up');
+  await expect(page.getByTestId('pace-drift')).toBeVisible();
+});
+
+test('pace cues stay off when the setting is off', async ({ page }) => {
+  const longScript = Array.from(
+    { length: 60 },
+    (_, index) =>
+      `Paragraph ${index} covers its own distinct subject and closes on a deliberate remark.`,
+  ).join('\n\n');
+  await seedState(
+    page,
+    { voiceMode: 'manual', targetDurationSeconds: 60, paceCues: false },
+    longScript,
+  );
+  await page.goto('/');
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
+  await page.getByRole('button', { name: /Start teleprompter/ }).click();
+
+  await page.waitForTimeout(12_000);
+  await expect(page.locator('.focus-guide--push')).toHaveCount(0);
+  await expect(page.locator('.pace-chip')).toHaveCount(0);
+});

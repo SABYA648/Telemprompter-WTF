@@ -93,14 +93,6 @@ export class TimeBasedScrollController implements ScrollController {
     if (Number.isFinite(pixels) && pixels > 0) this.lineHeightPx = pixels;
   }
 
-  moveToward(scrollTop: number, strength: number): void {
-    const target = Math.min(this.maxScroll(), Math.max(0, scrollTop));
-    const safeStrength = Math.min(0.85, Math.max(0, strength));
-    this.element.scrollTop += (target - this.element.scrollTop) * safeStrength;
-    this.lastTimestamp = null;
-    this.emit();
-  }
-
   notifyLayoutChange(): void {
     const oldMax = this.lastKnownMax;
     const ratio = calculateProgress(this.element.scrollTop, oldMax);

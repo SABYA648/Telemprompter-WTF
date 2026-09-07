@@ -63,7 +63,6 @@ export interface ScrollController {
   setSpeed(pixelsPerSecond: number): void;
   setFollowTarget(scrollTop: number | null, trust: number, feedForward: number): void;
   setLineHeight(pixels: number): void;
-  moveToward(scrollTop: number, strength: number): void;
   notifyLayoutChange(): void;
   destroy(): void;
 }
