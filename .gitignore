@@ -11,3 +11,6 @@ coverage/
 *.log
 public/models/runtime/
 public/models/whisper-tiny-v1/
+.agents/
+skills-lock.json
+.claude/skills/

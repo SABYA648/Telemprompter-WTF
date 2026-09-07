@@ -85,6 +85,6 @@ describe('Private Precision script alignment', () => {
     const started = performance.now();
     const result = engine.align('section 20 contains a distinct sentence about topic number 20');
     expect(result.confidence).toBeGreaterThan(0.5);
-    expect(performance.now() - started).toBeLessThan(750);
+    expect(performance.now() - started).toBeLessThan(5);
   });
 });
