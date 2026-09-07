@@ -84,6 +84,7 @@ describe('analytics abstraction', () => {
       'cleared_script',
       'cleared_local_data',
       'changed_presenter_setting',
+      'pace_cue_shown',
       'shared_teleprompter_link',
       'clicked_open_teleprompter',
       'allowed_usage_analytics',

@@ -811,6 +811,58 @@ button {
   border-top: 1px solid rgb(228 73 46 / 0.14);
 }
 
+/*
+ * Pace cues.
+ *
+ * The signal rides the focus line, because that is where the eye already is. Direction carries the
+ * meaning: the ticks lift when the speaker is behind and settle when they are ahead. No second
+ * colour, no red and green pair, so it survives both the single-accent palette and colour blindness.
+ * The text chip and the live region carry the same message for anyone the movement does not reach.
+ */
+.focus-guide::before,
+.focus-guide::after {
+  transition:
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 420ms ease;
+}
+
+.focus-guide--push::before,
+.focus-guide--push::after {
+  transform: translateY(calc(-6px * var(--cue-strength, 1)));
+  opacity: calc(0.5 + 0.4 * var(--cue-strength, 1));
+}
+
+.focus-guide--ease::before,
+.focus-guide--ease::after {
+  transform: translateY(calc(6px * var(--cue-strength, 1)));
+  opacity: calc(0.5 + 0.4 * var(--cue-strength, 1));
+}
+
+.pace-chip {
+  position: absolute;
+  top: -2em;
+  right: 5%;
+  padding: 0.14rem 0.55rem;
+  border-radius: 999px;
+  background: rgb(9 10 9 / 0.82);
+  color: var(--presenter-text);
+  font-size: 0.72rem;
+  font-weight: 640;
+  letter-spacing: 0.04em;
+  opacity: 0.72;
+}
+
+.presenter__drift {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-guide::before,
+  .focus-guide::after {
+    transition: none;
+  }
+}
+
 .presenter__topbar,
 .presenter__controls {
   position: fixed;

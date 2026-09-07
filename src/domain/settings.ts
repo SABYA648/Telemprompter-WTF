@@ -7,6 +7,7 @@ export const SETTING_LIMITS = {
   baseScrollSpeed: { min: 1, max: 10, step: 1 },
   focusPosition: { min: 25, max: 75, step: 5 },
   speakingWpm: { min: 80, max: 220, step: 5 },
+  targetDurationSeconds: { min: 0, max: 7200, step: 15 },
 } as const;
 
 export const DEFAULT_PREFERENCES: PresenterPreferences = {
@@ -22,6 +23,9 @@ export const DEFAULT_PREFERENCES: PresenterPreferences = {
   speakingWpm: 130,
   // Smart Pace is the default presenting experience: listen locally and follow rhythm.
   voiceMode: 'smart',
+  // No target by default, so the plan comes from the speaking rate until the speaker sets one.
+  targetDurationSeconds: 0,
+  paceCues: true,
 };
 
 export function clamp(value: number, min: number, max: number): number {
@@ -66,6 +70,12 @@ export function sanitizePreferences(
       SETTING_LIMITS.speakingWpm.min,
       SETTING_LIMITS.speakingWpm.max,
     ),
+    targetDurationSeconds: clamp(
+      numberOr(source.targetDurationSeconds, DEFAULT_PREFERENCES.targetDurationSeconds),
+      SETTING_LIMITS.targetDurationSeconds.min,
+      SETTING_LIMITS.targetDurationSeconds.max,
+    ),
+    paceCues: source.paceCues !== false,
     alignment: source.alignment === 'center' ? 'center' : 'left',
     mirror: source.mirror === true,
     verticalFlip: source.verticalFlip === true,
