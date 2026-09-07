@@ -59,13 +59,20 @@ const schema = [
         never requests microphone permission and continues working seamlessly when advanced browser
         capabilities or network connections are unavailable.
       </p>
-      <h2>Level 2: Smart Pace follows rhythm without transcription</h2>
+      <h2>Level 2: Smart Pace follows your place with the browser's own recognition</h2>
       <p>
-        Smart Pace samples the local microphone signal through the browser's Web Audio AnalyserNode.
-        It calibrates to your room's noise floor, detects speech activity, smooths cadence changes,
-        and gradually slows and stops during a pause. Because it measures audio signal energy rather
-        than transcribing words, it requires no model download, operates with zero latency, and
-        works across any spoken language. It is the zero-download default voice mode.
+        Smart Pace uses the speech recognition already built into your browser to follow where you
+        are in the script, matching what it hears against the script by sound as well as spelling.
+        That recognition is your browser's, not ours, and some browsers process the audio on their
+        own servers rather than on the device.
+      </p>
+      <p>
+        Where recognition is unavailable, Smart Pace falls back to sampling the microphone signal
+        through the Web Audio AnalyserNode. It calibrates to your room's noise floor, detects speech
+        activity, smooths cadence changes, and gradually slows and stops during a pause. That path
+        transcribes nothing and works across any spoken language. Either way there is no model
+        download, which is why it is the default voice mode. Choose Private Precision Beta when you
+        need recognition that stays on your device.
       </p>
       <h2>Level 3: Private Precision Beta follows your place with on-device speech recognition</h2>
       <p>

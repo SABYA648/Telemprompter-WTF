@@ -56,12 +56,13 @@ export const MODES: Record<'manual' | 'smart' | 'precision', ModeDefinition> = {
     badge: 'Default · Zero download',
     headline: 'Local microphone energy and cadence following',
     summary:
-      'Matches scroll speed to your natural speaking rhythm. Automatically slows and pauses during pauses. Fully local with zero transcription and zero model download.',
+      'Follows your place in the script using the speech recognition already built into your browser, and falls back to matching your speaking rhythm when recognition is unavailable. No model download either way.',
     mechanism:
-      'Samples local microphone audio via Web Audio AnalyserNode. Measures RMS energy against an adaptive room noise floor to detect speech activity and apply a dynamic scroll multiplier.',
-    networkRequirement: 'Zero network requests. Fully local in-browser Web Audio.',
+      "Uses the browser's Web Speech API to recognize words, matches them against the known script by phonetic key and local alignment, and steers the scroll so the spoken word sits on the focus line. When recognition is unavailable it samples microphone audio via Web Audio AnalyserNode and measures RMS energy against an adaptive room noise floor to drive scroll speed from cadence alone.",
+    networkRequirement:
+      'No download. Speech recognition is handled by the browser, and some browsers process that audio on their own servers rather than on the device. The rhythm fallback is fully local in-browser Web Audio. Your script is never sent anywhere.',
     downloadBytes: 0,
-    transcribesSpeech: false,
+    transcribesSpeech: true,
     requiresMicrophone: true,
     primaryUseCase:
       'Conversational delivery, YouTube videos, webinars, and natural speaking across any language.',

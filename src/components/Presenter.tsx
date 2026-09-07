@@ -8,7 +8,7 @@ import {
   type EntryContext,
   type SettingName,
 } from '../domain/analytics';
-import { countWords, durationSeconds, formatDuration } from '../domain/calculations';
+import { countWords, formatDuration } from '../domain/calculations';
 import {
   compileScriptGuide,
   cueSummary,
@@ -23,6 +23,13 @@ import {
   segmentScript,
   type HighlightWindow,
 } from '../domain/scriptHighlight';
+import {
+  PaceCueEngine,
+  formatDrift,
+  plannedSecondsAtWord,
+  plannedTotalSeconds,
+  type CueState,
+} from '../domain/pacePlan';
 import { SETTING_LIMITS, clamp, speedToPixelsPerSecond } from '../domain/settings';
 import { TimeBasedScrollController } from '../domain/scrollController';
 import type { PresenterPreferences } from '../domain/types';
@@ -40,6 +47,8 @@ interface Props {
 }
 
 const INTERACTION_HIDE_DELAY = 2800;
+// The chip announces a change once, then gets out of the way.
+const CHIP_VISIBLE_MS = 2500;
 // A session counts as complete when the scroll reaches at least 95% of the script or hits
 // the explicit end-of-script state reported by the scroll controller.
 const COMPLETE_PROGRESS_THRESHOLD = 0.95;
@@ -74,11 +83,27 @@ export default function Presenter({
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
   const [voiceListening, setVoiceListening] = useState(false);
   const [speechActive, setSpeechActive] = useState(false);
-  const [highlight, setHighlight] = useState<HighlightWindow>({
-    trailStart: 0,
-    liveStart: 0,
-    liveEnd: 0,
-  });
+  // The highlight is applied straight to the DOM rather than held in state. It changes at word
+  // rate while the scroll updates every frame, and rendering it through Preact re-diffed every
+  // word span in the script on each frame.
+  const wordNodesRef = useRef<HTMLElement[]>([]);
+  const wordStartsRef = useRef<Int32Array>(new Int32Array(0));
+  const appliedRef = useRef<HighlightWindow>({ trailStart: -1, liveStart: -1, liveEnd: -1 });
+  const [liveStart, setLiveStart] = useState(0);
+  // Which word the speaker is on, used by the pace cue. Comes from the aligner while following and
+  // from scroll progress otherwise, so cues work in Manual mode too.
+  const spokenWordRef = useRef(0);
+  const followingRef = useRef(false);
+  const cueEngineRef = useRef(new PaceCueEngine());
+  // Speaking time, not wall-clock: a pause is not falling behind.
+  const spokenMsRef = useRef(0);
+  const lastTickRef = useRef<number | null>(null);
+  const [cue, setCue] = useState<CueState>('steady');
+  const [driftLabel, setDriftLabel] = useState('');
+  const [chipVisible, setChipVisible] = useState(false);
+  const chipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cueRef = useRef<CueState>('steady');
+  const [cueStrength, setCueStrength] = useState(0);
   const voiceMultiplierRef = useRef(1);
   const scriptElementRef = useRef<HTMLDivElement>(null);
   const precisionAnchorRef = useRef<number | null>(null);
@@ -96,14 +121,70 @@ export default function Presenter({
   shortcutsOpenRef.current = shortcutsOpen;
   const capabilities = useRef(detectBrowserCapabilities()).current;
   const words = guide.kind === 'guided' ? guide.spokenWordCount : countWords(script);
-  const estimatedTotal = durationSeconds(words, preferences.speakingWpm);
-  const remaining = estimatedTotal * (1 - progress);
-  const activeSection = sectionAtSpokenOffset(
-    guide,
-    precisionAnchorRef.current ?? highlight.liveStart,
+  const planTotalSeconds = plannedTotalSeconds(
+    words,
+    preferences.speakingWpm,
+    preferences.targetDurationSeconds,
   );
+  const planRef = useRef({ words, totalSeconds: planTotalSeconds, cuesOn: preferences.paceCues });
+  planRef.current = { words, totalSeconds: planTotalSeconds, cuesOn: preferences.paceCues };
+  // The readout follows whatever plan is in force, so setting a finish time changes what the
+  // presenter is told is left rather than leaving a stale rate-based estimate on screen.
+  const remaining = planTotalSeconds * (1 - progress);
+  const activeSection = sectionAtSpokenOffset(guide, precisionAnchorRef.current ?? liveStart);
   const visualCue = cueSummary(activeSection, 'visual');
   const screenCue = cueSummary(activeSection, 'screen');
+
+  /** Index of the first cached word span starting at or after `character`. */
+  const wordIndexAt = (character: number): number => {
+    const starts = wordStartsRef.current;
+    let low = 0;
+    let high = starts.length;
+    while (low < high) {
+      const middle = (low + high) >> 1;
+      if ((starts[middle] ?? 0) < character) low = middle + 1;
+      else high = middle;
+    }
+    return low;
+  };
+
+  /** Touch only the spans that entered or left the window, never the whole script. */
+  const applyHighlight = (next: HighlightWindow) => {
+    const applied = appliedRef.current;
+    if (
+      applied.trailStart === next.trailStart &&
+      applied.liveStart === next.liveStart &&
+      applied.liveEnd === next.liveEnd
+    ) {
+      return;
+    }
+    const nodes = wordNodesRef.current;
+    if (!nodes.length) return;
+
+    const clear = (from: number, to: number) => {
+      for (let index = from; index < to; index += 1) {
+        nodes[index]?.classList.remove('script-word--live', 'script-word--trail');
+      }
+    };
+    if (applied.trailStart >= 0) {
+      clear(wordIndexAt(applied.trailStart), wordIndexAt(applied.liveEnd));
+    }
+
+    const trailFrom = wordIndexAt(next.trailStart);
+    const liveFrom = wordIndexAt(next.liveStart);
+    const liveTo = wordIndexAt(next.liveEnd);
+    for (let index = trailFrom; index < liveFrom; index += 1) {
+      nodes[index]?.classList.add('script-word--trail');
+    }
+    for (let index = liveFrom; index < liveTo; index += 1) {
+      nodes[index]?.classList.add('script-word--live');
+    }
+
+    appliedRef.current = next;
+    setLiveStart(next.liveStart);
+  };
+  const applyHighlightRef = useRef(applyHighlight);
+  applyHighlightRef.current = applyHighlight;
 
   const syncHighlightFromScroll = () => {
     const scroller = scrollerRef.current;
@@ -119,10 +200,66 @@ export default function Presenter({
         focusPositionRef.current,
         displayScript.length,
       );
-    setHighlight(highlightWindowAround(segmentsRef.current, center));
+    applyHighlightRef.current(highlightWindowAround(segmentsRef.current, center));
   };
   const syncHighlightRef = useRef(syncHighlightFromScroll);
   syncHighlightRef.current = syncHighlightFromScroll;
+
+  /**
+   * Compare where the speaker is against where the plan says they should be. Driven from the
+   * scroll snapshot, which arrives about eight times a second, so it never runs per frame.
+   */
+  const evaluateCue = (progressValue: number, isPlaying: boolean) => {
+    const now = performance.now();
+    const previous = lastTickRef.current;
+    // Dropping the mark while paused stops the first tick after a resume from charging the whole
+    // pause to the speaker. A pause is not falling behind.
+    lastTickRef.current = isPlaying ? now : null;
+    if (isPlaying && previous !== null) {
+      spokenMsRef.current += Math.min(1000, now - previous);
+    }
+
+    const plan = planRef.current;
+    if (!plan.cuesOn || plan.words <= 0 || plan.totalSeconds <= 0) {
+      if (cueRef.current !== 'steady') {
+        cueRef.current = 'steady';
+        setCue('steady');
+      }
+      setDriftLabel('');
+      return;
+    }
+
+    // While following, the aligner knows the word. Otherwise scroll progress is the best estimate,
+    // which is what makes the cue work in Manual mode as well.
+    const wordIndex = followingRef.current
+      ? spokenWordRef.current
+      : Math.round(progressValue * plan.words);
+
+    const reading = cueEngineRef.current.update({
+      plannedSeconds: plannedSecondsAtWord(wordIndex, plan.words, plan.totalSeconds),
+      elapsedSeconds: spokenMsRef.current / 1000,
+      totalSeconds: plan.totalSeconds,
+      at: now,
+    });
+
+    setDriftLabel(formatDrift(reading.driftSeconds));
+    setCueStrength(reading.magnitude);
+
+    if (reading.state === cueRef.current) return;
+    cueRef.current = reading.state;
+    setCue(reading.state);
+    if (reading.state === 'steady') {
+      setChipVisible(false);
+      return;
+    }
+    // The chip says it once; the tick offset keeps saying it quietly.
+    setChipVisible(true);
+    if (chipTimerRef.current) clearTimeout(chipTimerRef.current);
+    chipTimerRef.current = setTimeout(() => setChipVisible(false), CHIP_VISIBLE_MS);
+    analytics.track('pace_cue_shown', { cue: reading.state });
+  };
+  const evaluateCueRef = useRef(evaluateCue);
+  evaluateCueRef.current = evaluateCue;
 
   const revealControls = () => {
     setControlsVisible(true);
@@ -131,6 +268,22 @@ export default function Presenter({
       hideTimerRef.current = setTimeout(() => setControlsVisible(false), INTERACTION_HIDE_DELAY);
     }
   };
+
+  // Cache the word spans once per script so the highlight can address them by binary search
+  // instead of querying the DOM on every update.
+  useLayoutEffect(() => {
+    const scriptElement = scriptElementRef.current;
+    if (!scriptElement) return;
+    const nodes = Array.from(scriptElement.querySelectorAll<HTMLElement>('[data-script-word]'));
+    wordNodesRef.current = nodes;
+    const starts = new Int32Array(nodes.length);
+    nodes.forEach((node, index) => {
+      starts[index] = Number(node.dataset.start ?? 0);
+    });
+    wordStartsRef.current = starts;
+    appliedRef.current = { trailStart: -1, liveStart: -1, liveEnd: -1 };
+    syncHighlightRef.current();
+  }, [displayScript]);
 
   useLayoutEffect(() => {
     document.body.classList.add('presenting');
@@ -153,11 +306,18 @@ export default function Presenter({
       element,
       pixelsPerSecond: speedToPixelsPerSecond(preferences.baseScrollSpeed),
       onUpdate: (snapshot) => {
-        setPlaying(snapshot.isPlaying);
-        setProgress(snapshot.progress);
         progressRef.current = snapshot.progress;
+        setPlaying((current) => (current === snapshot.isPlaying ? current : snapshot.isPlaying));
+        // Half a percent is finer than the readout can show, so anything smaller is a wasted
+        // render of the whole script.
+        setProgress((current) =>
+          Math.round(current * 200) === Math.round(snapshot.progress * 200)
+            ? current
+            : snapshot.progress,
+        );
         if (snapshot.progress >= COMPLETE_PROGRESS_THRESHOLD) markComplete();
         syncHighlightRef.current();
+        evaluateCueRef.current(snapshot.progress, snapshot.isPlaying);
       },
       onComplete: markComplete,
     });
@@ -173,6 +333,7 @@ export default function Presenter({
     return () => {
       clearTimeout(startTimer);
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      if (chipTimerRef.current) clearTimeout(chipTimerRef.current);
       controller.destroy();
       controllerRef.current = null;
       document.body.classList.remove('presenting');
@@ -188,6 +349,9 @@ export default function Presenter({
     );
   }, [preferences.baseScrollSpeed]);
 
+  // Smart Pace without speech recognition has only microphone energy to go on, so the rhythm
+  // multiplier still sets the base speed. When an alignment target exists the servo owns the
+  // velocity and this only shapes the carrier underneath it.
   const updateVoiceMultiplier = (multiplier: number) => {
     voiceMultiplierRef.current = multiplier;
     controllerRef.current?.setSpeed(
@@ -195,10 +359,16 @@ export default function Presenter({
     );
   };
 
-  const applyAlignment = (characterIndex: number, confidence: number, tokenEnd?: number) => {
+  const applyAlignment = (
+    characterIndex: number,
+    tokenEnd: number,
+    confidence: number,
+    wordsPerMinute: number,
+  ) => {
     const scroller = scrollerRef.current;
     const scriptElement = scriptElementRef.current;
     if (!scroller || !displayScript.length) return;
+
     const focused =
       scriptElement &&
       scrollOffsetForCharacter(scroller, scriptElement, characterIndex, focusPositionRef.current);
@@ -207,29 +377,43 @@ export default function Presenter({
         ? focused
         : (characterIndex / displayScript.length) *
           Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    const strength = confidence >= 0.7 ? 0.48 : 0.22;
+
+    // Feed-forward from the speaker's own rate, so the reader keeps moving between alignments
+    // instead of waiting to be pushed. Pixels per word is measured from the rendered script.
+    const wordCount = wordNodesRef.current.length;
+    const pixelsPerWord = wordCount > 0 ? scroller.scrollHeight / wordCount : 0;
+    const feedForward = (Math.max(0, wordsPerMinute) / 60) * pixelsPerWord;
+
     if (controllerRef.current) {
-      controllerRef.current.moveToward(target, strength);
+      controllerRef.current.setFollowTarget(target, confidence, feedForward);
     } else {
       const max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
       scroller.scrollTop = Math.min(max, Math.max(0, target));
     }
+
     const center =
-      typeof tokenEnd === 'number' && tokenEnd > characterIndex
-        ? Math.round((characterIndex + tokenEnd) / 2)
-        : characterIndex;
+      tokenEnd > characterIndex ? Math.round((characterIndex + tokenEnd) / 2) : characterIndex;
     precisionAnchorRef.current = center;
-    setHighlight(highlightWindowAround(segmentsRef.current, center, 6, 3));
+    spokenWordRef.current = wordIndexAt(center);
+    applyHighlightRef.current(highlightWindowAround(segmentsRef.current, center, 6, 3));
   };
 
   const handleVoiceActivity = (activity: { listening: boolean; speechActive: boolean }) => {
     setVoiceListening(activity.listening);
     setSpeechActive(activity.speechActive);
-    if (!activity.listening) precisionAnchorRef.current = null;
-    else requestAnimationFrame(() => syncHighlightRef.current());
+    followingRef.current = activity.listening;
+    if (!activity.listening) {
+      precisionAnchorRef.current = null;
+      // Hand the reader back to plain time-based scrolling rather than leaving it chasing a
+      // target that will never be updated again.
+      controllerRef.current?.setFollowTarget(null, 0, 0);
+    } else {
+      requestAnimationFrame(() => syncHighlightRef.current());
+    }
   };
 
   useEffect(() => {
+    controllerRef.current?.setLineHeight(preferences.fontSize * preferences.lineHeight);
     controllerRef.current?.notifyLayoutChange();
   }, [
     preferences.fontSize,
@@ -414,7 +598,26 @@ export default function Presenter({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [playing, preferences, settingsOpen, shortcutsOpen]);
 
+  const cueClass =
+    preferences.paceCues && cue !== 'steady'
+      ? cue === 'push'
+        ? 'focus-guide--push'
+        : 'focus-guide--ease'
+      : '';
+  const cueAnnouncement =
+    !preferences.paceCues || cue === 'steady'
+      ? ''
+      : cue === 'push'
+        ? 'Running behind. Pick up the pace.'
+        : 'Running ahead. Ease off.';
+
   const restart = () => {
+    spokenMsRef.current = 0;
+    lastTickRef.current = null;
+    cueEngineRef.current.reset();
+    cueRef.current = 'steady';
+    setCue('steady');
+    setChipVisible(false);
     controllerRef.current?.restart();
     analytics.track('restarted_teleprompter', { control_source: 'button' });
     revealControls();
@@ -438,13 +641,24 @@ export default function Presenter({
 
       {preferences.focusLine && (
         <div
-          class="focus-guide"
-          style={{ top: `${preferences.focusPosition}%` }}
+          class={`focus-guide ${cueClass}`}
+          style={{
+            top: `${preferences.focusPosition}%`,
+            '--cue-strength': cueStrength.toFixed(2),
+          }}
           aria-hidden="true"
         >
           <span />
+          {cueClass && chipVisible && (
+            <b class="pace-chip">{cue === 'push' ? 'Pick up' : 'Ease off'}</b>
+          )}
         </div>
       )}
+
+      {/* The cue is never colour or shape alone: it is also announced. */}
+      <p class="sr-only" role="status" aria-live="polite">
+        {cueAnnouncement}
+      </p>
 
       {guide.kind === 'guided' && activeSection && (
         <aside class="guide-rail" aria-label="Production cues">
@@ -486,33 +700,21 @@ export default function Presenter({
               transform: `scale(${preferences.mirror ? -1 : 1}, ${preferences.verticalFlip ? -1 : 1})`,
             }}
           >
-            {segments.map((segment) => {
-              if (segment.kind === 'gap') {
-                return <span key={`g-${segment.start}`}>{segment.text}</span>;
-              }
-              const isLive =
-                segment.start >= highlight.liveStart && segment.end <= highlight.liveEnd;
-              const isTrail =
-                !isLive &&
-                segment.start >= highlight.trailStart &&
-                segment.start < highlight.liveStart;
-              const className = isLive
-                ? 'script-word script-word--live'
-                : isTrail
-                  ? 'script-word script-word--trail'
-                  : 'script-word';
-              return (
+            {segments.map((segment) =>
+              segment.kind === 'gap' ? (
+                <span key={`g-${segment.start}`}>{segment.text}</span>
+              ) : (
                 <span
                   key={`w-${segment.start}`}
-                  class={className}
+                  class="script-word"
                   data-script-word="true"
                   data-start={segment.start}
                   data-end={segment.end}
                 >
                   {segment.text}
                 </span>
-              );
-            })}
+              ),
+            )}
           </div>
         </div>
       </div>
@@ -524,6 +726,11 @@ export default function Presenter({
         <div class="presenter__readout" aria-live="polite">
           <span>{Math.round(progress * 100)}%</span>
           <span>about {formatDuration(remaining)} left</span>
+          {preferences.paceCues && driftLabel && (
+            <span data-testid="pace-drift" class="presenter__drift">
+              {driftLabel}
+            </span>
+          )}
           {guide.kind === 'guided' && activeSection && (
             <span data-testid="guide-beat">
               {activeSection.timecodeLabel ? `${activeSection.timecodeLabel} · ` : ''}

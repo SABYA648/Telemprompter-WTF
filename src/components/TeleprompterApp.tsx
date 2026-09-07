@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { analytics, type EntryContext, type SettingName } from '../domain/analytics';
-import { durationSeconds, formatDuration } from '../domain/calculations';
+import { durationSeconds, formatDuration, requiredWpm } from '../domain/calculations';
 import { detectBrowserCapabilities } from '../domain/capabilities';
 import {
   LOCAL_STATE_KEY,
@@ -263,6 +263,12 @@ export default function TeleprompterApp({
             <span>
               <b>{formatDuration(duration)}</b> at {preferences.speakingWpm} WPM
             </span>
+            {preferences.targetDurationSeconds > 0 && words > 0 && (
+              <span data-testid="required-pace">
+                needs <b>{Math.round(requiredWpm(words, preferences.targetDurationSeconds))}</b> WPM
+                to finish in {formatDuration(preferences.targetDurationSeconds)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -303,6 +309,23 @@ export default function TeleprompterApp({
                 (_, index) => SETTING_LIMITS.speakingWpm.min + index * 10,
               ).map((wpm) => (
                 <option value={wpm}>{wpm} WPM</option>
+              ))}
+            </select>
+          </label>
+          <label class="wpm-control">
+            Finish in
+            <select
+              value={preferences.targetDurationSeconds}
+              onChange={(event) =>
+                updatePreferences(
+                  { ...preferences, targetDurationSeconds: Number(event.currentTarget.value) },
+                  'targetDurationSeconds',
+                )
+              }
+            >
+              <option value={0}>No limit</option>
+              {[1, 2, 3, 5, 10, 15, 20, 30, 45, 60].map((minutes) => (
+                <option value={minutes * 60}>{minutes} min</option>
               ))}
             </select>
           </label>

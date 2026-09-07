@@ -19,6 +19,10 @@ export interface PresenterPreferences {
   focusPosition: number;
   speakingWpm: number;
   voiceMode: VoiceMode;
+  /** Planned length of the delivery in seconds. Zero means the speaking rate sets the plan. */
+  targetDurationSeconds: number;
+  /** Show the live speed-up and slow-down signal at the focus line. */
+  paceCues: boolean;
 }
 
 export interface PersistedStateV1 {
@@ -57,7 +61,8 @@ export interface ScrollController {
   pause(): void;
   restart(): void;
   setSpeed(pixelsPerSecond: number): void;
-  moveToward(scrollTop: number, strength: number): void;
+  setFollowTarget(scrollTop: number | null, trust: number, feedForward: number): void;
+  setLineHeight(pixels: number): void;
   notifyLayoutChange(): void;
   destroy(): void;
 }

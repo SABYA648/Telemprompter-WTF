@@ -52,9 +52,56 @@ interface SpeechWindow {
 }
 
 export interface TranscriptReading {
-  text: string;
+  /** Words the recognizer has just committed, never the whole transcript. */
+  finalDelta: string;
+  /** The current unstable tail, replaced wholesale on every reading. */
+  interim: string;
   confidence: number;
-  isFinal: boolean;
+}
+
+/**
+ * Split a result list into the newly committed prefix and the still-unstable tail, and report how
+ * far the committed prefix now reaches.
+ *
+ * The previous code collected from index 0 on every event, so it re-read and re-tokenized the whole
+ * session transcript several times a second, growing without bound for the length of the talk.
+ */
+export function splitRecognitionResults(
+  results: SpeechRecognitionResultListLike,
+  fromIndex: number,
+): { finalDelta: string; interim: string; confidence: number; finalizedIndex: number } {
+  const finals: string[] = [];
+  const interims: string[] = [];
+  let confidence = 0;
+  let confidenceCount = 0;
+  let finalizedIndex = Math.max(0, Math.min(fromIndex, results.length));
+  let stillCommitting = true;
+
+  for (let index = finalizedIndex; index < results.length; index += 1) {
+    const result = results[index];
+    const alternative = result?.[0];
+    if (!result) continue;
+    if (Number.isFinite(alternative?.confidence) && (alternative?.confidence ?? 0) > 0) {
+      confidence += alternative?.confidence ?? 0;
+      confidenceCount += 1;
+    }
+    const transcript = alternative?.transcript ?? '';
+    if (result.isFinal && stillCommitting) {
+      if (transcript) finals.push(transcript);
+      finalizedIndex = index + 1;
+      continue;
+    }
+    stillCommitting = false;
+    if (transcript) interims.push(transcript);
+  }
+
+  const tidy = (parts: string[]): string => parts.join(' ').replace(/\s+/gu, ' ').trim();
+  return {
+    finalDelta: tidy(finals),
+    interim: tidy(interims),
+    confidence: confidenceCount ? confidence / confidenceCount : 1,
+    finalizedIndex,
+  };
 }
 
 interface BrowserSpeechOptions {
@@ -70,6 +117,9 @@ interface PrimedSpeech {
   unavailable: boolean;
   results: BrowserSpeechRecognitionEvent[];
 }
+
+/** Interim results repeat the same unstable tail many times a second. */
+const INTERIM_THROTTLE_MS = 100;
 
 const FATAL_SPEECH_ERRORS = new Set([
   'audio-capture',
@@ -237,6 +287,8 @@ export class BrowserSpeechSession {
   private recognition: BrowserSpeechRecognition | null = null;
   private stopped = true;
   private restartTimer: ReturnType<typeof setTimeout> | null = null;
+  private finalizedIndex = 0;
+  private lastInterimAt = 0;
 
   constructor(options: BrowserSpeechOptions) {
     this.options = options;
@@ -250,6 +302,8 @@ export class BrowserSpeechSession {
     if (!Constructor && !primed) throw new Error('speech-recognition-unavailable');
 
     this.stopped = false;
+    this.finalizedIndex = 0;
+    this.lastInterimAt = 0;
     this.recognition = primed?.recognition ?? (Constructor ? new Constructor() : null);
     if (!this.recognition) throw new Error('speech-recognition-unavailable');
     const recognition = this.recognition;
@@ -273,6 +327,8 @@ export class BrowserSpeechSession {
 
   stop(): void {
     this.stopped = true;
+    this.finalizedIndex = 0;
+    this.lastInterimAt = 0;
     if (this.restartTimer !== null) clearTimeout(this.restartTimer);
     this.restartTimer = null;
     const recognition = this.recognition;
@@ -319,9 +375,22 @@ export class BrowserSpeechSession {
       recognition.onresult = (event) => {
         succeed();
         this.options.onPace(listeningPace(true));
-        const collected = collectRecognitionText(event.results);
-        if (!collected.text) return;
-        this.options.onTranscript(collected);
+        const split = splitRecognitionResults(event.results, this.finalizedIndex);
+        this.finalizedIndex = split.finalizedIndex;
+        if (!split.finalDelta && !split.interim) return;
+
+        // Interim results arrive many times a second and mostly restate the same tail. Committed
+        // words always go through immediately; unstable ones are sampled.
+        const now = typeof performance === 'undefined' ? Date.now() : performance.now();
+        if (!split.finalDelta) {
+          if (now - this.lastInterimAt < INTERIM_THROTTLE_MS) return;
+        }
+        this.lastInterimAt = now;
+        this.options.onTranscript({
+          finalDelta: split.finalDelta,
+          interim: split.interim,
+          confidence: split.confidence,
+        });
       };
       recognition.onerror = (event) => {
         if (event.error === 'no-speech' || event.error === 'aborted') return;
@@ -350,6 +419,8 @@ export class BrowserSpeechSession {
         this.restartTimer = setTimeout(() => {
           if (this.stopped || !this.recognition) return;
           try {
+            // A restarted recognizer begins a fresh result list.
+            this.finalizedIndex = 0;
             this.recognition.start();
           } catch {
             if (!settled) fail(new Error('speech-recognition-unavailable'));

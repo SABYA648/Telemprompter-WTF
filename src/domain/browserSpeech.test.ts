@@ -5,6 +5,7 @@ import {
   configureSpeechRecognition,
   hasBrowserSpeechRecognition,
   primeBrowserSpeechInUserGesture,
+  splitRecognitionResults,
   takePrimedSpeechRecognition,
   type BrowserSpeechRecognition,
 } from './browserSpeech';
@@ -36,6 +37,39 @@ describe('browser speech recognition', () => {
     expect(collected.text).toBe('welcome to the practical guide');
     expect(collected.isFinal).toBe(false);
     expect(collected.confidence).toBeCloseTo(0.8);
+  });
+
+  it('emits only newly committed words and the current unstable tail', () => {
+    const results = {
+      length: 3,
+      0: { isFinal: true, length: 1, 0: { transcript: 'welcome to the', confidence: 0.9 } },
+      1: { isFinal: true, length: 1, 0: { transcript: 'practical guide', confidence: 0.9 } },
+      2: { isFinal: false, length: 1, 0: { transcript: 'we will start', confidence: 0.6 } },
+    };
+
+    const first = splitRecognitionResults(results, 0);
+    expect(first.finalDelta).toBe('welcome to the practical guide');
+    expect(first.interim).toBe('we will start');
+    expect(first.finalizedIndex).toBe(2);
+
+    // The next event must not repeat what has already been committed.
+    const second = splitRecognitionResults(results, first.finalizedIndex);
+    expect(second.finalDelta).toBe('');
+    expect(second.interim).toBe('we will start');
+    expect(second.finalizedIndex).toBe(2);
+  });
+
+  it('stops committing at the first unstable result', () => {
+    const results = {
+      length: 3,
+      0: { isFinal: true, length: 1, 0: { transcript: 'one', confidence: 0.9 } },
+      1: { isFinal: false, length: 1, 0: { transcript: 'two', confidence: 0.5 } },
+      2: { isFinal: true, length: 1, 0: { transcript: 'three', confidence: 0.9 } },
+    };
+    const split = splitRecognitionResults(results, 0);
+    expect(split.finalDelta).toBe('one');
+    expect(split.interim).toBe('two three');
+    expect(split.finalizedIndex).toBe(1);
   });
 
   it('reports when the constructor is missing', () => {
@@ -87,7 +121,8 @@ describe('browser speech recognition', () => {
 
     const transcripts: string[] = [];
     const session = new BrowserSpeechSession({
-      onTranscript: (reading) => transcripts.push(reading.text),
+      onTranscript: (reading) =>
+        transcripts.push(`${reading.finalDelta} ${reading.interim}`.trim()),
       onPace: () => undefined,
     });
     primeBrowserSpeechInUserGesture();

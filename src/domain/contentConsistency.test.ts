@@ -16,7 +16,9 @@ describe('Public Content Consistency against Product Facts', () => {
   const compatibilityAstro = read('src/pages/compatibility.astro');
   const readme = read('README.md');
 
-  it('verifies Smart Pace is never claimed to perform transcription or use a speech server', () => {
+  it('verifies no page claims Smart Pace avoids transcription or the network', () => {
+    // Smart Pace uses the browser's own speech recognition, which some browsers run on their
+    // servers. Any page still promising zero transcription or zero network is now false.
     const documents = [
       { name: 'llms.txt', content: llms },
       { name: 'index.astro', content: indexAstro },
@@ -28,11 +30,28 @@ describe('Public Content Consistency against Product Facts', () => {
     ];
 
     for (const doc of documents) {
-      // Must not claim Smart Pace transcribes or uses speech recognition / speech to text
-      expect(doc.content).not.toMatch(
-        /Smart Pace (?:transcribes|uses speech-to-text|runs speech recognition)/i,
-      );
+      expect(doc.content, doc.name).not.toMatch(/zero transcription/i);
+      expect(doc.content, doc.name).not.toMatch(/without transcribing speech/i);
+      expect(doc.content, doc.name).not.toMatch(/Smart Pace[^.]{0,80}without transcription/i);
     }
+  });
+
+  it('verifies the pages say where Smart Pace recognition runs', () => {
+    // The privacy-facing pages have to name the exposure, not just omit the old claim.
+    for (const doc of [
+      { name: 'privacy.astro', content: privacyAstro },
+      { name: 'private-voice-tracking.astro', content: privateVoiceAstro },
+    ]) {
+      expect(doc.content, doc.name).toMatch(/own servers/i);
+    }
+    expect(llms).toMatch(/browser vendor's servers/i);
+  });
+
+  it('verifies Private Precision is still described as staying on the device', () => {
+    expect(MODES.precision.transcribesSpeech).toBe(true);
+    expect(MODES.precision.networkRequirement).toMatch(/same-origin/i);
+    expect(privateVoiceAstro).toMatch(/on-device/i);
+    expect(privacyAstro).toMatch(/never leave the device/i);
   });
 
   it('verifies Private Precision model size is accurately cited as ~67 MB or 66,874,154 bytes', () => {

@@ -137,6 +137,17 @@ export default function SettingControls({ preferences, onChange }: Props): preac
             onChange={(event) => update('focusLine', event.currentTarget.checked)}
           />
         </label>
+        <label class="toggle-field">
+          <span>
+            <b>Pace cues</b>
+            <small>A quiet signal when you drift off plan</small>
+          </span>
+          <input
+            type="checkbox"
+            checked={preferences.paceCues}
+            onChange={(event) => update('paceCues', event.currentTarget.checked)}
+          />
+        </label>
       </div>
     </div>
   );

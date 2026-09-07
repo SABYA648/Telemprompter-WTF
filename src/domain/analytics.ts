@@ -33,6 +33,7 @@ export const ANALYTICS_EVENTS = [
   'cleared_script',
   'cleared_local_data',
   'changed_presenter_setting',
+  'pace_cue_shown',
   'shared_teleprompter_link',
   'clicked_open_teleprompter',
   'allowed_usage_analytics',
@@ -71,6 +72,7 @@ export const RECORDING_TYPES = ['screen', 'camera'] as const;
 export const PIP_MODES = ['document', 'video', 'popout'] as const;
 export const SHARE_METHODS = ['native', 'clipboard'] as const;
 export const IMPORT_SOURCE_TYPES = ['txt'] as const;
+export const CUE_KINDS = ['push', 'ease'] as const;
 export const SETTING_NAMES = [
   'fontSize',
   'lineHeight',
@@ -83,6 +85,8 @@ export const SETTING_NAMES = [
   'focusPosition',
   'speakingWpm',
   'voiceMode',
+  'targetDurationSeconds',
+  'paceCues',
 ] as const;
 export const PAGE_TYPES = [
   'guide',
@@ -128,6 +132,7 @@ export type PipMode = (typeof PIP_MODES)[number];
 export type ShareMethod = (typeof SHARE_METHODS)[number];
 export type ImportSourceType = (typeof IMPORT_SOURCE_TYPES)[number];
 export type SettingName = (typeof SETTING_NAMES)[number];
+export type CueKind = (typeof CUE_KINDS)[number];
 export type PageType = (typeof PAGE_TYPES)[number];
 export type ContentCluster = (typeof CONTENT_CLUSTERS)[number];
 export type CtaLocation = (typeof CTA_LOCATIONS)[number];
@@ -179,6 +184,7 @@ export interface AnalyticsEventProperties {
   cleared_script: Record<string, never>;
   cleared_local_data: Record<string, never>;
   changed_presenter_setting: { setting: SettingName };
+  pace_cue_shown: { cue: CueKind };
   shared_teleprompter_link: { method: ShareMethod };
   clicked_open_teleprompter: {
     page_type: PageType;
@@ -281,6 +287,7 @@ const EVENT_PROPERTY_SCHEMA: Record<AnalyticsEvent, Record<string, PropertyRule>
   cleared_script: {},
   cleared_local_data: {},
   changed_presenter_setting: { setting: SETTING_NAMES },
+  pace_cue_shown: { cue: CUE_KINDS },
   shared_teleprompter_link: { method: SHARE_METHODS },
   clicked_open_teleprompter: {
     page_type: PAGE_TYPES,

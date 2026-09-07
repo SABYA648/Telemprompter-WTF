@@ -2,7 +2,7 @@
 
 > Free online teleprompter: paste your script and present. No login, no ads, no cloud script storage.
 
-teleprompter.wtf is a free, open-source teleprompter that runs in the browser. Paste a script and present with manual scrolling; no account is required. Smart Pace follows speaking rhythm using local microphone signal analysis without transcribing speech. Private Precision Beta optionally downloads a local on-device speech model (about 67 MB with its runtime, downloaded once and kept in the browser) to follow your place in the known script. Recording is local as well. Scripts, microphone audio, recognition fragments, and recordings never leave the device. Optional Google Analytics usage measurement is consent-gated and never receives script or voice content.
+teleprompter.wtf is a free, open-source teleprompter that runs in the browser. Paste a script and present with manual scrolling; no account is required. Smart Pace follows your place in the script using the speech recognition built into the browser, which on some browsers is processed on the browser vendor's servers, and falls back to local microphone signal analysis that transcribes nothing when recognition is unavailable. Private Precision Beta optionally downloads a local on-device speech model (about 67 MB with its runtime, downloaded once and kept in the browser) to follow your place in the known script. Recording is local as well. Scripts and recordings never leave the device. Private Precision keeps microphone audio and recognition fragments on the device as well. Optional Google Analytics usage measurement is consent-gated and never receives script or voice content.
 
 ## Product
 
