@@ -424,10 +424,10 @@ export default function VoiceTrackingControls({
                   <p class="voice-option__tag">Default. Fully local.</p>
                   <h3>Smart Pace</h3>
                   <p>
-                    Starts with you. Uses this browser&apos;s microphone speech-to-text to follow
-                    your place in the script. If recognition is unavailable, it matches scroll to
-                    your speaking rhythm instead. Audio is processed in the browser; nothing is
-                    stored.
+                    Starts with you. Uses this browser&apos;s own speech recognition to follow your
+                    place in the script. If recognition is unavailable, it matches scroll to your
+                    speaking rhythm instead. Nothing is stored, and your script is never sent
+                    anywhere.
                   </p>
                 </div>
                 <button
@@ -514,7 +514,9 @@ export default function VoiceTrackingControls({
               </article>
             </div>
             <p class="voice-privacy">
-              Audio stays in this browser. Voice tracking stops when you turn it off or leave the
+              Your script never leaves this device. Speech recognition belongs to your browser, and
+              some browsers process that audio on their own servers. Private Precision stays
+              entirely on this device. Voice tracking stops when you turn it off or leave the
               presenter.
             </p>
             {message && (

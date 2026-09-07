@@ -80,9 +80,11 @@ const schema = [
                 ><td>No</td></tr
               >
               <tr
-                ><th scope="row">Smart Pace microphone</th><td>Speech cadence & rhythm</td><td
-                  >Browser Web Audio</td
-                ><td>Nowhere (in-memory signal only)</td><td>No</td></tr
+                ><th scope="row">Smart Pace microphone</th><td>Script position & rhythm</td><td
+                  >Browser speech recognition, or Web Audio when unavailable</td
+                ><td>Nowhere by us. Your browser's recognition service may receive audio</td><td
+                  >No</td
+                ></tr
               >
               <tr
                 ><th scope="row">Private Precision microphone</th><td>Local speech alignment</td><td
@@ -140,11 +142,14 @@ const schema = [
         <h2>Microphone and local voice tracking</h2>
         <p>
           The microphone is requested only after you start presenting with a voice mode selected.
-          Smart Pace listens locally: it analyzes signal energy and cadence in this browser using
-          Web Audio and does not transcribe your voice. Private Precision Beta runs a Whisper speech
-          model on your device to find your place in the known script, using temporary recognition
-          fragments that never leave the device. Stopping voice tracking or leaving the presenter
-          stops media tracks, closes the audio context, and disposes of local recognition state.
+          Smart Pace uses the speech recognition built into your browser to find your place in the
+          script. That recognition belongs to your browser, not to us, and some browsers process the
+          audio on their own servers. When recognition is unavailable it falls back to analyzing
+          signal energy and cadence locally with Web Audio, which transcribes nothing. Private
+          Precision Beta runs a Whisper speech model on your device instead, using temporary
+          recognition fragments that never leave the device. Your script is never transmitted in any
+          mode. Stopping voice tracking or leaving the presenter stops media tracks, closes the
+          audio context, and disposes of local recognition state.
         </p>
         <p>
           The Private Precision model is downloaded once, on your explicit request, and kept in this

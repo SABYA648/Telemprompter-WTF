@@ -19,7 +19,7 @@ Manual mode stays independent from microphone, model, recording, analytics, and 
 - No login, ads, subscription, database, or script backend
 - Static-first Astro pages with focused Preact islands
 - Smooth elapsed-time manual scrolling
-- Smart Pace rhythm tracking without transcription
+- Smart Pace position tracking with the browser's own speech recognition, and a local rhythm fallback
 - Optional Private Precision Beta with local Whisper inference
 - Browser-local screen and camera recording
 - Progressive Picture in Picture with a pop-out fallback

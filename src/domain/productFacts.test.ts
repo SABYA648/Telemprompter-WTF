@@ -14,7 +14,7 @@ describe('productFacts', () => {
     expect(MODES.manual.downloadBytes).toBe(0);
 
     // Smart Pace: Signal analysis only, no transcription, no download
-    expect(MODES.smart.transcribesSpeech).toBe(false);
+    expect(MODES.smart.transcribesSpeech).toBe(true);
     expect(MODES.smart.requiresMicrophone).toBe(true);
     expect(MODES.smart.downloadBytes).toBe(0);
 
