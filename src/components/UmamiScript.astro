@@ -1,0 +1,22 @@
+---
+const websiteId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID ?? 'c5952a2b-b192-46fe-8a3d-04ad673ffd6d';
+const domains = import.meta.env.PUBLIC_UMAMI_DOMAINS ?? 'www.teleprompter.wtf';
+const proxy = import.meta.env.PUBLIC_UMAMI_PROXY === 'true';
+const scriptUrl = proxy
+  ? '/stats/script.js'
+  : (import.meta.env.PUBLIC_UMAMI_SCRIPT_URL ?? 'https://analytics.sabya.pm/script.js');
+---
+
+{
+  websiteId && (
+    <script
+      is:inline
+      defer
+      src={scriptUrl}
+      data-website-id={websiteId}
+      data-domains={domains}
+      data-exclude-hash="true"
+      data-host-url={proxy ? 'https://www.teleprompter.wtf/stats' : undefined}
+    />
+  )
+}

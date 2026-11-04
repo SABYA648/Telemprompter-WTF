@@ -52,3 +52,30 @@ Owner manual checks:
 - With Docker available, build and run the image, verify `/` returns 200 and `/private-voice-tracking` returns 301, and compare image sizes if the archived image can be built.
 
 Next: M2.
+
+## M2 Analytics reset: Umami only, always on - 2026-11-04
+
+Shipped:
+
+- Replaced consent-gated analytics with the sitewide Umami script, browser-local device identity, bounded queue, typed and validated taxonomy v2, normalized virtual page views and throttled errors.
+- Removed the consent components, Google analytics configuration and second build and server. Updated the privacy page, CSP, optional proxy instructions and owner analytics documentation.
+- Added identity, queue, error and taxonomy unit coverage and a browser stub test for first-load script request, identity, CTA properties, invalid properties and Google requests.
+
+Files: analytics domain and tests, Umami component, layout, environment and server configuration, privacy page, browser tests and analytics documentation.
+
+Gates: check pass, unit 62/62, e2e 50/50, media not applicable, budget not applicable, lighthouse not run. Docker skipped: daemon unavailable. The script endpoint returned HTTP 200 to `curl`; the local Chromium environment reported a certificate-authority error for the direct request, so the browser tests stub the script.
+
+Deviations: D-015 seeds future content and settings IDs until their schemas exist; D-016 defines an interim word bucket and empty-streak bucket; D-017 derives safe virtual page titles from routes.
+
+Known issues:
+
+- Live Umami event receipt was not verified in Chromium because of the local certificate-authority error.
+- Docker build and header behavior remain unverified while the daemon is unavailable.
+
+Owner manual checks:
+
+- Confirm Umami is version 2.18.0 or later and decide whether to enable the optional proxy.
+- In a normal production browser, verify the script loads without a certificate error and that page views, device identity and a CTA event arrive in Umami.
+- With Docker available, build and run the image and check the Nginx headers and redirect.
+
+Next: M3.

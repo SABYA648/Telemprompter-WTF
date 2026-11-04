@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import '../styles/author-card.css';
+import UmamiScript from '../components/UmamiScript.astro';
 
 interface Props {
   title: string;
@@ -88,14 +89,10 @@ const personSchema = {
     {noindex && <meta name="robots" content="noindex,follow" />}
     {schema && <script is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />}
     <script is:inline type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+    <UmamiScript />
     <script>
       import { analytics, bindOpenTeleprompterCtas } from '../domain/analytics';
-      import { loadLocalState } from '../domain/localState';
-      // Apply a previously stored consent choice on every page, so Umami page views,
-      // GA page views, and content-to-product events work site-wide. Undecided or denied
-      // means nothing loads.
-      const consent = loadLocalState().privacyConsent;
-      if (consent.decided && consent.usageAnalytics) analytics.allow();
+      analytics.initialize();
       bindOpenTeleprompterCtas();
     </script>
   </head>

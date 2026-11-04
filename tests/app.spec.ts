@@ -95,7 +95,6 @@ test('clear script confirms and removes text', async ({ page }) => {
 });
 
 test('clear local data removes script and resets preferences', async ({ page }) => {
-  await page.getByRole('button', { name: 'No thanks' }).click();
   await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill('Text saved only here.');
   await page.getByText('Privacy & local data').click();
@@ -103,7 +102,6 @@ test('clear local data removes script and resets preferences', async ({ page }) 
   await page.getByRole('button', { name: 'Clear local data' }).click();
   await expect(page.getByLabel('Teleprompter script')).toHaveValue('');
   await expect(page.getByText('Local script and preferences cleared.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Allow analytics' })).toBeVisible();
 });
 
 test('TXT import reads plain text and rejects malformed binary content', async ({ page }) => {
@@ -138,6 +136,12 @@ test('shortcuts help is accessible and Escape exits overlays then presenter', as
 });
 
 test('core pages and presenter emit no console errors', async ({ page }) => {
+  await page.route('https://analytics.sabya.pm/script.js', (route) =>
+    route.fulfill({
+      contentType: 'application/javascript',
+      body: 'window.umami = { track() {}, identify() {} };',
+    }),
+  );
   const errors: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(message.text());

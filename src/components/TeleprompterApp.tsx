@@ -78,9 +78,6 @@ export default function TeleprompterApp({
     entryContextRef.current = hasSaved && saved.script.trim() ? 'restored_script' : 'new_script';
     setHydrated(true);
 
-    const onConsent = (event: Event) => {
-      setPrivacyConsent((event as CustomEvent<PrivacyConsent>).detail);
-    };
     const onCleared = () => {
       const clean = embedded ? embedInitialState(initialScript ?? '', preset) : defaultState();
       setScript(clean.script);
@@ -88,10 +85,8 @@ export default function TeleprompterApp({
       setPrivacyConsent(clean.privacyConsent);
       setSaveStatus('Local data cleared');
     };
-    window.addEventListener('teleprompter:consent-change', onConsent);
     window.addEventListener('teleprompter:local-data-cleared', onCleared);
     return () => {
-      window.removeEventListener('teleprompter:consent-change', onConsent);
       window.removeEventListener('teleprompter:local-data-cleared', onCleared);
     };
   }, []);

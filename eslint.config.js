@@ -8,7 +8,6 @@ export default defineConfig(
     ignores: [
       '**/.astro/**',
       'dist/**',
-      'dist-ga/**',
       'node_modules/**',
       'artifacts/**',
       'playwright-report/**',

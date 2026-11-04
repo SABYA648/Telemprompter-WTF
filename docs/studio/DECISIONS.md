@@ -14,3 +14,7 @@
 - **D-012** No new UI frameworks. Dependencies are limited to the list in 0.4.
 - **D-013** Same origin `www.teleprompter.wtf` for the site and Studio, so homepage-to-Studio handoff can use shared storage and SEO authority stays in one place.
 - **D-014** The classic presenter stays for speakers (P4). Studio reuses its scroll engine.
+
+- **D-015** Until the settings schema and content packs exist in later milestones, seed the analytics allowlists for settings, templates and niches from the approved plan. M5 and M8 must derive or reconcile those lists against their shipped schemas and content IDs so the validation cannot drift.
+- **D-016** The plan names `words_bucket` without defining its boundaries. Reuse the classic script-size buckets for now. Use `0` as the session streak bucket before a streak exists. Revisit the boundaries with the Studio data layer and real usage.
+- **D-017** Virtual page titles are fixed labels derived from the normalized route rather than arbitrary caller-supplied titles. This preserves the no-user-content analytics rule even if a future caller passes a script title.

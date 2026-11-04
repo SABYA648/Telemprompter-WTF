@@ -100,9 +100,6 @@ test('capture representative visual states', async ({ page }) => {
   });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Optional analytics' })).toBeVisible();
-  await page.screenshot({ path: `${artifactDir}/375-consent.png`, fullPage: true });
-  await page.getByRole('button', { name: 'No thanks' }).click();
   await page.screenshot({ path: `${artifactDir}/375-home-empty.png`, fullPage: true });
   await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill(sampleScript);
@@ -155,16 +152,9 @@ test('capture representative visual states', async ({ page }) => {
 test('capture hero, guide embed, and not-found states', async ({ page }) => {
   test.setTimeout(120_000);
 
-  const dismissConsent = async () => {
-    const noThanks = page.getByRole('button', { name: 'No thanks' });
-    await noThanks.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => undefined);
-    if (await noThanks.isVisible().catch(() => false)) await noThanks.click();
-  };
-
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: width < 600 ? 844 : 900 });
     await page.goto('/');
-    await dismissConsent();
     const hero = page.locator('.home-hero');
     await expect(hero.locator('img[fetchpriority="high"]')).toBeVisible();
     await hero.screenshot({ path: `${artifactDir}/${width}-home-hero.png` });

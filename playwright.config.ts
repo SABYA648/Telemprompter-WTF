@@ -23,19 +23,11 @@ export default defineConfig({
   ...(process.env.PLAYWRIGHT_BASE_URL
     ? {}
     : {
-        webServer: [
-          {
-            command: 'npx serve dist-ga --listen tcp://127.0.0.1:48171 --no-clipboard',
-            url: 'http://127.0.0.1:48171',
-            reuseExistingServer: false,
-            timeout: 120_000,
-          },
-          {
-            command: 'npx serve dist --listen tcp://127.0.0.1:48172 --no-clipboard',
-            url: 'http://127.0.0.1:48172',
-            reuseExistingServer: false,
-            timeout: 120_000,
-          },
-        ],
+        webServer: {
+          command: 'npx serve dist --listen tcp://127.0.0.1:48171 --no-clipboard',
+          url: 'http://127.0.0.1:48171',
+          reuseExistingServer: false,
+          timeout: 120_000,
+        },
       }),
 });

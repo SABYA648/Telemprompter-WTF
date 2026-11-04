@@ -29,7 +29,7 @@ npm run test:e2e
 
 ## Configuration
 
-Build-time public settings are listed in `.env.example`. Usage analytics currently require visitor consent. See [analytics documentation](docs/analytics.md) and the [privacy policy](https://www.teleprompter.wtf/privacy).
+Build-time public settings are listed in `.env.example`. Umami records page views and typed product events using an anonymous device identifier. See [analytics documentation](docs/analytics.md) and the [privacy policy](https://www.teleprompter.wtf/privacy).
 
 ## Docker
 

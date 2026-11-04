@@ -64,7 +64,7 @@ test('404 embed is eagerly hydrated and fully keyboard driven', async ({ page })
 
 test('404 embed starts from a touch tap in a mobile viewport', async ({ browser, baseURL }) => {
   const context = await browser.newContext({
-    baseURL: baseURL ?? 'http://127.0.0.1:48172',
+    baseURL: baseURL ?? 'http://127.0.0.1:48171',
     viewport: { width: 390, height: 844 },
     hasTouch: true,
     isMobile: true,
@@ -90,7 +90,7 @@ test('404 embed starts from a touch tap in a mobile viewport', async ({ browser,
 
 test('404 content stays intact with reduced motion', async ({ browser, baseURL }) => {
   const context = await browser.newContext({
-    baseURL: baseURL ?? 'http://127.0.0.1:48172',
+    baseURL: baseURL ?? 'http://127.0.0.1:48171',
     reducedMotion: 'reduce',
   });
   const page = await context.newPage();
