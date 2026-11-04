@@ -3,9 +3,9 @@ import PrivacyChoices from '../components/PrivacyChoices';
 import TeleprompterApp from '../components/TeleprompterApp';
 import Layout from '../layouts/Layout.astro';
 
-const title = 'Free Online Teleprompter That Follows Your Pace | teleprompter.wtf';
+const title = 'Free Online Teleprompter | teleprompter.wtf';
 const description =
-  'A free online teleprompter that follows your pace while your script and voice stay on your device. Zero login, no ads, no watermark. Paste and present.';
+  'A free online teleprompter with adjustable scrolling, local script storage, mirroring and recording. Paste your script and present without an account.';
 const schema = [
   {
     '@context': 'https://schema.org',
@@ -27,8 +27,6 @@ const schema = [
     image: 'https://www.teleprompter.wtf/illustrations/teleprompter-og.webp',
     featureList: [
       'Manual elapsed-time scrolling',
-      'Smart Pace local microphone cadence following',
-      'Private Precision Beta on-device speech alignment',
       'Local screen and camera recording',
       'Horizontal mirroring for beam-splitter glass',
       'Document Picture in Picture and compact view',
@@ -50,10 +48,10 @@ const schema = [
     <div class="home-hero__split">
       <div class="home-hero__copy">
         <p class="eyebrow">Free · No signup · Private by design</p>
-        <h1>Free online teleprompter that follows your pace</h1>
+        <h1>Free online teleprompter</h1>
         <p class="home-hero__lead">
-          Paste your script and start. Smart Pace follows your speaking rhythm locally by default,
-          while reliable manual scrolling is always available.
+          Paste your script and start. Adjust the scrolling speed as you speak, then pause or
+          restart whenever you need.
         </p>
         <ul class="home-hero__promises">
           <li>No login</li>
@@ -80,32 +78,9 @@ const schema = [
 
   <section class="home-content section-wrap">
     <div class="section-heading">
-      <p class="eyebrow">Three ways to present</p>
+      <p class="eyebrow">Made for presenting</p>
       <h2>Control that matches your take.</h2>
-      <p>
-        Manual scrolling is always ready. Smart Pace and Private Precision Beta give you two local
-        ways to let the words follow your voice.
-      </p>
-    </div>
-    <div class="feature-list">
-      <article>
-        <span>01</span><h3>Manual</h3><p>
-          Steady, predictable elapsed-time scrolling. Control speed with keyboard shortcuts or
-          on-screen buttons. Never requests microphone permission and works offline.
-        </p>
-      </article>
-      <article>
-        <span>02</span><h3>Smart Pace (Default)</h3><p>
-          Follows your place using the speech recognition built into your browser, and matches your
-          speaking rhythm locally when recognition is unavailable. No model download either way.
-        </p>
-      </article>
-      <article>
-        <span>03</span><h3>Private Precision (Beta)</h3><p>
-          Downloads an optional local speech model (about 67 MB on first use) to recognize spoken
-          phrases on-device and align your exact place in the known script. Still Beta.
-        </p>
-      </article>
+      <p>Adjust the speed and presentation to suit your script.</p>
     </div>
     <div class="feature-list feature-list--secondary">
       <article>
@@ -126,24 +101,6 @@ const schema = [
           without any server upload or watermark.
         </p>
       </article>
-    </div>
-
-    <div class="privacy-flow-banner">
-      <p class="eyebrow">Local privacy architecture</p>
-      <h3>Your script, microphone audio, and video recordings never leave your device.</h3>
-      <div class="privacy-flow" aria-label="Local processing flow">
-        <span>Local script</span><b aria-hidden="true">→</b><span>Microphone Web Audio</span><b
-          aria-hidden="true">→</b
-        ><span>In-browser rhythm / alignment</span><b aria-hidden="true">→</b><span
-          >Dynamic scroll</span
-        >
-      </div>
-      <p class="home-voice-link">
-        Inspect the <a href="/private-voice-tracking">technical voice-tracking boundary</a>, review
-        the complete <a href="/features">feature list</a>, check <a href="/compatibility"
-          >browser & device compatibility</a
-        >, or read our plain-language <a href="/privacy">privacy policy</a>.
-      </p>
     </div>
 
     <div class="home-links">

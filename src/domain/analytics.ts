@@ -1,5 +1,3 @@
-import type { VoiceMode } from './types';
-
 export const ANALYTICS_EVENTS = [
   'started_teleprompter',
   'paused_teleprompter',
@@ -11,17 +9,6 @@ export const ANALYTICS_EVENTS = [
   'opened_shortcuts_panel',
   'entered_fullscreen',
   'exited_fullscreen',
-  'enabled_smart_pace',
-  'smart_pace_microphone_blocked',
-  'smart_pace_unavailable',
-  'opened_voice_tracking_panel',
-  'chose_manual_scrolling',
-  'started_voice_model_download',
-  'finished_voice_model_download',
-  'failed_voice_model_download',
-  'enabled_private_precision',
-  'private_precision_fell_back',
-  'removed_voice_model',
   'started_recording',
   'finished_recording',
   'saved_recording',
@@ -45,7 +32,6 @@ export const ANALYTICS_EVENTS = [
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
 export type SafeAnalyticsProperties = Record<string, string | number | boolean>;
 
-export const VOICE_MODE_PARAMS = ['manual', 'smart_pace', 'private_precision'] as const;
 export const SCRIPT_SIZE_BUCKETS = [
   '1_100',
   '101_300',
@@ -60,14 +46,6 @@ export const SCRIPT_KINDS = ['plain', 'production'] as const;
 export const CONTROL_SOURCES = ['button', 'keyboard'] as const;
 export const CALCULATOR_MODES = ['find_pace', 'find_time'] as const;
 export const RECORDING_FAIL_REASONS = ['permission_blocked', 'unavailable'] as const;
-export const PRECISION_MODEL_IDS = ['whisper-tiny-v1'] as const;
-export const FALLBACK_REASONS = [
-  'alignment_low',
-  'runtime_error',
-  'unsupported',
-  'memory',
-  'user_switch',
-] as const;
 export const RECORDING_TYPES = ['screen', 'camera'] as const;
 export const PIP_MODES = ['document', 'video', 'popout'] as const;
 export const SHARE_METHODS = ['native', 'clipboard'] as const;
@@ -84,7 +62,6 @@ export const SETTING_NAMES = [
   'focusLine',
   'focusPosition',
   'speakingWpm',
-  'voiceMode',
   'targetDurationSeconds',
   'paceCues',
 ] as const;
@@ -111,11 +88,6 @@ export const CONTENT_CLUSTERS = [
   'privacy',
 ] as const;
 export const CTA_LOCATIONS = ['inline', 'end', 'header', 'callout'] as const;
-// True first-use transfer of Private Precision (12 model files plus the ONNX runtime WASM and loader, all in the managed download)
-// expressed as a decimal MB bucket, keeping the event low cardinality.
-export const MODEL_SIZE_BUCKETS = ['65_70_mb'] as const;
-
-export type VoiceModeParam = (typeof VOICE_MODE_PARAMS)[number];
 export type ScriptSizeBucket = (typeof SCRIPT_SIZE_BUCKETS)[number];
 export type EntryContext = (typeof ENTRY_CONTEXTS)[number];
 export type ProgressBucket = (typeof PROGRESS_BUCKETS)[number];
@@ -124,9 +96,6 @@ export type ScriptKind = (typeof SCRIPT_KINDS)[number];
 export type ControlSource = (typeof CONTROL_SOURCES)[number];
 export type CalculatorMode = (typeof CALCULATOR_MODES)[number];
 export type RecordingFailReason = (typeof RECORDING_FAIL_REASONS)[number];
-export type PrecisionModelId = (typeof PRECISION_MODEL_IDS)[number];
-export type ModelSizeBucket = (typeof MODEL_SIZE_BUCKETS)[number];
-export type FallbackReason = (typeof FALLBACK_REASONS)[number];
 export type RecordingType = (typeof RECORDING_TYPES)[number];
 export type PipMode = (typeof PIP_MODES)[number];
 export type ShareMethod = (typeof SHARE_METHODS)[number];
@@ -137,11 +106,8 @@ export type PageType = (typeof PAGE_TYPES)[number];
 export type ContentCluster = (typeof CONTENT_CLUSTERS)[number];
 export type CtaLocation = (typeof CTA_LOCATIONS)[number];
 
-export const PRIVATE_PRECISION_SIZE_BUCKET: ModelSizeBucket = '65_70_mb';
-
 export interface AnalyticsEventProperties {
   started_teleprompter: {
-    voice_mode: VoiceModeParam;
     script_size_bucket: ScriptSizeBucket;
     entry_context: EntryContext;
     script_kind: ScriptKind;
@@ -152,27 +118,12 @@ export interface AnalyticsEventProperties {
   left_teleprompter_early: {
     progress_bucket: ProgressBucket;
     duration_bucket: DurationBucket;
-    voice_mode: VoiceModeParam;
   };
   restarted_teleprompter: { control_source: ControlSource };
   opened_appearance_panel: Record<string, never>;
   opened_shortcuts_panel: Record<string, never>;
   entered_fullscreen: Record<string, never>;
   exited_fullscreen: Record<string, never>;
-  enabled_smart_pace: Record<string, never>;
-  smart_pace_microphone_blocked: Record<string, never>;
-  smart_pace_unavailable: Record<string, never>;
-  opened_voice_tracking_panel: Record<string, never>;
-  chose_manual_scrolling: Record<string, never>;
-  started_voice_model_download: { model_id: PrecisionModelId };
-  finished_voice_model_download: {
-    model_id: PrecisionModelId;
-    size_bucket: ModelSizeBucket;
-  };
-  failed_voice_model_download: Record<string, never>;
-  enabled_private_precision: Record<string, never>;
-  private_precision_fell_back: { reason: FallbackReason };
-  removed_voice_model: Record<string, never>;
   started_recording: { recording_type: RecordingType; microphone_included: boolean };
   finished_recording: { recording_type: RecordingType; duration_bucket: DurationBucket };
   saved_recording: { recording_type: RecordingType };
@@ -222,12 +173,6 @@ export function durationBucket(seconds: number): DurationBucket {
   return '15m_plus';
 }
 
-export function voiceModeParam(mode: VoiceMode): VoiceModeParam {
-  if (mode === 'smart') return 'smart_pace';
-  if (mode === 'precision') return 'private_precision';
-  return 'manual';
-}
-
 declare global {
   interface Window {
     dataLayer?: unknown[];
@@ -244,7 +189,6 @@ type PropertyRule = readonly string[] | 'boolean';
 
 const EVENT_PROPERTY_SCHEMA: Record<AnalyticsEvent, Record<string, PropertyRule>> = {
   started_teleprompter: {
-    voice_mode: VOICE_MODE_PARAMS,
     script_size_bucket: SCRIPT_SIZE_BUCKETS,
     entry_context: ENTRY_CONTEXTS,
     script_kind: SCRIPT_KINDS,
@@ -255,27 +199,12 @@ const EVENT_PROPERTY_SCHEMA: Record<AnalyticsEvent, Record<string, PropertyRule>
   left_teleprompter_early: {
     progress_bucket: PROGRESS_BUCKETS,
     duration_bucket: DURATION_BUCKETS,
-    voice_mode: VOICE_MODE_PARAMS,
   },
   restarted_teleprompter: { control_source: CONTROL_SOURCES },
   opened_appearance_panel: {},
   opened_shortcuts_panel: {},
   entered_fullscreen: {},
   exited_fullscreen: {},
-  enabled_smart_pace: {},
-  smart_pace_microphone_blocked: {},
-  smart_pace_unavailable: {},
-  opened_voice_tracking_panel: {},
-  chose_manual_scrolling: {},
-  started_voice_model_download: { model_id: PRECISION_MODEL_IDS },
-  finished_voice_model_download: {
-    model_id: PRECISION_MODEL_IDS,
-    size_bucket: MODEL_SIZE_BUCKETS,
-  },
-  failed_voice_model_download: {},
-  enabled_private_precision: {},
-  private_precision_fell_back: { reason: FALLBACK_REASONS },
-  removed_voice_model: {},
   started_recording: { recording_type: RECORDING_TYPES, microphone_included: 'boolean' },
   finished_recording: { recording_type: RECORDING_TYPES, duration_bucket: DURATION_BUCKETS },
   saved_recording: { recording_type: RECORDING_TYPES },
@@ -322,7 +251,6 @@ const PROHIBITED_PROPERTY_PATTERN =
 // constrained to fixed enums or booleans by EVENT_PROPERTY_SCHEMA, so they cannot carry
 // user content.
 const SAFE_TAXONOMY_KEYS = new Set([
-  'voice_mode',
   'script_size_bucket',
   'script_kind',
   'microphone_included',

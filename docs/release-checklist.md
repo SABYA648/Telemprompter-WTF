@@ -27,7 +27,5 @@ The latest local production-equivalent evidence is recorded in
 - Verify the Google Search Console property and submit the sitemap.
 - Verify Bing Webmaster Tools and submit the sitemap.
 - Check GA4 Realtime with one real opted-in session.
-- Run one real microphone session with Smart Pace.
-- Run one real Private Precision Beta session (download, enable, present, observe fallback behavior).
 - Run one real mobile session (manual presenter at minimum).
 - Inspect PageSpeed Insights on production after deploy.

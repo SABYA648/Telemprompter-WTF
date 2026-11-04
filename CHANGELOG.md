@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file. The format is b
 
 ## [Unreleased]
 
+### Removed
+
+- Voice-follow controls and the optional local speech model. The presenter uses manual scrolling.
+
 ### Added
 
 - Consent-gated self-hosted Umami (`https://analytics.sabya.pm/script.js`) for page views and product events, loaded only after the visitor allows analytics.

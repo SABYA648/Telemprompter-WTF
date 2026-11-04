@@ -1,8 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
-const title = 'Teleprompter Features: Manual, Smart Pace & Precision | teleprompter.wtf';
+const title = 'Teleprompter Features: Scrolling and Recording | teleprompter.wtf';
 const description =
-  'Complete feature breakdown: elapsed-time manual scrolling, local Smart Pace, Private Precision Beta, local recording, beam-splitter mirroring, and compact views.';
+  'Explore manual scrolling, local recording, beam-splitter mirroring, keyboard shortcuts, compact views and accessible display controls.';
 const schema = [
   {
     '@context': 'https://schema.org',
@@ -29,8 +29,8 @@ const schema = [
       <p class="eyebrow">Built for the take</p>
       <h1>Simple on the surface. Capable when needed.</h1>
       <p>
-        Paste and present immediately. Manual scrolling, local voice tracking, in-browser recording,
-        and compact-view tools stay behind clear controls until you need them.
+        Paste and present immediately. Manual scrolling, in-browser recording, and compact-view
+        tools stay behind clear controls until you need them.
       </p>
       <a
         class="button button--primary"
@@ -46,20 +46,6 @@ const schema = [
           The scroll engine uses elapsed time rather than frame counts, so speed stays consistent on
           standard and high-refresh displays. Adjust speed from 1 to 10 and pause or resume without
           jumps.
-        </p>
-      </section>
-      <section>
-        <p class="feature-number">02</p><h2>Smart Pace (Zero Download)</h2><p>
-          Uses your browser's own speech recognition to follow your place in the script, and falls
-          back to local Web Audio cadence tracking when recognition is unavailable. No model
-          download either way. Some browsers process recognition on their own servers.
-        </p>
-      </section>
-      <section>
-        <p class="feature-number">03</p><h2>Private Precision Beta</h2><p>
-          An optional local Whisper Tiny model (about 67 MB on first download, cached in this
-          browser) recognizes temporary audio fragments and aligns them to your known script. Audio
-          and fragments never leave the device.
         </p>
       </section>
       <section>
@@ -108,12 +94,7 @@ const schema = [
       </section>
     </div>
 
-    <p class="home-voice-link">
-      Need browser-specific API details? Read our <a href="/compatibility"
-        >Browser & Device Compatibility Guide</a
-      >
-      or explore the <a href="/private-voice-tracking">Private Voice Tracking Architecture</a>.
-    </p>
+    <p>Read our <a href="/compatibility">browser compatibility guide</a>.</p>
 
     <aside class="callout">
       <div><p class="eyebrow">Ready?</p><h2>Paste. Present. Done.</h2></div><a

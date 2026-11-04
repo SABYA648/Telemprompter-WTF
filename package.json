@@ -7,10 +7,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "astro dev",
-    "assets:prepare": "node scripts/prepare-runtime-assets.mjs",
     "assets:verify": "node scripts/verify-illustration-pack.mjs",
-    "models:fetch": "node scripts/fetch-local-model.mjs",
-    "build": "npm run assets:prepare && astro build && node scripts/prune-build.mjs",
+    "build": "astro build",
     "preview": "astro preview",
     "typecheck": "astro check",
     "lint": "eslint .",
@@ -22,7 +20,6 @@
     "test:e2e": "PUBLIC_UMAMI_WEBSITE_ID= PUBLIC_GA_MEASUREMENT_ID= npm run build && PUBLIC_GA_MEASUREMENT_ID=G-TEST123 PUBLIC_UMAMI_WEBSITE_ID=c5952a2b-b192-46fe-8a3d-04ad673ffd6d TELEPROMPTER_OUT_DIR=dist-ga npm run build && playwright test",
     "test:e2e:headed": "PUBLIC_UMAMI_WEBSITE_ID= PUBLIC_GA_MEASUREMENT_ID= npm run build && PUBLIC_GA_MEASUREMENT_ID=G-TEST123 PUBLIC_UMAMI_WEBSITE_ID=c5952a2b-b192-46fe-8a3d-04ad673ffd6d TELEPROMPTER_OUT_DIR=dist-ga npm run build && playwright test --headed",
     "test:e2e:docker": "PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 playwright test",
-    "test:inference": "PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 node scripts/verify-local-inference.mjs",
     "test:seo-crawl": "node scripts/seo-crawl-check.mjs",
     "test:lighthouse": "node scripts/lighthouse.mjs",
     "revenue:estimate": "node scripts/revenue-estimate.mjs",
@@ -31,7 +28,6 @@
   "dependencies": {
     "@astrojs/preact": "^6.0.2",
     "@astrojs/sitemap": "^3.7.3",
-    "@huggingface/transformers": "3.7.5",
     "astro": "^7.2.0",
     "preact": "^10.29.8"
   },
@@ -56,7 +52,6 @@
     "node": ">=22.12.0"
   },
   "overrides": {
-    "onnxruntime-node": "1.21.0",
     "sharp": "0.35.3"
   }
 }

@@ -8,19 +8,19 @@ const longScript = Array.from(
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await expect(
-    page.getByRole('heading', { name: 'Free online teleprompter that follows your pace' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Free online teleprompter' })).toBeVisible();
 });
 
 test('homepage loads and updates script statistics', async ({ page }) => {
   const editor = page.getByLabel('Teleprompter script');
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await editor.fill('One two three\n\nFour five.');
   await expect(page.getByText('5 words')).toBeVisible();
   await expect(page.getByText(/at 130 WPM/)).toBeVisible();
 });
 
 test('presenter starts, scrolls, pauses, resumes, changes speed and restarts', async ({ page }) => {
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill(longScript);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   const scroller = page.getByTestId('presenter-scroll');
@@ -48,6 +48,7 @@ test('presenter starts, scrolls, pauses, resumes, changes speed and restarts', a
 });
 
 test('appearance settings update font size and mirror mode', async ({ page }) => {
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill(longScript);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await expect(page.getByRole('dialog', { name: 'Teleprompter presenter' })).toBeFocused();
@@ -66,6 +67,7 @@ test('appearance settings update font size and mirror mode', async ({ page }) =>
 });
 
 test('fullscreen capability is exposed only when supported', async ({ page }) => {
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill('A short presenter script.');
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   const supported = await page.evaluate(
@@ -76,6 +78,7 @@ test('fullscreen capability is exposed only when supported', async ({ page }) =>
 
 test('script survives refresh', async ({ page }) => {
   const canary = 'A locally saved script survives this refresh.';
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill(canary);
   await expect(page.getByText('Saved only on this device')).toBeVisible();
   await page.waitForTimeout(500);
@@ -84,6 +87,7 @@ test('script survives refresh', async ({ page }) => {
 });
 
 test('clear script confirms and removes text', async ({ page }) => {
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill('Text that will be cleared.');
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Clear script' }).click();
@@ -92,6 +96,7 @@ test('clear script confirms and removes text', async ({ page }) => {
 
 test('clear local data removes script and resets preferences', async ({ page }) => {
   await page.getByRole('button', { name: 'No thanks' }).click();
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill('Text saved only here.');
   await page.getByText('Privacy & local data').click();
   page.once('dialog', (dialog) => dialog.accept());
@@ -120,6 +125,7 @@ test('TXT import reads plain text and rejects malformed binary content', async (
 });
 
 test('shortcuts help is accessible and Escape exits overlays then presenter', async ({ page }) => {
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill(longScript);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await page.getByRole('button', { name: 'Shortcuts' }).click();
@@ -139,6 +145,7 @@ test('core pages and presenter emit no console errors', async ({ page }) => {
   page.on('pageerror', (error) => errors.push(error.message));
 
   await page.goto('/');
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill(longScript);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await page.getByRole('button', { name: 'Appearance' }).click();

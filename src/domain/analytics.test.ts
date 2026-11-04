@@ -10,7 +10,6 @@ import {
   progressBucket,
   scriptSizeBucket,
   validateEventProperties,
-  voiceModeParam,
 } from './analytics';
 
 describe('analytics abstraction', () => {
@@ -62,17 +61,6 @@ describe('analytics abstraction', () => {
       'opened_shortcuts_panel',
       'entered_fullscreen',
       'exited_fullscreen',
-      'enabled_smart_pace',
-      'smart_pace_microphone_blocked',
-      'smart_pace_unavailable',
-      'opened_voice_tracking_panel',
-      'chose_manual_scrolling',
-      'started_voice_model_download',
-      'finished_voice_model_download',
-      'failed_voice_model_download',
-      'enabled_private_precision',
-      'private_precision_fell_back',
-      'removed_voice_model',
       'started_recording',
       'finished_recording',
       'saved_recording',
@@ -109,7 +97,6 @@ describe('analytics abstraction', () => {
   it('drops user-content-shaped properties', () => {
     expect(
       filterSafeProperties({
-        voice_mode: 'manual',
         entry_context: 'restored_script',
         success: true,
         script: 'private words',
@@ -120,7 +107,7 @@ describe('analytics abstraction', () => {
         clipboard: 'copied text',
         free_text: 'looks like a safe key but is not taxonomy',
       }),
-    ).toEqual({ voice_mode: 'manual', entry_context: 'restored_script', success: true });
+    ).toEqual({ entry_context: 'restored_script', success: true });
   });
 
   it('drops malformed keys and arbitrary or oversized values', () => {
@@ -138,21 +125,18 @@ describe('analytics abstraction', () => {
   it('keeps only schema-approved properties with enum values', () => {
     expect(
       validateEventProperties('started_teleprompter', {
-        voice_mode: 'smart_pace',
         script_size_bucket: '301_750',
         entry_context: 'restored_script',
         script_kind: 'plain',
         speed: 5,
       }),
     ).toEqual({
-      voice_mode: 'smart_pace',
       script_size_bucket: '301_750',
       entry_context: 'restored_script',
       script_kind: 'plain',
     });
     expect(
       validateEventProperties('started_teleprompter', {
-        voice_mode: 'shouty',
         script_size_bucket: '301_750',
         entry_context: 'restored_script',
         script_kind: 'plain',
@@ -209,12 +193,6 @@ describe('analytics abstraction', () => {
     expect(durationBucket(300)).toBe('5_15m');
     expect(durationBucket(899)).toBe('5_15m');
     expect(durationBucket(900)).toBe('15m_plus');
-  });
-
-  it('maps internal voice modes to analytics voice_mode values', () => {
-    expect(voiceModeParam('manual')).toBe('manual');
-    expect(voiceModeParam('smart')).toBe('smart_pace');
-    expect(voiceModeParam('precision')).toBe('private_precision');
   });
 
   it('accepts only the self-hosted Umami script origin', () => {

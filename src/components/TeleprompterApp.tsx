@@ -13,7 +13,6 @@ import {
 } from '../domain/localState';
 import { SETTING_LIMITS } from '../domain/settings';
 import { compileScriptGuide } from '../domain/scriptGuide';
-import { primeBrowserSpeechInUserGesture } from '../domain/browserSpeech';
 import type { PresenterPreferences, PrivacyConsent } from '../domain/types';
 import Presenter from './Presenter';
 
@@ -63,23 +62,7 @@ export default function TeleprompterApp({
   useEffect(() => {
     const saved = loadLocalState(localStorage, storageKey);
     const hasSaved = saved.savedAt > 0;
-    let restoredPreferences = saved.preferences;
-    // One-shot experience refresh: older installs defaulted to Manual. Promote them to
-    // Smart Pace once so the product asks to listen by default. Precision stays put.
-    // Embedded practice workspaces keep their authored manual default instead.
-    const experienceKey = 'teleprompter-wtf.experience-v2-smart';
-    if (!embedded) {
-      try {
-        if (!localStorage.getItem(experienceKey)) {
-          if (restoredPreferences.voiceMode === 'manual') {
-            restoredPreferences = { ...restoredPreferences, voiceMode: 'smart' };
-          }
-          localStorage.setItem(experienceKey, '1');
-        }
-      } catch {
-        // Storage can be unavailable; the in-memory default still prefers Smart Pace.
-      }
-    }
+    const restoredPreferences = saved.preferences;
     if (hasSaved) {
       setScript(saved.script);
       setPreferences(restoredPreferences);
@@ -224,7 +207,6 @@ export default function TeleprompterApp({
 
   const start = () => {
     if (!script.trim()) return;
-    if (preferences.voiceMode === 'smart') primeBrowserSpeechInUserGesture();
     setPresenting(true);
   };
 
@@ -239,8 +221,8 @@ export default function TeleprompterApp({
         class={`editor-shell${variant === 'compact' ? ' editor-shell--compact' : ''}`}
         aria-labelledby={embedded ? undefined : 'editor-title'}
         aria-label={embedded ? 'Practice teleprompter' : undefined}
-        aria-busy={embedded && !hydrated ? 'true' : undefined}
-        inert={embedded && !hydrated}
+        aria-busy={!hydrated ? 'true' : undefined}
+        inert={!hydrated}
         data-hydrated={hydrated || undefined}
       >
         <div class="editor-heading">

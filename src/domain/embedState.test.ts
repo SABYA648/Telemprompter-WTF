@@ -64,15 +64,13 @@ describe('embedded workspace state', () => {
   it('starts embeds from the authored sample with manual voice mode by default', () => {
     const state = embedInitialState('Sample script');
     expect(state.script).toBe('Sample script');
-    expect(state.preferences.voiceMode).toBe('manual');
     expect(state.savedAt).toBe(0);
   });
 
   it('applies presets over embed defaults and keeps saved-state-independent clamping', () => {
-    const state = embedInitialState('Sample', { fontSize: 72, mirror: true, voiceMode: 'smart' });
+    const state = embedInitialState('Sample', { fontSize: 72, mirror: true });
     expect(state.preferences.fontSize).toBe(72);
     expect(state.preferences.mirror).toBe(true);
-    expect(state.preferences.voiceMode).toBe('smart');
     expect(state.preferences.lineHeight).toBe(DEFAULT_PREFERENCES.lineHeight);
   });
 

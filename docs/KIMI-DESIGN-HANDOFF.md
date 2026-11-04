@@ -99,7 +99,6 @@ Audit existing behavior before editing it. Preserve valid capabilities and harde
 - Start, pause, resume, restart, seek, and clear state feedback.
 - Speed, font size, line height, text width, alignment, focus position, contrast, mirror, and vertical flip.
 - Countdown, fullscreen, compact/Picture-in-Picture fallbacks, keyboard controls, and touch controls.
-- Smart Pace, browser speech behavior, Private Precision Beta, recording, and capability fallbacks without weakening existing privacy boundaries.
 - Long, empty, corrupt, malformed, and rapidly edited scripts.
 - Duplicate actions, interrupted initialization, permission denial, missing browser APIs, model failure, and accidental data loss.
 

@@ -78,24 +78,6 @@ const schema = [
               <td>Always available (0 dependencies)</td>
             </tr>
             <tr>
-              <th scope="row">Smart Pace (Web Audio)</th>
-              <td>Full</td>
-              <td>Full</td>
-              <td>Full</td>
-              <td>Full</td>
-              <td>Full</td>
-              <td>Falls back to Manual scrolling</td>
-            </tr>
-            <tr>
-              <th scope="row">Private Precision (WASM)</th>
-              <td>Full</td>
-              <td>Full</td>
-              <td>Full</td>
-              <td>Supported (4GB+ RAM)</td>
-              <td>Supported (4GB+ RAM)</td>
-              <td>Falls back to Smart Pace</td>
-            </tr>
-            <tr>
               <th scope="row">Document Picture-in-Picture</th>
               <td>Supported (v116+)</td>
               <td>Not in browser</td>
@@ -140,15 +122,6 @@ const schema = [
               <td>Supported</td>
               <td>CSS transform (Universal)</td>
             </tr>
-            <tr>
-              <th scope="row">Offline Operation</th>
-              <td>Full (PWA cache)</td>
-              <td>Full (PWA cache)</td>
-              <td>Full (PWA cache)</td>
-              <td>Full (PWA cache)</td>
-              <td>Full (PWA cache)</td>
-              <td>Static cached bundle</td>
-            </tr>
           </tbody>
         </table>
       </div>
@@ -160,25 +133,6 @@ const schema = [
         (`requestAnimationFrame`) multiplied by your selected speed setting. Because it has zero
         external dependencies and does not require microphone permission, it works across every
         browser engine, including legacy environments.
-      </p>
-
-      <h3>2. Smart Pace</h3>
-      <p>
-        Smart Pace relies on `navigator.mediaDevices.getUserMedia` and the standard `AudioContext` /
-        `AnalyserNode` APIs. In modern browsers supporting `AudioWorklet`, PCM capture runs on an
-        audio rendering thread; in older Safari builds, it gracefully degrades to a ScriptProcessor
-        node. If microphone permission is denied or no input device is detected, the presenter
-        clearly displays a notice and leaves manual scrolling active.
-      </p>
-
-      <h3>3. Private Precision Beta</h3>
-      <p>
-        Private Precision Beta runs single-threaded WebAssembly in a dedicated Web Worker via ONNX
-        Runtime Web. Because Whisper Tiny requires around 250 MB to 400 MB of heap during peak model
-        inference, devices with very low available RAM (such as budget phones or heavily throttled
-        tabs) may experience sluggish updates. Whenever a recognition chunk fails or takes longer
-        than the real-time deadline, the system drops the chunk and maintains scroll pace through
-        Smart Pace without jumping.
       </p>
 
       <h2>Picture in Picture & compact views</h2>

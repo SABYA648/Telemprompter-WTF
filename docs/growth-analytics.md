@@ -31,17 +31,6 @@ Steps, in order:
 
 Breakdown dimension: `content_cluster` (custom dimension; requires the manual GA4 registration step). Add Landing page and Device category as additional breakdowns. A step with a large drop indicates either weak CTA placement (step 1 to 2) or a product problem after arrival (step 3 to 4).
 
-## 3. Voice feature adoption
-
-Question answered: do visitors choose Manual, Smart Pace, or Private Precision Beta, and does the chosen mode affect completion?
-
-Technique: Free form.
-
-- Rows: `voice_mode` (custom dimension)
-- Values: Event count for `started_teleprompter`, Event count for `finished_teleprompter`, Event count for `left_teleprompter_early`, Event count for `private_precision_fell_back`
-
-Read completion per start by mode. A high `private_precision_fell_back` count relative to `started_teleprompter` with `voice_mode = private_precision` suggests device or environment friction worth investigating; the `reason` parameter on `private_precision_fell_back` (alignment_low, runtime_error, unsupported, memory, user_switch) shows why.
-
 ## 4. Retention
 
 Question answered: do people come back, and which content produces returning users?

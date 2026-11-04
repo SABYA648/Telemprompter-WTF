@@ -21,13 +21,11 @@ What the owner monitors, weekly and monthly. Sources: Google Search Console (acq
 
 ### Product quality
 
-- `private_precision_fell_back` rate relative to Private Precision Beta starts, broken down by `reason`
 - `smart_pace_microphone_blocked` and `smart_pace_unavailable` relative to `enabled_smart_pace` indicate permission and capability friction
 
 ## Monthly
 
 - Returning-user share in GA4 (New vs returning dimension)
-- Voice mode mix across `started_teleprompter`: manual versus Smart Pace versus Private Precision Beta
 - Recording and Picture in Picture adoption (`started_recording`, `opened_picture_in_picture`)
 - Browser capability mix: which advanced features fire `unavailable` fallbacks on which device categories
 - Core Web Vitals from Search Console field data, plus a Lighthouse pass against production after any performance-relevant change

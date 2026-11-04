@@ -2,8 +2,6 @@
 
 Research date: 9 August 2026.
 
-> Refresh note (2026-08-09, final pre-launch pass): live results were rechecked for the generic and voice-follow clusters on this date. Voice-following and on-device privacy claims are now standard across competitors (VoicePrompter claims on-device processing in 34 languages and PWA offline use; VoxCue claims fully local processing; Speakflow pairs voice scrolling with accounts). The defensible differentiators remain: genuinely free with no login, open source, an on-device Whisper model rather than a vague "voice activated" label, and honest Beta labeling. No content changes resulted from this refresh; the existing query-cluster mapping below still holds.
-
 This review used live search results and primary product pages. It is a snapshot, not a permanent claim about another product. Named pricing and feature claims should be rechecked before publishing a comparison page.
 
 ## Query clusters
@@ -11,7 +9,7 @@ This review used live search results and primary product pages. It is a snapshot
 | Cluster      | Representative queries                                                                            | Dominant intent                        | teleprompter.wtf owner                                                            |
 | ------------ | ------------------------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------- |
 | Generic tool | free online teleprompter, online teleprompter, browser teleprompter                               | Use a tool immediately                 | `/`                                                                               |
-| Voice follow | voice activated teleprompter, voice controlled teleprompter, teleprompter that follows your voice | Understand and use voice follow        | `/private-voice-tracking` and `/guides/voice-activated-teleprompters`             |
+| Voice follow | voice activated teleprompter, voice controlled teleprompter, teleprompter that follows your voice | Understand and use voice follow        | `/guides/voice-activated-teleprompters`                                           |
 | Video        | teleprompter for YouTube, video recording teleprompter                                            | Record while maintaining eye contact   | `/guides/teleprompter-for-youtube` and `/guides/teleprompter-for-video-recording` |
 | Presenting   | presentation teleprompter, teleprompter for Zoom                                                  | Set up a prompt around a call or stage | Dedicated presentation and Zoom guides                                            |
 | Technique    | how to use a teleprompter, read naturally, maintain eye contact, format a script                  | Improve delivery                       | Distinct technique guides                                                         |
@@ -48,17 +46,16 @@ The sources above do not consistently document where voice processing happens or
 
 ## Page ownership map
 
-| URL                                     | Primary intent                                | Must not compete with                                      |
-| --------------------------------------- | --------------------------------------------- | ---------------------------------------------------------- |
-| `/`                                     | Use a free online teleprompter                | No duplicate free-online or online-teleprompter route      |
-| `/features`                             | Review shipped product capabilities           | Voice page owns implementation detail                      |
-| `/private-voice-tracking`               | Understand and try private local voice follow | Voice guide owns category education                        |
-| `/privacy`                              | Understand data handling and consent          | Feature pages should link here, not repeat the full policy |
-| `/guides`                               | Browse educational content                    | Individual guides own query-specific answers               |
-| `/guides/voice-activated-teleprompters` | Compare voice-follow methods                  | Private voice page owns this product's implementation      |
-| `/guides/teleprompter-speed`            | Learn pacing principles                       | Calculators own arithmetic tasks                           |
-| `/tools/teleprompter-speed-calculator`  | Solve words, time, and WPM                    | Words-to-minutes owns reference-rate comparison            |
-| `/tools/words-to-minutes`               | Compare duration across common WPM rates      | Speed calculator owns target-time calculations             |
+| URL                                     | Primary intent                           | Must not compete with                                      |
+| --------------------------------------- | ---------------------------------------- | ---------------------------------------------------------- |
+| `/`                                     | Use a free online teleprompter           | No duplicate free-online or online-teleprompter route      |
+| `/features`                             | Review shipped product capabilities      | Voice page owns implementation detail                      |
+| `/privacy`                              | Understand data handling and consent     | Feature pages should link here, not repeat the full policy |
+| `/guides`                               | Browse educational content               | Individual guides own query-specific answers               |
+| `/guides/voice-activated-teleprompters` | Compare voice-follow methods             | Private voice page owns this product's implementation      |
+| `/guides/teleprompter-speed`            | Learn pacing principles                  | Calculators own arithmetic tasks                           |
+| `/tools/teleprompter-speed-calculator`  | Solve words, time, and WPM               | Words-to-minutes owns reference-rate comparison            |
+| `/tools/words-to-minutes`               | Compare duration across common WPM rates | Speed calculator owns target-time calculations             |
 
 ## Publishing decision
 

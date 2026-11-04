@@ -130,14 +130,6 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
           )
         }
         {
-          guide.slug === 'voice-activated-teleprompters' && (
-            <p class="guide-context-link">
-              See the exact local processing boundary in{' '}
-              <a href="/private-voice-tracking">How private voice tracking works</a>.
-            </p>
-          )
-        }
-        {
           guide.embed && (
             <div id="practice">
               <TeleprompterEmbed
@@ -180,10 +172,10 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
             rel="author me noopener">Sabyasachi Mishra</a
           >
         </p>
-        <p class="sabyacard__role">AI Product Manager &amp; Systems Builder</p>
+        <p class="sabyacard__role">Product Manager &amp; Systems Builder</p>
         <p class="sabyacard__bio">
-          Builds AI products that hold up in production, and independently runs Shiproom,
-          teleprompter.wtf, and compressimage.fun.
+          Builds software products and independently runs Shiproom, teleprompter.wtf, and
+          compressimage.fun.
         </p>
         <p class="sabyacard__links">
           <a

@@ -13,7 +13,6 @@ export default defineConfig(
       'artifacts/**',
       'playwright-report/**',
       'test-results/**',
-      'public/models/**',
     ],
   },
   eslint.configs.recommended,
@@ -42,15 +41,6 @@ export default defineConfig(
         AudioContext: 'readonly',
         navigator: 'readonly',
         performance: 'readonly',
-      },
-    },
-  },
-  {
-    files: ['public/audio/*.js'],
-    languageOptions: {
-      globals: {
-        AudioWorkletProcessor: 'readonly',
-        registerProcessor: 'readonly',
       },
     },
   },

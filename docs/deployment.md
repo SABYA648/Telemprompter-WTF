@@ -2,7 +2,7 @@
 
 ## Static hosting
 
-Run `npm ci`, `npm run models:fetch`, and `npm run build`, then publish `dist/` at `https://www.teleprompter.wtf`. The site uses clean extensionless canonical URLs. Configure the host to serve generated `index.html` files for those routes and return `404.html` with status 404 for missing routes.
+Run `npm ci` and `npm run build`, then publish `dist/` at `https://www.teleprompter.wtf`. The site uses clean extensionless canonical URLs. Configure the host to serve generated `index.html` files for those routes and return `404.html` with status 404 for missing routes.
 
 `public/_headers` is copied into the build for compatible hosts. Equivalent Nginx behavior is included in `nginx.conf`.
 
@@ -20,9 +20,7 @@ curl --fail http://127.0.0.1:8080/health
 
 Or use `docker compose up --build -d`.
 
-The multi-stage build uses clean npm installation, fetches and checks all pinned model files, runs the static build, and copies only generated output into an unprivileged Nginx image. There is no Node runtime, database, or inference server in the final stage.
-
-The full model adds 45,233,651 bytes of weights and tokenizer/configuration files. ONNX Runtime WASM adds 21,596,019 bytes, plus a 44,484-byte loader. These assets are present in the image but do not download during a normal page visit.
+The multi-stage build uses clean npm installation, runs the static build, and copies only generated output into an unprivileged Nginx image. There is no Node runtime, database, or inference server in the final stage.
 
 ## Optional build variables
 
@@ -54,10 +52,9 @@ Do not enable HSTS on local HTTP deployments. Consider browser preload only afte
 ## Caching and ranges
 
 - Fingerprinted `/_astro/` assets use one-year immutable caching.
-- Versioned `/models/` files use one-year immutable caching and advertise byte ranges.
 - HTML uses immediate revalidation.
 - robots, sitemap, and llms files use a short one-hour cache.
-- Text assets are compressed. Model binaries are excluded from gzip.
+- Text assets are compressed.
 
 ## Permissions Policy
 

@@ -36,23 +36,17 @@ Build an instant browser utility that:
 - **Astro static-first.** The site builds to plain HTML served by Nginx. Content pages ship nearly no JavaScript; interactivity is isolated.
 - **Preact islands.** The editor, presenter, media, and consent UI are independent islands. A failure in one cannot take down the page.
 - **Local state only.** Scripts, settings, and consent choices live in versioned browser-local storage with safe migration and corruption handling.
-- **Smart Pace: signal analysis, not recognition.** Local Web Audio analysis with room calibration, adaptive thresholds, speech activity, and silence timing tracks rhythm without producing a transcript. It is the zero-download default voice mode.
-- **Private Precision Beta: local Whisper with script alignment.** A pinned quantized Whisper Tiny ONNX model (`onnx-community/whisper-tiny`, revision `ff4177021cc41f7db950912b73ea4fdf7d01d8e7`) runs through ONNX Runtime Web in a dedicated Worker. Six-second audio windows produce temporary recognition fragments that are aligned against a bounded region of the known script and discarded. Smart Pace always runs alongside as fallback. See [docs/local-precision.md](docs/local-precision.md).
 - **Docker and Nginx.** A multi-stage build verifies checksummed model assets, compiles the static site, and serves it from an unprivileged Nginx image with a read-only filesystem option and a `/health` healthcheck. Model files sit same-origin under `/models/` with one-year immutable caching and byte-range support.
 
 ## Tradeoffs, stated honestly
 
-- **Model size.** Private Precision Beta costs about 67 MB on first use (45,233,651 bytes of model files plus the ONNX Runtime WASM), downloaded explicitly and kept in the browser afterward. That is unacceptable as a default, so it is an explicit opt-in.
-- **Device variability.** Single-threaded WASM inference speed and alignment quality vary by hardware, accent, and environment. This is the main reason the feature ships labeled Beta, and why Smart Pace runs underneath it.
 - **Beta precision.** Measured alignment confidence on the bundled fixture is 0.794 to 0.804 (details in [docs/local-precision.md](docs/local-precision.md)). Low-confidence results hold scroll position instead of jumping; chunks are dropped when the worker is busy rather than queued, so the presenter never stutters to catch up.
 - **Browser media API limits.** Recording formats, Picture in Picture behavior, and background audio rules differ across browsers and are constrained further on mobile. The product capability-detects and degrades instead of promising uniform behavior.
 
 ## Quality system
 
-- **Unit tests** (vitest, 27 tests) over scrolling, calculations, state migration, settings, Smart Pace signal behavior, script alignment, and analytics filtering.
 - **Playwright end-to-end suites** covering the app, privacy and analytics, SEO metadata, advanced features, responsive layout and accessibility, and visual regression.
 - **Privacy canaries.** E2E tests inject known script and voice canary strings and assert they never appear in any outgoing URL or request body.
-- **Local inference verification.** `npm run test:inference` drives the real worker, pinned model, and ONNX Runtime against the production Docker build with a bundled audio fixture.
 - **Lighthouse artifacts** and Core Web Vitals monitoring for performance.
 - **Content lint.** `npm run content:lint` checks public copy, built metadata, JSON-LD, and internal links on every build.
 - **Docker validation.** Container builds and end-to-end tests run against the served image, not just the dev server.

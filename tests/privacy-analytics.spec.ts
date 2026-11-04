@@ -10,6 +10,7 @@ test('analytics stay absent before consent and after declining', async ({ page }
 
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Optional analytics' })).toBeVisible();
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill('No analytics before consent.');
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await page.waitForTimeout(400);
@@ -78,6 +79,7 @@ test('no Microsoft Clarity integration remains', async ({ page }) => {
   await page.route('https://www.googletagmanager.com/**', (route) => route.abort());
   await page.route('https://analytics.sabya.pm/**', (route) => route.abort());
   await page.goto('/');
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill('Clarity is gone from this build.');
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
   await page.waitForTimeout(400);
@@ -102,9 +104,7 @@ test('analytics stays dormant until consent even with a configured measurement I
   await page.route('https://analytics.sabya.pm/**', (route) => route.abort());
   await page.route('https://www.googletagmanager.com/**', (route) => route.abort());
   await page.goto('http://127.0.0.1:48172/');
-  await expect(
-    page.getByRole('heading', { name: 'Free online teleprompter that follows your pace' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Free online teleprompter' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Allow analytics' })).toBeVisible();
   await expect(page.locator('script[data-teleprompter-analytics]')).toHaveCount(0);
   expect(analyticsRequests).toEqual([]);
@@ -117,6 +117,7 @@ test('private script canary never enters an outgoing request', async ({ page }) 
     outgoing.push(`${request.method()} ${request.url()} ${request.postData() ?? ''}`);
   });
   await page.goto('/');
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill(`${canary}\n\nOnly local words.`);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();
@@ -133,6 +134,7 @@ test('voice canary never enters an outgoing request', async ({ page }) => {
     outgoing.push(`${request.method()} ${request.url()} ${request.postData() ?? ''}`);
   });
   await page.goto('/');
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill(`${canary} stays local.`);
   await page.getByRole('button', { name: /Start teleprompter/ }).click();

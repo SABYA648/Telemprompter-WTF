@@ -8,5 +8,5 @@
     "types": ["vitest/globals"]
   },
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "dist-ga", "artifacts", "playwright-report", "test-results", "public/models"]
+  "exclude": ["dist", "dist-ga", "artifacts", "playwright-report", "test-results"]
 }

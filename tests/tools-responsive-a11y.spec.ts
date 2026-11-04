@@ -44,6 +44,7 @@ for (const path of [
 
 test('presenter and appearance dialog pass automated accessibility scans', async ({ page }) => {
   await page.goto('/');
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page
     .getByLabel('Teleprompter script')
     .fill(
@@ -64,6 +65,7 @@ test('presenter and appearance dialog pass automated accessibility scans', async
 test('mobile presenter remains reachable in portrait and landscape', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto('/');
+  await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page
     .getByLabel('Teleprompter script')
     .fill(

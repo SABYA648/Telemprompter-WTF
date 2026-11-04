@@ -70,7 +70,7 @@ export const guides: Guide[] = [
       {
         heading: 'Find a pace you can lead',
         paragraphs: [
-          'Start slower than you think you need. The scroll should follow your voice, not force you to chase it. A conversational delivery often lands around 120-150 words per minute, but clarity matters more than the number.',
+          'Start slower than you think you need. Adjust the scroll to your speaking pace so you do not need to chase it. A conversational delivery often lands around 120-150 words per minute, but clarity matters more than the number.',
         ],
         bullets: [
           'Pause the scroll at a section break if you need to reset.',
@@ -783,7 +783,7 @@ export const guides: Guide[] = [
         heading: 'A hybrid controller is safer',
         paragraphs: [
           'Recognition confidence changes during pauses, ad-libs, noise, and repeated lines. A good controller does not jump on one uncertain result. It uses rhythm when confidence is low, gentle corrections when confidence is medium, and stronger evidence before a larger position change.',
-          'teleprompter.wtf calls these two local paths Smart Pace and Private Precision. Its private voice tracking page documents the complete implementation boundary.',
+          'teleprompter.wtf uses manually controlled scrolling. Set the speed, pause when needed, and resume with the controls.',
         ],
       },
     ],
@@ -797,10 +797,9 @@ export const guides: Guide[] = [
       alt: 'Short and long script cards following a calm visual rhythm into a teleprompter',
     },
     embed: {
-      intro:
-        'This practice prompter starts in manual mode; try the same script with voice follow in the full app.',
+      intro: 'Try this script with manual scrolling and adjust the speed as you read.',
       sampleScript:
-        'Speak, and the page should keep up.\nPause here, and notice the scroll waiting.\nSkip ahead a line, then find your place again.\nRhythm matters more than raw speed.\nA good prompter forgives an ad-lib.',
+        'Read at a steady pace.\nPause the scroll when you need a breath.\nResume when you are ready.\nAdjust the speed to fit your delivery.\nPractice until the words feel natural.',
       preset: { speakingWpm: 130 },
     },
   },
@@ -810,50 +809,28 @@ export const guides: Guide[] = [
     updated: '2026-08-23',
     title: 'Manual vs. voice-activated teleprompter: which should you choose?',
     description:
-      'Compare fixed-speed manual scrolling, cadence-based Smart Pace, and recognition-based Private Precision across speeches, courses, and calls.',
-    eyebrow: 'Mode selection',
+      'Compare manually controlled scrolling with voice-activated teleprompters and choose a setup that suits your delivery and recording environment.',
+    eyebrow: 'Choosing a prompter',
     intro:
-      'Neither manual scrolling nor voice tracking is universally superior. The right choice depends on whether your priority is strict timing, conversational freedom, or offline resilience.',
+      'Manual and voice-activated teleprompters take different approaches to pacing. Consider your setting, privacy needs and how much you plan to improvise.',
     sections: [
       {
-        heading: 'When Manual fixed-speed scrolling wins',
+        heading: 'When manual scrolling helps',
         paragraphs: [
-          'Manual mode maintains a constant elapsed-time speed regardless of room noise or acoustic interruptions. It is the best choice for:',
-        ],
-        bullets: [
-          'Time-critical keynote speeches where you have a hard stop (e.g., exactly 10 minutes).',
-          'Live stages with heavy acoustic feedback, loud PA systems, or audience applause.',
-          'Offline presentations in venues with zero internet or strict browser permissions.',
-          'Presenters who prefer pacing their delivery against a metronomic visual guide.',
+          'Manual scrolling moves at a speed you choose. It is predictable in noisy rooms and does not need microphone access. Pause or adjust the speed as your delivery changes.',
+          'teleprompter.wtf uses manual scrolling. Set a speaking rate to estimate duration, then tune the scroll speed during practice.',
         ],
       },
       {
-        heading: 'When Smart Pace rhythm following wins',
+        heading: 'When voice activation may help',
         paragraphs: [
-          'Smart Pace listens to speech presence without speech-to-text. It adjusts scroll rate dynamically and pauses automatically when you stop to take a breath, answer a quick question, or show a prop.',
-          'Because it requires zero download and zero model initialization, Smart Pace is the recommended default for YouTube creators, online teachers, and casual video calls.',
+          'Some products attempt to follow the speaker. Results depend on the room, accent, microphone and the product. Check whether speech processing happens on the device or through a service.',
         ],
       },
       {
-        heading: 'When Private Precision word alignment wins',
+        heading: 'Practice with your setup',
         paragraphs: [
-          'Private Precision Beta downloads an on-device Whisper model to match spoken words against script tokens. It is ideal when you need the prompter to track your exact location through longer takes where you might ad-lib, repeat a line, or skip a sentence.',
-          'Because the model runs locally, your script and voice never touch a cloud server, but it does require a modern laptop or desktop with sufficient memory.',
-        ],
-      },
-      {
-        heading: 'Summary comparison table',
-        paragraphs: ['Here is how the three modes compare on key production criteria:'],
-        bullets: [
-          'Manual: 0 MB download, 0% CPU overhead, no mic required, fixed pacing.',
-          'Smart Pace: 0 MB download, <1% CPU overhead, microphone required, rhythm following.',
-          'Private Precision: ~67 MB one-time download, moderate CPU overhead, microphone required, verbatim script tracking with Smart Pace fallback.',
-        ],
-      },
-      {
-        heading: 'The hybrid recommendation',
-        paragraphs: [
-          'For most creators, start with Smart Pace. If you find yourself frequently pausing or improvising and want position recovery, enable Private Precision Beta. If you are speaking in an auditorium or on a stage, switch to Manual.',
+          'Try a short passage at the distance and font size you will use. Add line breaks at natural pauses, then rehearse with the controls you will use during the presentation.',
         ],
       },
     ],
