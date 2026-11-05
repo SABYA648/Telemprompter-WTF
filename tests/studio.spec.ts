@@ -125,7 +125,9 @@ test('Studio settings survive reload and assigned keys persist', async ({ page }
   await page.getByLabel('Prompter dock').selectOption('left');
   await page.goto('/studio#/settings/keys');
   await page.getByRole('button', { name: 'Assign key' }).first().click();
+  await expect(page.getByText(/Press a key for/)).toBeVisible();
   await page.keyboard.press('q');
+  await expect(page.getByText(/toggle scroll:.*q/)).toBeVisible();
   await page.reload();
   await expect(page.getByText(/toggle scroll:.*q/)).toBeVisible();
   await page.goto('/studio#/settings/camera');

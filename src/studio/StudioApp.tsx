@@ -18,11 +18,20 @@ import type { ScriptStatus, StudioScript } from '../domain/studio/types';
 import { durationAtWpm, fitForTarget, sectionDurations } from '../domain/studio/timing';
 import { readabilityWarning } from '../domain/studio/words';
 import { isMemoryStorage } from '../domain/studio/db';
+import { isStandaloneDisplay } from '../domain/studio/install';
+import { persistOnFirstStandaloneLaunch } from '../domain/studio/storage';
 import { routeFromHash, bootHash, type Route } from './router';
 import RecordScreen from './RecordScreen';
 import SettingsScreen from './SettingsScreen';
 import { TakesScreen, TakeScreen } from './TakesScreen';
 import { recoverTakes } from '../domain/studio/takesRepo';
+import InstallSheet from './InstallSheet';
+import {
+  ServiceWorkerUpdate,
+  SharedInbox,
+  StandaloneTransferCard,
+  TransferControls,
+} from './PwaControls';
 import {
   browserHandoffScript,
   browserHandoffUrl,
@@ -52,6 +61,7 @@ export default function StudioApp(): preact.JSX.Element {
   const [ready, setReady] = useState(false);
   const [memory, setMemory] = useState(false);
   const [recovered, setRecovered] = useState(false);
+  const [transferResult, setTransferResult] = useState('');
   const refreshRequest = useRef(0);
   const refresh = async () => {
     const request = ++refreshRequest.current;
@@ -64,6 +74,14 @@ export default function StudioApp(): preact.JSX.Element {
         await migrateQuickScript();
         await purgeDeletedScripts();
         await ensureFirstScript();
+        const transfer = sessionStorage.getItem('studio.transfer.result');
+        if (transfer) {
+          setTransferResult(transfer);
+          sessionStorage.removeItem('studio.transfer.result');
+          // Tracked after the reload, so the event survives it and carries the imported device id.
+          analytics.track('transferred_scripts', { direction: 'import' });
+        }
+        await persistOnFirstStandaloneLaunch(isStandaloneDisplay());
         const handoff = browserHandoffScript(location.hash);
         if (handoff) {
           const imported = await createScript(handoff);
@@ -133,6 +151,8 @@ export default function StudioApp(): preact.JSX.Element {
   const handoffScript = active.find((script) => script.id === route.id) ?? active[0] ?? null;
   return (
     <div class="studio-shell">
+      <ServiceWorkerUpdate hidden={route.screen === 'record'} />
+      <InstallSheet recording={route.screen === 'record'} />
       {inApp && route.screen !== 'record' && (
         <div class="studio-storage-warning" role="status">
           Instagram's browser can't record video. Open this page in{' '}
@@ -160,7 +180,13 @@ export default function StudioApp(): preact.JSX.Element {
           We recovered a take from your last session. <a href="#/takes">View take</a>
         </p>
       )}
+      {transferResult && (
+        <p class="studio-storage-warning" role="status">
+          {transferResult}
+        </p>
+      )}
       {route.screen === 'home' && <Home scripts={active} />}
+      {route.screen === 'inbox' && <SharedInbox />}
       {route.screen === 'scripts' && (
         <Scripts scripts={active} deleted={deleted} refresh={refresh} />
       )}
@@ -172,6 +198,11 @@ export default function StudioApp(): preact.JSX.Element {
       {route.screen === 'take' && <TakeScreen id={route.id ?? ''} />}
       {route.screen === 'takes' && <TakesScreen />}
       {route.screen === 'settings' && <SettingsScreen section={route.id} />}
+      {route.screen === 'settings' && !route.id && (
+        <div class="studio-screen">
+          <TransferControls />
+        </div>
+      )}
       {route.screen !== 'record' && route.screen !== 'practice' && <Tabs route={route.screen} />}
     </div>
   );
@@ -210,6 +241,7 @@ function Home({ scripts }: { scripts: StudioScript[] }) {
     <section class="studio-screen studio-home">
       <p class="studio-kicker">teleprompter.wtf Studio</p>
       <h1>{firstRun ? 'Record your first video in 60 seconds' : 'Welcome back'}</h1>
+      <StandaloneTransferCard empty={firstRun} />
       {firstRun && <p>We loaded a 30-second starter script. Edit it or paste your own.</p>}
       <div class="studio-card">
         <h2>{quick?.title ?? 'Your first script'}</h2>

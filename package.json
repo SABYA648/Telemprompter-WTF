@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "astro dev",
     "assets:verify": "node scripts/verify-illustration-pack.mjs",
-    "build": "astro build",
+    "build": "astro build && node scripts/build-sw.mjs",
+    "icons:generate": "node scripts/generate-icons.mjs",
     "preview": "astro preview",
     "typecheck": "astro check",
     "lint": "eslint .",

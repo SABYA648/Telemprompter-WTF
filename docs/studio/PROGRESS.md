@@ -159,3 +159,47 @@ Owner manual checks:
 - On a desktop webcam, verify the two-pane editor, distance presets, clicker keys, F5 interception, and setting persistence after reload.
 
 Next: M6 after M5 browser gates and commit/push can run in a writable, browser-capable environment.
+
+## M6 PWA - 2026-11-05
+
+Shipped:
+
+- Committed generated PNG icons (192, 512, maskable 512 with 20% padding, opaque 180 touch icon) and the manifest exactly as in 11.8. Added the head tags to both layouts and a noindex `/offline` route.
+- `npm run build` now also runs `scripts/build-sw.mjs`. It parses the built pages, follows their module graph and CSS fonts, and writes a deterministic `dist/sw.js` with a sha256 `VERSION`. A missing page asset fails the build.
+- Service worker: network-first navigation with a 3 s timeout, then the cached page, then `/offline`. Cache-first `/_astro`, `/icons` and `/fonts`. Cross-origin and non-GET requests pass through. `POST /share-target` stores an idea with the existing schema and answers 303. `SKIP_WAITING` is supported.
+- Production-only registration from StudioApp, with the "Update ready" toast and Reload button.
+- Pure install-state model and ask ladder, with accessible Android and iOS sheets. They respect one ask per session, three in total and the 7-day cooldown, and never open during a recording. An install prompt fired before Studio finishes booting is kept.
+- `T1.` transfer code export and import from Settings, the iOS sheet and the Home Screen "Bring your scripts from Safari" card. It enforces the 1 MB decoded limit, including against decompression bombs, validates every row before writing any, lets the newest `updatedAt` win, carries no takes and keeps the device id.
+- `persist()` on first standalone launch, plus nginx and `_headers` updates for `sw.js`, the manifest, icons and the `/share-target` fallback.
+- Fixed a key-capture race in Settings that made one browser test fail about 1 run in 15: the listener now attaches in the same commit as the prompt.
+
+Files: `public/site.webmanifest`, `public/icons`, `public/_headers`, `nginx.conf`, `scripts/build-sw.mjs`, `scripts/sw-precache.mjs`, `scripts/generate-icons.mjs`, `src/sw`, `src/domain/studio` install, transfer and storage modules, `src/studio` InstallSheet and PwaControls, `src/pages/offline.astro`, both layouts, `tests/pwa.spec.ts`, `tests/media.spec.ts`.
+
+Gates: check pass, unit 216/216, e2e 98/98, media 7/7, budget 45.1 KB Studio / 27.8 KB largest content page, lighthouse not run. Docker: image built and run; `/sw.js` sends `Cache-Control: no-cache`; `/site.webmanifest` is valid JSON sent as `application/manifest+json` with `max-age=3600`; `POST /share-target` answers 303 to `/studio#/inbox`; all 20 precache URLs answer 200. Beyond the required gates, `tests/pwa.spec.ts` passed 32/32 against the running image and `npm run test:seo-crawl` passed.
+
+Acceptance:
+
+- Manifest: `tests/pwa.spec.ts` deep-equals the whole 11.8 object, and separately asserts `id`, `start_url`, `scope`, `display`, `icons`, `shortcuts` and `share_target`.
+- Offline: the same spec confirms registration on `/studio`, then with `context.setOffline(true)` confirms the reload renders the shell and a real never-visited guide shows `/offline`.
+- Share target: `src/sw/share-target.test.ts` covers the pure functions, `src/sw/service-worker.test.ts` runs the rendered worker, and the browser test submits a real multipart form.
+- Transfer: the browser test exports, imports in a fresh context, and confirms scripts, ideas, settings, streak and device id. `src/domain/studio/transfer.test.ts` covers the limits and validation.
+- Recording: the media test records real takes with a fake camera and fires the install prompt mid-take. It failed as expected when the recording-start signal was temporarily removed.
+
+Deviations: D-020 to D-026.
+
+Known issues:
+
+- The update flow is tested with a stubbed registration and with `SKIP_WAITING` in the worker unit test. No test deploys two real builds and walks a live update.
+- Install prompts, `appinstalled` and share sheets cannot be driven in headless Chromium. Tests use synthetic events and a form POST to the same endpoint.
+- `VERSION` hashes the precache list, as 11.8 specifies, so replacing an icon under the same file name does not refresh installed copies until the list changes.
+- The 3 s navigation timeout is verified with fake timers, not a slow real network.
+- `#/inbox` is read-only until the M8 Ideas inbox.
+
+Owner manual checks:
+
+- Android Chrome: confirm the install prompt appears after the first export or second session, the app installs with the correct icon and name, each of the three shortcuts opens its screen, and sharing text and a link from another app lands in `#/inbox` with the idea saved.
+- iPhone and iPad Safari: follow J13. Export a take, tap "Show me how", add to the Home Screen, open the app, tap "Paste scripts", and confirm the scripts arrive. Check the touch icon and the status bar over the dark shell.
+- On both phones: open the installed app in airplane mode and confirm Studio loads and a never-visited guide shows the offline page. Check that recording still works offline, and confirm that a real later deployment shows "Update ready" and that Reload picks it up.
+- After deployment: confirm the production proxy keeps `/sw.js` at `no-cache` and passes `POST /share-target` through.
+
+Next: M7.

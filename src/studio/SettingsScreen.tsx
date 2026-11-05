@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState, useLayoutEffect } from 'preact/hooks';
 import { analytics } from '../domain/analytics';
 import { openCamera } from '../domain/studio/camera';
 import ProCameraControls from './ProCameraControls';
@@ -398,7 +398,8 @@ export default function SettingsScreen({ section }: { section?: string | undefin
     navigator.mediaDevices?.addEventListener?.('devicechange', update);
     return () => navigator.mediaDevices?.removeEventListener?.('devicechange', update);
   }, []);
-  useEffect(() => {
+  // Attached in the same commit as the "Press a key" prompt, so no key can slip past it.
+  useLayoutEffect(() => {
     if (!capture || !settings) return;
     const listener = (e: KeyboardEvent) => {
       e.preventDefault();

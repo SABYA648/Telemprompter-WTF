@@ -666,6 +666,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
       return;
     }
     starting.current = true;
+    dispatchEvent(new Event('studio-take-started'));
     setNotice('');
     setChips([]);
     timeline.current = [];
@@ -834,6 +835,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
               ? '50_200mb'
               : '200mb_plus',
     });
+    dispatchEvent(new Event('studio-take-exported'));
     setNotice('Video saved.');
   };
   useEffect(() => {

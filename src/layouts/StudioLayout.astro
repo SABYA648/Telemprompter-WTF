@@ -1,6 +1,17 @@
 ---
 import UmamiScript from '../components/UmamiScript.astro';
 import '../styles/studio.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+}
+const {
+  title = 'Studio | teleprompter.wtf',
+  description = 'Write and organize video scripts locally with teleprompter.wtf Studio.',
+  canonical = 'https://www.teleprompter.wtf/studio',
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -9,14 +20,15 @@ import '../styles/studio.css';
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#090a09" />
+    <meta name="apple-mobile-web-app-title" content="Teleprompter" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="robots" content="noindex,follow" />
-    <title>Studio | teleprompter.wtf</title>
-    <meta
-      name="description"
-      content="Write and organize video scripts locally with teleprompter.wtf Studio."
-    />
-    <link rel="canonical" href="https://www.teleprompter.wtf/studio" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <UmamiScript />
   </head>
   <body class="studio-body"><main id="studio-main"><slot /></main></body>

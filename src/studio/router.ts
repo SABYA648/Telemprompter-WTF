@@ -1,5 +1,6 @@
 export type Route = {
-  screen: 'home' | 'scripts' | 'editor' | 'record' | 'practice' | 'takes' | 'take' | 'settings';
+  screen:
+    'home' | 'scripts' | 'editor' | 'record' | 'practice' | 'takes' | 'take' | 'settings' | 'inbox';
   id?: string;
 };
 export function routeFromHash(hash: string): Route {
@@ -11,6 +12,7 @@ export function routeFromHash(hash: string): Route {
     return { screen: 'editor', id: 'new' };
   if (first === 'scripts' && second && parts.length === 2) return { screen: 'editor', id: second };
   if (first === 'scripts' && parts.length === 1) return { screen: 'scripts' };
+  if (first === 'inbox' && parts.length === 1) return { screen: 'inbox' };
   if (first === 'record' && second && parts.length === 2) return { screen: 'record', id: second };
   if (first === 'practice' && second && parts.length === 2)
     return { screen: 'practice', id: second };
@@ -28,7 +30,7 @@ export function bootHash(search: string): string | null {
     case 'record':
       return '#/record/quick';
     case 'idea':
-      return '#/';
+      return '#/inbox';
     default:
       return null;
   }

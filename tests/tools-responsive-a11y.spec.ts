@@ -57,6 +57,7 @@ test('presenter and appearance dialog pass automated accessibility scans', async
   const presenterResults = await new AxeBuilder({ page }).include('.presenter').analyze();
   expect(presenterResults.violations).toEqual([]);
 
+  await page.mouse.move(400, 400);
   await page.getByRole('button', { name: 'Appearance' }).click();
   const settingsResults = await new AxeBuilder({ page }).include('.settings-panel').analyze();
   expect(settingsResults.violations).toEqual([]);

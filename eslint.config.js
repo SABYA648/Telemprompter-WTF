@@ -43,4 +43,22 @@ export default defineConfig(
       },
     },
   },
+  {
+    files: ['src/sw/**/*.js'],
+    languageOptions: {
+      globals: {
+        URL: 'readonly',
+        self: 'readonly',
+        caches: 'readonly',
+        indexedDB: 'readonly',
+        crypto: 'readonly',
+        setTimeout: 'readonly',
+        fetch: 'readonly',
+        Response: 'readonly',
+        clearTimeout: 'readonly',
+        sharedIdea: 'readonly',
+        shareRedirect: 'readonly',
+      },
+    },
+  },
 );

@@ -140,6 +140,7 @@ export function TakeScreen({ id }: { id: string }) {
               ? '50_200mb'
               : '200mb_plus',
     });
+    dispatchEvent(new Event('studio-take-exported'));
     setTake({ ...take, exportedAt: Date.now() });
   };
   return (

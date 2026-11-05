@@ -248,9 +248,72 @@ test('remote keys scroll, toggle, and prevent F5 reload', async ({ page }) => {
   await page.getByRole('button', { name: 'Quick settings' }).click();
   await page.getByLabel('Countdown').selectOption('0');
   await page.getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByRole('dialog', { name: 'Quick settings' })).toHaveCount(0);
   await page.keyboard.press('F5');
   await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
   await page.waitForTimeout(1100);
   await page.keyboard.press('F5');
   await expect(page.getByRole('dialog', { name: 'Review take' })).toBeVisible();
+});
+
+test('the install sheet waits for the export and never interrupts a recording', async ({
+  page,
+}) => {
+  const sheet = page.getByRole('dialog', { name: 'Install teleprompter.wtf' });
+  const review = page.getByRole('dialog', { name: 'Review take' });
+  const recordTake = async () => {
+    await page.getByRole('button', { name: 'Start recording' }).click();
+    await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
+    await page.waitForTimeout(700);
+  };
+  const keepAndDownload = async () => {
+    await page.getByRole('button', { name: 'Stop recording' }).click();
+    await expect(review).toBeVisible();
+    await expect(sheet).toHaveCount(0);
+    await review.getByRole('button', { name: 'Keep', exact: true }).click();
+    const download = page.waitForEvent('download');
+    await review.getByRole('button', { name: /^Download/ }).click();
+    await download;
+  };
+  await page.goto('/studio#/record/quick');
+  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await expect(page.getByRole('button', { name: 'Start recording' })).toBeVisible();
+  await page.getByRole('button', { name: 'Quick settings' }).click();
+  await page.getByLabel('Countdown').selectOption('0');
+  await page.getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByRole('dialog', { name: 'Quick settings' })).toHaveCount(0);
+
+  await recordTake();
+  await keepAndDownload();
+  // The export earned the ask, but the browser has not offered its prompt yet.
+  await expect(sheet).toHaveCount(0);
+  await review.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByRole('heading', { name: 'Takes' })).toBeVisible();
+  await page.evaluate(() => {
+    location.hash = '/record/quick';
+  });
+  const allow = page.getByRole('button', { name: 'Allow camera and mic' });
+  const start = page.getByRole('button', { name: 'Start recording' });
+  await expect(allow.or(start)).toBeVisible();
+  if (await allow.isVisible()) await allow.click();
+  await expect(start).toBeVisible();
+
+  await recordTake();
+  // The browser's prompt arrives mid-take: the earlier export must not uncover the sheet.
+  await page.evaluate(() => {
+    const event = new Event('beforeinstallprompt', { cancelable: true });
+    Object.defineProperty(event, 'prompt', { value: async () => undefined });
+    Object.defineProperty(event, 'userChoice', {
+      value: Promise.resolve({ outcome: 'dismissed' }),
+    });
+    dispatchEvent(event);
+  });
+  await page.waitForTimeout(300);
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
+
+  await keepAndDownload();
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole('button', { name: 'Not now' }).click();
+  await expect(sheet).toHaveCount(0);
 });

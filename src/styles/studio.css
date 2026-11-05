@@ -884,3 +884,51 @@
     animation-duration: 0s !important;
   }
 }
+.studio-install-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #000a;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+}
+.studio-install-sheet {
+  background: var(--studio-card);
+  color: var(--studio-text);
+  border-radius: 20px 20px 0 0;
+  padding: 24px max(24px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom));
+  width: min(100%, 520px);
+  display: grid;
+  gap: 12px;
+  box-shadow: 0 0 0 1px #ffffff33;
+}
+.studio-install-sheet h2,
+.studio-install-sheet p {
+  margin: 0;
+}
+.studio-update {
+  position: fixed;
+  z-index: 110;
+  bottom: calc(70px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--studio-card);
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 0 0 1px #ffffff33;
+  white-space: nowrap;
+}
+.studio-transfer-manual {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+.studio-transfer-manual textarea {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
