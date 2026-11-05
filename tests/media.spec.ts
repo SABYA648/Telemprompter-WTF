@@ -295,7 +295,10 @@ test('the install sheet waits for the export and never interrupts a recording', 
   const allow = page.getByRole('button', { name: 'Allow camera and mic' });
   const start = page.getByRole('button', { name: 'Start recording' });
   await expect(allow.or(start)).toBeVisible();
-  if (await allow.isVisible()) await allow.click();
+  if (await allow.isVisible()) {
+    // The priming screen can vanish between the visibility check and the click.
+    await allow.click({ timeout: 1500 }).catch(() => undefined);
+  }
   await expect(start).toBeVisible();
 
   await recordTake();

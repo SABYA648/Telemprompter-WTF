@@ -1,10 +1,8 @@
 # teleprompter.wtf
 
-A free browser teleprompter for scripts, presentations and recordings. Paste your text, set the scrolling speed and present without an account.
+A free browser teleprompter and local video recorder for Reels, Shorts, YouTube and presentations. [Open Studio](https://www.teleprompter.wtf/studio) or use the [classic presenter](https://www.teleprompter.wtf/#classic-editor).
 
-[Open the teleprompter](https://www.teleprompter.wtf) | [Source code](https://github.com/SABYA648/Telemprompter-WTF)
-
-The classic presenter includes manual scrolling, keyboard controls, mirroring, fullscreen, compact views, local script autosave and plain-text import. Where supported, it can record a screen or camera locally. The browser chooses a supported recording format; recordings are saved by the user and are not uploaded by the app.
+Studio records the camera with a lens-side prompter, keeps scripts and takes on the device, and saves video through the share sheet or download. The classic presenter offers manual scrolling, mirroring, keyboard controls and compact views. No account, upload, watermark or server is required for either mode.
 
 ## Development
 
@@ -15,25 +13,20 @@ npm ci
 npm run dev
 ```
 
-Astro builds static pages and Preact islands. Domain logic is in `src/domain`, interactive components in `src/components`, and page content in `src/pages` and `src/content`.
+Astro builds static pages and Preact islands. Studio UI is in `src/studio`, local data and recording logic in `src/domain/studio`, and classic controls in `src/components`. There are no AI features or remote inference. Product analytics use self-hosted Umami only, with typed events that exclude user content.
 
 ## Checks
 
 ```bash
 npm run check
-npx playwright install chromium
 npm run test:e2e
+npx playwright test --project=media
+npm run budget
 ```
 
-`check` runs asset verification, type checking, linting, content checks, formatting, unit tests and a production build. The browser tests cover the editor, presenter, media controls, responsive layout, accessibility and metadata.
-
-## Configuration
-
-Build-time public settings are listed in `.env.example`. Umami records page views and typed product events using an anonymous device identifier. See [analytics documentation](docs/analytics.md) and the [privacy policy](https://www.teleprompter.wtf/privacy).
+For production SEO and Lighthouse checks, start the read-only Docker container below, then run `npm run test:seo-crawl` and `npm run test:lighthouse`.
 
 ## Docker
-
-The multi-stage Dockerfile builds the static site and serves it with unprivileged Nginx.
 
 ```bash
 docker build -t teleprompter-wtf .
@@ -41,4 +34,4 @@ docker run --read-only --tmpfs /tmp:uid=101,gid=101 --tmpfs /var/cache/nginx:uid
 curl --fail http://127.0.0.1:8080/health
 ```
 
-See [deployment documentation](docs/deployment.md) and [contribution guidelines](CONTRIBUTING.md).
+Build-time public settings are in `.env.example`. See [analytics](docs/analytics.md), [deployment](docs/deployment.md), [privacy](https://www.teleprompter.wtf/privacy) and [contributing](CONTRIBUTING.md).

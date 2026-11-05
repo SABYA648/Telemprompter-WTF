@@ -73,6 +73,7 @@ export default function InstallSheet({ recording }: { recording: boolean }) {
       earlyPrompt = null;
       setPrompt(null);
       analytics.track('installed_app', { platform: platform() });
+      dispatchEvent(new Event('studio-installed'));
     };
     onPrompt = setPrompt;
     addEventListener('studio-take-exported', exported);

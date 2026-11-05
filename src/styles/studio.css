@@ -932,3 +932,11 @@
   width: 100%;
   margin-top: 4px;
 }
+.studio-practice-script {
+  white-space: pre-wrap;
+  font-size: clamp(1.4rem, 4vw, 2.3rem);
+  line-height: 1.55;
+}
+.studio-practice progress {
+  width: 100%;
+}

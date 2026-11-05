@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { analytics, deviceClass } from '../domain/analytics';
+import { markActiveDay } from '../domain/studio/streak';
 import {
   cameraErrorReason,
   openCamera,
@@ -784,6 +785,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
     }
     setReview(next);
     setKept(true);
+    await markActiveDay();
     if (script)
       await saveScript({
         ...script,

@@ -79,6 +79,9 @@ export function TakesScreen() {
     <section class="studio-screen">
       <h1>Takes</h1>
       <StorageMeter />
+      {takes.some((take) => !take.exportedAt) && (
+        <p class="studio-storage-warning">Save it to Photos now. Browser storage can be cleared.</p>
+      )}
       {!takes.length && <p>No takes yet. Record a video to see it here.</p>}
       {Object.entries(grouped).map(([id, rows]) => (
         <div class="studio-card">
@@ -150,6 +153,7 @@ export function TakeScreen({ id }: { id: string }) {
       </a>
       <h1>Take {take.number}</h1>
       <TakePlayer take={take} />
+      {!take.exportedAt && <p>Save it to Photos now. Browser storage can be cleared.</p>}
       <p>
         {take.status === 'recovered' ? 'Recovered · ' : ''}
         {Math.round(take.durationMs / 1000)}s · {take.container.toUpperCase()} · {take.width} ×{' '}

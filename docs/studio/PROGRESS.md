@@ -203,3 +203,30 @@ Owner manual checks:
 - After deployment: confirm the production proxy keeps `/sw.js` at `no-cache` and passes `POST /share-target` through.
 
 Next: M7.
+
+## M7 Launch: positioning, habit kernel and QA - 2026-11-05
+
+Shipped:
+
+- Repositioned the homepage with the Appendix A creator hero, visible 390x844 Record CTA, classic-editor path, trust chips, three launch blocks, FAQ and shipped-feature schema. Updated navigation, the mobile returning-visitor bar and all public launch pages, documentation, `llms.txt` and changelog.
+- Added the no-freeze local-day streak kernel for kept takes and practice runs reaching 80%, with a Home badge and Settings switch. Added a daily `.ics` reminder with a floating local time, alarm and conditional calendar URL, plus Settings and the second-active-day or post-install ask.
+- Added save nudges to the take library and detail screen, and the owner device QA checklist.
+- Verified acceptance: the homepage CTA is above the fold at 390x844; `.ics` unit tests check daily repeat, alarm, floating time and iOS standalone URL omission; streak unit tests cover same day, next day, gap, timezone change and both DST boundaries. Playwright clock tests cover day transitions, the Settings switch and practice credit. Visual capture and accessibility scans passed.
+
+Files: homepage, shared layout and styles, public pages, `src/domain/studio/streak.ts`, `ics.ts`, Studio Home, Practice, Settings, take screens, browser and unit tests, docs, README and changelog.
+
+Gates: check pass, unit 221/221, e2e 102/102, media 7/7, budget 46.9 KB Studio / 27.8 KB largest content page, SEO crawl pass against the read-only Docker image, Lighthouse on `/`: Performance 98, Accessibility 100, SEO 100, LCP 1.8 s, TBT 120 ms, CLS 0. Docker container removed after testing.
+
+Deviations: D-027 uses local calendar date keys and a timed 140 WPM practice run for the M7 streak kernel. D-028 defers navigation and `llms.txt` links to M8 and M10 routes until they exist. Per the orchestration instruction, no PR was opened and nothing was merged or pushed to main.
+
+Known issues:
+
+- Real-device behavior for iOS calendar import, camera formats, install prompts, app switching and saved-file uploads still needs owner QA.
+- The practice screen measures progress from a fixed 140 WPM reading timer. It does not verify spoken words.
+- One Lighthouse run saw a 1.5 s unattributed browser task on a guide and scored its Performance 73. The immediate repeat scored 100 with TBT 10 ms; the homepage stayed within every M7 budget in both runs.
+
+Owner manual checks:
+
+- Run every device and browser row in `docs/studio/DEVICE-QA.md` before merging the launch PR, especially iPhone and Android recording, save to Photos or Gallery, Instagram and YouTube uploads, offline install and `.ics` import.
+
+Next: M8.

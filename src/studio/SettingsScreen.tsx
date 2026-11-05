@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState, useLayoutEffect } from 'preact/hooks';
 import { analytics } from '../domain/analytics';
+import { ReminderCard } from './ReminderCard';
 import { openCamera } from '../domain/studio/camera';
 import ProCameraControls from './ProCameraControls';
 import { assignKey } from '../domain/studio/keymap';
 import { KEY_ACTIONS, loadSettings, saveSettings } from '../domain/studio/settings';
 import type { KeyAction, StudioSettings } from '../domain/studio/types';
 
-type Section = 'camera' | 'mic' | 'recording' | 'prompter' | 'keys';
+type Section = 'camera' | 'mic' | 'recording' | 'prompter' | 'keys' | 'reminders' | 'habit';
 const sections: [Section, string][] = [
   ['camera', 'Camera'],
   ['mic', 'Microphone'],
   ['recording', 'Recording'],
   ['prompter', 'Prompter'],
   ['keys', 'Remote and keys'],
+  ['reminders', 'Reminders'],
+  ['habit', 'Habit'],
 ];
 const labels: Record<string, string> = {
   deviceId: 'Device',
@@ -157,7 +160,7 @@ const ranges: Record<string, [number, number, number, string]> = {
   windowLines: [2, 12, 1, ' lines'],
   cuePosition: [0.15, 0.6, 0.01, ''],
 };
-const fields: Record<Exclude<Section, 'keys'>, string[]> = {
+const fields: Record<Exclude<Section, 'keys' | 'reminders' | 'habit'>, string[]> = {
   camera: [
     'deviceId',
     'facing',
@@ -220,7 +223,7 @@ export function SettingsFields({
   locked = false,
   audioCapabilities,
 }: {
-  section: Exclude<Section, 'keys'>;
+  section: Exclude<Section, 'keys' | 'reminders' | 'habit'>;
   settings: StudioSettings;
   onChange: (next: StudioSettings, key: string) => void;
   devices?: MediaDeviceInfo[];
@@ -562,7 +565,28 @@ export default function SettingsScreen({ section }: { section?: string | undefin
     <section class="studio-screen">
       <a href="#/settings">← Settings</a>
       <h1>{sections.find(([id]) => id === selected)?.[1]}</h1>
-      {selected === 'keys' ? (
+      {selected === 'habit' ? (
+        <label class="studio-setting-field">
+          <input
+            type="checkbox"
+            checked={settings.habit.streaksEnabled}
+            onChange={(event) => {
+              const next = {
+                ...settings,
+                habit: {
+                  ...settings.habit,
+                  streaksEnabled: (event.target as HTMLInputElement).checked,
+                },
+              };
+              setSettings(next);
+              void saveSettings(next);
+            }}
+          />{' '}
+          Show streak badge
+        </label>
+      ) : selected === 'reminders' ? (
+        <ReminderCard always />
+      ) : selected === 'keys' ? (
         <div class="studio-settings-fields">
           {KEY_ACTIONS.map((action) => (
             <div class="studio-setting-field">

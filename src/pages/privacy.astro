@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 const title = 'Privacy and Local Data | teleprompter.wtf';
 const description =
-  'Learn how teleprompter.wtf stores scripts and settings on your device and uses Umami to measure page views and product events.';
+  'Studio keeps scripts, ideas, settings and recordings in your browser on this device. Learn how local storage and self-hosted Umami analytics work.';
 ---
 
 <Layout title={title} description={description}>
@@ -14,27 +14,32 @@ const description =
       <p class="eyebrow">Privacy</p><h1>Your work stays on your device.</h1>
     </header>
     <div class="prose-body">
-      <h2>Scripts and recordings</h2>
-      <p>
-        Scripts and settings are stored in your browser on this device. Recordings are created
-        locally and saved when you choose to download them. The app does not upload your script or
-        recording.
+      <h2>Studio storage</h2><p>
+        Studio stores scripts, ideas, settings, reminders, streak dates and take chunks in IndexedDB
+        on this device. The classic editor uses browser-local storage. A transfer code contains
+        scripts and settings when you choose to copy it; it never contains takes.
       </p>
-      <h2>Usage measurement</h2>
-      <p>
-        We use self-hosted Umami to measure page views and product events with an anonymous device
-        identifier stored in your browser. Events do not contain script text, titles or file names.
+      <h2>Recordings and exports</h2><p>
+        The camera and microphone stream is recorded in your browser. Takes remain in browser
+        storage until you share or download them. Nothing is uploaded by the app. Browser storage
+        can be cleared by the browser or by you, so save important takes to Photos or Files
+        promptly. Private browsing may lose takes when the tab closes.
       </p>
-      <p>
-        You can clear the saved script and preferences from the editor or remove this site's data in
-        your browser settings.
+      <h2>Offline use and reminders</h2><p>
+        The Home Screen app caches pages and assets for offline use. Calendar reminders are
+        generated as a file on your device; there is no reminder server. You can remove a reminder
+        in your calendar.
       </p>
-      <h2>Questions</h2>
-      <p>
-        Contact us through the <a
-          href="https://github.com/SABYA648/Telemprompter-WTF/issues"
-          rel="noopener noreferrer">project issue tracker</a
-        >. Please do not include private script content.
+      <h2>Usage measurement</h2><p>
+        We use self-hosted Umami to measure page views and product actions with a random device
+        identifier stored in your browser. Events never contain script text, titles, idea text, file
+        names or recording content.
+      </p>
+      <h2>Remove data</h2><p>
+        Delete scripts and takes in Studio, or remove all site data in your browser settings. To ask
+        a question, use the <a href="https://github.com/SABYA648/Telemprompter-WTF/issues"
+          >project issue tracker</a
+        > without private content.
       </p>
     </div>
   </article>

@@ -1,83 +1,40 @@
 ---
 import Layout from '../layouts/Layout.astro';
-const title = 'About teleprompter.wtf: Free, Private, Open Source Teleprompter';
+const title = 'About teleprompter.wtf Studio | Free Video Recording';
 const description =
-  'Why teleprompter.wtf is free, private, open-source, and intentionally simple. Paste your script and present without an account or cloud database.';
-const schema = [
-  {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.teleprompter.wtf/' },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: 'About',
-        item: 'https://www.teleprompter.wtf/about',
-      },
-    ],
-  },
-];
+  'teleprompter.wtf is an open-source, local-first teleprompter and video recorder. Record beside the lens or use the classic presenter without an account.';
 ---
 
-<Layout title={title} description={description} schema={schema}>
+<Layout title={title} description={description}>
   <article class="prose-page section-wrap">
     <nav class="breadcrumbs" aria-label="Breadcrumb">
       <a href="/">Home</a><span>/</span><span aria-current="page">About</span>
     </nav>
     <header class="page-intro">
-      <p class="eyebrow">About the project</p>
-      <h1>A teleprompter should not need onboarding.</h1>
-      <p>
-        teleprompter.wtf is a small, open-source utility built around one idea: paste your words and
-        start presenting.
+      <p class="eyebrow">About the project</p><h1>Make the video. Keep the file.</h1><p>
+        teleprompter.wtf is a free, open-source tool for creators and speakers. Write a script, read
+        it beside the lens and record in your browser.
       </p>
     </header>
-    <div class="prose-grid">
-      <div class="prose-aside"><p>Paste.<br />Present.<br />Done.</p></div>
-      <div class="prose-body">
-        <h2>Why this exists</h2>
-        <p>
-          Many teleprompters begin with mandatory account creation, pricing tiers, paywalls, or
-          feature-heavy dashboards. Those things get in the way of the moment when you simply need
-          readable words moving at the right pace.
-        </p>
-        <p>
-          This project treats speed, typography, privacy, accessibility, and predictable controls as
-          the product itself, not as premium extras.
-        </p>
-        <h2>Open source on purpose</h2>
-        <p>
-          The code is completely open source so anyone can inspect how local storage, microphone
-          input, and analytics work, report an issue, improve accessibility, or self-host the tool.
-          The core application does not need a database or a script-storage service.
-        </p>
-        <p>
-          <a href="https://github.com/SABYA648/Telemprompter-WTF" rel="noopener noreferrer"
-            >View SABYA648/Telemprompter-WTF on GitHub</a
-          >.
-        </p>
-        <h2>What it will not do</h2>
-        <p>
-          teleprompter.wtf will not put scripts in public links, require an account for the basic
-          presenter, sell attention to advertisers, watermark your video recordings, or claim your
-          words need a cloud database to scroll on your screen.
-        </p>
-        <h2>Tested across real browsers</h2>
-        <p>
-          We test and document exact browser capabilities and fallback states. For details on
-          desktop and mobile browser support, inspect our <a href="/compatibility"
-            >Browser & Device Compatibility Matrix</a
-          >.
-        </p>
-        <h2>Use it, then tell us what hurt</h2>
-        <p>
-          The most useful contributions are concrete: a browser where fullscreen behaves oddly, a
-          control that is hard to reach on a particular phone, or a wording choice that does not
-          work with assistive technology. Open a GitHub issue with reproducible details. Never
-          include a private script.
-        </p>
-      </div>
+    <div class="prose-body">
+      <h2>Why Studio exists</h2><p>
+        Recording a talking-head video should not require an account or subscription. Studio puts
+        the script near the camera, keeps takes locally and lets you save the file to your device.
+      </p>
+      <h2>The classic presenter remains</h2><p>
+        If you only need scrolling text, use the <a href="/#classic-editor">classic teleprompter</a
+        >. It supports manual pace, mirror mode and keyboard control without opening a camera.
+      </p>
+      <h2>Open source and local</h2><p>
+        There is no script or recording server. The site uses self-hosted Umami for page views and
+        product events, without script text or file names. Inspect the <a
+          href="https://github.com/SABYA648/Telemprompter-WTF">source code</a
+        > or read the <a href="/privacy">storage details</a>.
+      </p>
+      <p>
+        For a browser-specific issue, open a GitHub issue with steps to reproduce and your browser
+        version. Please leave private scripts and recordings out of reports.
+      </p>
     </div>
   </article>
 </Layout>

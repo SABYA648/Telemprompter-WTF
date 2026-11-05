@@ -75,7 +75,7 @@ for (const file of htmlFiles) {
     descriptions.set(description, page);
   }
   for (const match of html.matchAll(/href="(\/[^"]*)"/g))
-    hrefs.push([page, match[1].split('#')[0]]);
+    hrefs.push([page, new URL(match[1], 'https://www.teleprompter.wtf').pathname]);
   for (const match of html.matchAll(/<script type="application\/ld\+json">([^<]+)<\/script>/g)) {
     try {
       JSON.parse(match[1]);

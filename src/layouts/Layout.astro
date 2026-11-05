@@ -106,11 +106,14 @@ const personSchema = {
           teleprompter<span>.wtf</span>
         </a>
         <nav aria-label="Primary navigation">
-          <a href="/features">Features</a>
+          <a class="site-header__studio" href="/studio"
+            ><span class="site-header__studio-desktop">Studio</span><span
+              class="site-header__studio-mobile">Open Studio</span
+            ></a
+          >
           <a href="/guides">Guides</a>
           <a href="/tools">Tools</a>
-          <a href="/studio">Studio</a>
-          <a href="/about">About</a>
+          <a href="/features">Features</a>
         </nav>
       </div>
     </header>
@@ -122,9 +125,11 @@ const personSchema = {
           <p>Paste. Present. Done. No account required.</p>
         </div>
         <nav aria-label="Footer navigation">
+          <a href="/studio">Studio</a>
           <a href="/features">Features</a>
           <a href="/guides">Guides</a>
           <a href="/tools">Tools</a>
+          <a href="/compatibility">Compatibility</a>
           <a href="/privacy">Privacy</a>
           <a href="/about">About</a>
           <a href="https://github.com/SABYA648/Telemprompter-WTF" rel="noopener noreferrer"
@@ -216,5 +221,14 @@ const personSchema = {
         />
       </aside>
     </footer>
+    <a id="studio-return" class="studio-return" href="/studio" hidden>Continue in Studio</a>
+    <script is:inline>
+      try {
+        if (localStorage.getItem('studio.hasData'))
+          document.getElementById('studio-return').hidden = false;
+      } catch {
+        /* Storage unavailable. */
+      }
+    </script>
   </body>
 </html>

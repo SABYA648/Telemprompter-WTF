@@ -19,9 +19,13 @@ import { durationAtWpm, fitForTarget, sectionDurations } from '../domain/studio/
 import { readabilityWarning } from '../domain/studio/words';
 import { isMemoryStorage } from '../domain/studio/db';
 import { isStandaloneDisplay } from '../domain/studio/install';
+import { localDay, readStreak, type Streak } from '../domain/studio/streak';
+import { loadSettings } from '../domain/studio/settings';
+import { ReminderCard } from './ReminderCard';
 import { persistOnFirstStandaloneLaunch } from '../domain/studio/storage';
 import { routeFromHash, bootHash, type Route } from './router';
 import RecordScreen from './RecordScreen';
+import PracticeScreen from './PracticeScreen';
 import SettingsScreen from './SettingsScreen';
 import { TakesScreen, TakeScreen } from './TakesScreen';
 import { recoverTakes } from '../domain/studio/takesRepo';
@@ -74,6 +78,11 @@ export default function StudioApp(): preact.JSX.Element {
         await migrateQuickScript();
         await purgeDeletedScripts();
         await ensureFirstScript();
+        try {
+          if (!isMemoryStorage()) localStorage.setItem('studio.hasData', '1');
+        } catch {
+          /* Storage unavailable. */
+        }
         const transfer = sessionStorage.getItem('studio.transfer.result');
         if (transfer) {
           setTransferResult(transfer);
@@ -192,9 +201,7 @@ export default function StudioApp(): preact.JSX.Element {
       )}
       {route.screen === 'editor' && <Editor id={route.id ?? ''} refresh={refresh} />}
       {route.screen === 'record' && <RecordScreen id={route.id ?? 'quick'} memory={memory} />}
-      {route.screen === 'practice' && (
-        <Placeholder title="Practice" text="Practice arrives in the next milestone." />
-      )}
+      {route.screen === 'practice' && <PracticeScreen id={route.id ?? ''} />}
       {route.screen === 'take' && <TakeScreen id={route.id ?? ''} />}
       {route.screen === 'takes' && <TakesScreen />}
       {route.screen === 'settings' && <SettingsScreen section={route.id} />}
@@ -232,6 +239,15 @@ function Tabs({ route }: { route: Route['screen'] }) {
   );
 }
 function Home({ scripts }: { scripts: StudioScript[] }) {
+  const [streak, setStreak] = useState<Streak | null>(null);
+  const [showStreak, setShowStreak] = useState(true);
+  useEffect(() => {
+    const refresh = () => void readStreak().then(setStreak);
+    refresh();
+    void loadSettings().then((value) => setShowStreak(value.habit.streaksEnabled));
+    addEventListener('studio-streak-changed', refresh);
+    return () => removeEventListener('studio-streak-changed', refresh);
+  }, []);
   const firstRun =
     scripts.length === 1 &&
     scripts[0]?.id === 'quick' &&
@@ -241,6 +257,21 @@ function Home({ scripts }: { scripts: StudioScript[] }) {
     <section class="studio-screen studio-home">
       <p class="studio-kicker">teleprompter.wtf Studio</p>
       <h1>{firstRun ? 'Record your first video in 60 seconds' : 'Welcome back'}</h1>
+      {showStreak && streak && streak.activeDates.length > 0 && (
+        <div class="studio-card" aria-label="Recording streak">
+          <strong>
+            {streak.current > 0 ? `${streak.current}-day streak` : 'Fresh start today'}
+          </strong>
+          <p>
+            {streak.activeDates.at(-1) === localDay(new Date())
+              ? 'Recorded today. See you tomorrow.'
+              : streak.current > 0
+                ? 'Record today to keep your streak.'
+                : `Fresh start today. Your best streak is ${streak.best} days.`}
+          </p>
+        </div>
+      )}
+      <ReminderCard activeDays={streak?.activeDates.length ?? 0} />
       <StandaloneTransferCard empty={firstRun} />
       {firstRun && <p>We loaded a 30-second starter script. Edit it or paste your own.</p>}
       <div class="studio-card">

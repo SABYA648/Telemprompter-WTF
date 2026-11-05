@@ -1,16 +1,22 @@
 # teleprompter.wtf
 
-> Free online teleprompter: paste your script and present. No login, no ads, no cloud script storage.
+> Free online teleprompter with camera: record Reels, Shorts and YouTube videos in Studio, or use the classic presenter. No login or upload.
 
-teleprompter.wtf is a free, open-source browser teleprompter. Paste a script, adjust the scrolling speed, and present without an account. Scripts and recordings are saved locally.
+teleprompter.wtf is a free, open-source browser teleprompter and local video recorder. Studio records with the script beside the camera lens, stores takes on the device and exports through the browser. The classic presenter offers manual scrolling and mirroring. Product analytics use self-hosted Umami without user content.
 
 ## Product
 
-- [Open the teleprompter](https://www.teleprompter.wtf/)
+- [Homepage and classic teleprompter](https://www.teleprompter.wtf/)
+- [Studio camera recorder](https://www.teleprompter.wtf/studio)
 - [Features](https://www.teleprompter.wtf/features)
 - [Browser & device compatibility](https://www.teleprompter.wtf/compatibility)
 - [Privacy](https://www.teleprompter.wtf/privacy)
 - [About the project](https://www.teleprompter.wtf/about)
+
+## Creator pages
+
+- [Studio video recording](https://www.teleprompter.wtf/studio)
+- Script templates, niche hooks, creator tools and more guides are planned but not yet published.
 
 ## Tools
 

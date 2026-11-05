@@ -1,10 +1,9 @@
 ---
 import TeleprompterApp from '../components/TeleprompterApp';
 import Layout from '../layouts/Layout.astro';
-
-const title = 'Free Online Teleprompter | teleprompter.wtf';
+const title = 'Free Online Teleprompter with Camera | teleprompter.wtf';
 const description =
-  'A free online teleprompter with adjustable scrolling, local script storage, mirroring and recording. Paste your script and present without an account.';
+  'Read your script right under the lens and record Reels, Shorts and YouTube videos in your browser. Free, no signup, no watermark. Videos save to your device.';
 const schema = [
   {
     '@context': 'https://schema.org',
@@ -25,14 +24,13 @@ const schema = [
     isAccessibleForFree: true,
     image: 'https://www.teleprompter.wtf/illustrations/teleprompter-og.webp',
     featureList: [
-      'Manual elapsed-time scrolling',
-      'Local screen and camera recording',
-      'Horizontal mirroring for beam-splitter glass',
-      'Document Picture in Picture and compact view',
-      'Local autosave and plain-text TXT import',
+      'Camera recording with a lens-side teleprompter',
+      'Local script library and takes',
+      'Manual WPM scrolling',
+      'Horizontal mirroring',
+      'Offline Studio',
+      'Local video export',
     ],
-    browserRequirements:
-      'Requires JavaScript and modern browser APIs (Web Audio, Canvas, MediaRecorder)',
   },
 ];
 ---
@@ -46,17 +44,24 @@ const schema = [
   <section class="home-hero">
     <div class="home-hero__split">
       <div class="home-hero__copy">
-        <p class="eyebrow">Free · No signup · Private by design</p>
-        <h1>Free online teleprompter</h1>
+        <p class="eyebrow">Free · No signup · No watermark</p>
+        <h1>Free online teleprompter with camera for Reels, Shorts and YouTube</h1>
         <p class="home-hero__lead">
-          Paste your script and start. Adjust the scrolling speed as you speak, then pause or
-          restart whenever you need.
+          Write or paste a script, then record with the words right under your lens. Redo any line,
+          keep your best take, and save it straight to your phone. Nothing is uploaded.
         </p>
+        <div class="home-hero__actions">
+          <a
+            class="button button--primary"
+            href="/studio?go=record"
+            data-analytics-cta="hero"
+            data-page-type="home"
+            data-content-cluster="home">Record a video</a
+          >
+          <a class="button" href="#classic-editor">Use the classic teleprompter</a>
+        </div>
         <ul class="home-hero__promises">
-          <li>No login</li>
-          <li>No ads</li>
-          <li>No watermark</li>
-          <li>Scripts stay on your device</li>
+          <li>No login</li><li>No watermark</li><li>1080p and 4K</li><li>Saves to your device</li>
         </ul>
       </div>
       <figure class="home-hero__art">
@@ -64,76 +69,63 @@ const schema = [
           src="/illustrations/teleprompter-hero.webp"
           width="1024"
           height="683"
-          alt="Blank script cards flowing through teleprompter glass toward a camera lens"
+          alt="Script cards beside a camera lens"
           loading="eager"
           fetchpriority="high"
           decoding="async"
         />
       </figure>
     </div>
-    <TeleprompterApp client:load />
+    <div id="classic-editor"><TeleprompterApp client:load /></div>
   </section>
-
-  <section class="home-content section-wrap">
-    <div class="section-heading">
-      <p class="eyebrow">Made for presenting</p>
-      <h2>Control that matches your take.</h2>
-      <p>Adjust the speed and presentation to suit your script.</p>
-    </div>
-    <div class="feature-list feature-list--secondary">
-      <article>
-        <span>04</span><h3>Keep it beside your camera</h3><p>
-          Document Picture in Picture on Chromium browsers, with video Picture in Picture and
-          pop-out window fallbacks on Firefox and Safari.
-        </p>
-      </article>
-      <article>
-        <span>05</span><h3>Prompter-rig ready</h3><p>
-          Mirror horizontally for beam-splitter glass, flip vertically for inverted displays, and
-          present in fullscreen without browser distractions.
-        </p>
-      </article>
-      <article>
-        <span>06</span><h3>Record locally</h3><p>
-          Capture your camera or screen directly in the browser. Preview and save your video locally
-          without any server upload or watermark.
-        </p>
-      </article>
-    </div>
-
+  <div class="home-content section-wrap">
+    <section class="launch-block">
+      <p class="eyebrow">Three simple steps</p><h2>How it works</h2>
+      <ol>
+        <li>1. Write or paste your script.</li><li>2. Record with the words under your lens.</li><li
+        >
+          3. Save to your phone and post anywhere.
+        </li>
+      </ol>
+    </section>
+    <section class="launch-block">
+      <h2>What other apps charge for, free here</h2><p>
+        Record with a lens-side prompter, retake sections, use camera and microphone controls, keep
+        takes in a local library, and export without a watermark.
+      </p><a href="/features">Explore Studio and classic features</a>
+    </section>
+    <section class="launch-block">
+      <h2>Made for Reels, Shorts and YouTube</h2><p>
+        Use a vertical frame for short videos or switch to landscape for YouTube. Studio keeps your
+        scripts, settings and takes on this device.
+      </p><a href="/studio?go=record">Open the video recorder</a>
+    </section>
+    <section class="launch-block">
+      <h2>Common questions</h2>
+      <h3>Is it really free?</h3><p>Yes. No trial, no paywall, no watermark.</p>
+      <h3>Where is my video saved?</h3><p>
+        On your device until you save it to Photos or download it. Nothing is uploaded.
+      </p>
+      <h3>Does it work on iPhone and Android?</h3><p>
+        Yes, in Safari and Chrome. Add it to your Home Screen for full-screen recording.
+      </p>
+      <h3>Can I post straight to Instagram?</h3><p>
+        Save the video, then post it from Instagram, or pick Instagram in the share sheet.
+      </p>
+      <h3>Does it work for landscape YouTube videos?</h3><p>
+        Yes. Switch to 16:9 on your laptop or turn your phone sideways.
+      </p>
+    </section>
     <div class="home-links">
-      <div>
-        <p class="eyebrow">Creator & speaker guides</p><h2>Deliver naturally, not mechanically.</h2>
-      </div>
-      <div class="link-stack">
-        <a href="/guides/how-to-use-a-teleprompter"
-          ><span>How to use a teleprompter without sounding scripted</span><b aria-hidden="true"
-            >↗</b
-          ></a
-        >
-        <a href="/guides/manual-vs-voice-activated-teleprompter"
-          ><span>Manual vs. voice-activated teleprompter: which to choose</span><b
-            aria-hidden="true">↗</b
-          ></a
-        >
-        <a href="/guides/teleprompter-camera-distance-and-font-size"
-          ><span>Camera distance, font size, and line width guide</span><b aria-hidden="true">↗</b
-          ></a
-        >
-        <a href="/guides/teleprompter-speed"
-          ><span>Choosing the right teleprompter speed and WPM</span><b aria-hidden="true">↗</b></a
-        >
-        <a href="/guides/teleprompter-for-youtube"
-          ><span>Teleprompter setup for YouTube videos</span><b aria-hidden="true">↗</b></a
-        >
-        <a href="/tools/words-to-minutes"
-          ><span>Turn word count into speaking time</span><b aria-hidden="true">↗</b></a
-        >
-        <a href="/guides"><span>Browse all teleprompter guides</span><b aria-hidden="true">↗</b></a>
-        <a href="/tools"
-          ><span>Open all free planning calculators</span><b aria-hidden="true">↗</b></a
+      <div><p class="eyebrow">Learn more</p><h2>Plan and record your next video.</h2></div><div
+        class="link-stack"
+      >
+        <a href="/guides/teleprompter-for-short-form-video">Short-form video guide</a><a
+          href="/guides/teleprompter-for-youtube">YouTube teleprompter guide</a
+        ><a href="/tools/words-to-minutes">Script timing tool</a><a href="/guides"
+          >Browse all guides</a
         >
       </div>
     </div>
-  </section>
+  </div>
 </Layout>
