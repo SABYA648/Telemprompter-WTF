@@ -93,7 +93,8 @@ export async function getDb() {
       try {
         if (name === 'kv') await db.put('kv', value, key as string);
         else await db.put(name as 'scripts', value as StudioScript);
-      } catch {
+      } catch (error) {
+        if (name === 'takes' || name === 'chunks') throw error;
         memoryMode = true;
         memoryStore(name).set(keyString(actualKey), value);
       }

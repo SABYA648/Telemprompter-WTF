@@ -78,6 +78,6 @@ describe('library recovery', () => {
     vi.stubGlobal('location', location);
     await openInStudio('New text');
     expect(await getScript('quick')).toMatchObject({ body: 'New text', deletedAt: null });
-    expect(location.href).toBe('/studio#/scripts/quick');
+    expect(location.href).toBe('/studio#/record/quick');
   });
 });

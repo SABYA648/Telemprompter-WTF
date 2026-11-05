@@ -20,6 +20,8 @@ test('homepage Record video hands the classic script to Studio', async ({ page }
   await page.locator('.editor-shell[data-hydrated]').waitFor();
   await page.getByLabel('Teleprompter script').fill('A handoff script from the homepage.');
   await page.getByRole('button', { name: 'Open Studio' }).click();
+  await expect(page).toHaveURL(/\/studio#\/record\/quick/);
+  await page.getByRole('link', { name: 'Not now' }).click();
   await expect(page).toHaveURL(/\/studio#\/scripts\/quick/);
   await expect(page.getByLabel('Script')).toHaveValue('A handoff script from the homepage.');
 });

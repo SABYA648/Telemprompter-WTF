@@ -17,7 +17,19 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: '**/media.spec.ts',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'media',
+      testMatch: '**/media.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        permissions: ['camera', 'microphone'],
+        launchOptions: {
+          args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
+        },
+      },
     },
   ],
   ...(process.env.PLAYWRIGHT_BASE_URL

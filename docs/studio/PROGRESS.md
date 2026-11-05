@@ -106,3 +106,29 @@ Owner manual checks:
 - On a physical phone, write a script in Studio, reload, and confirm it remains in the local library.
 
 Next: M4.
+
+## M4 Record core - 2026-11-05
+
+Shipped:
+
+- Added capability-driven recording support: MIME preference and bitrate selection, camera-constraint fallback, clear permission/busy/insecure failures, and an in-app-browser replacement notice.
+- Replaced the Studio Record placeholder with a camera preview, countdown, lens-side WPM prompter, cue and pause handling, font controls, tap/scrub behavior, section chips, target timing and focused keyboard controls.
+- Added a local MediaRecorder lifecycle with chunk persistence, interruption/reload recovery, wake-lock handling, review actions, keep/retake/discard/star, Web Share/download export, take detail/list screens and a storage meter.
+- Added quick record settings for camera direction, resolution, countdown, safe zones and grid; the homepage handoff now opens the quick script in Record and retains an explicit editor path.
+- Added typed Studio analytics for the live recording journey and coverage for media selection, bitrates, constraints, error mapping, scroll math, chunk ordering, filenames, storage estimates, in-app detection and browser recording/recovery flows.
+
+Files: `src/domain/studio` media, camera, recorder, storage and take modules; `src/studio/RecordScreen.tsx`, `src/studio/TakesScreen.tsx`; Studio shell/styles, handoff, browser and unit tests.
+
+Gates: `npm run check` pass (100/100 unit tests); `npm run test:e2e` pass (62/62); `npx playwright test --project=media` pass (4/4); Studio budget 32.5 KB gzip / 130 KB. No M4 Docker gate was specified.
+
+Deviations: none.
+
+Known issues:
+
+- A physical device is still required to validate real camera selection, local file saving and wake-lock behavior across the supported browser matrix.
+
+Owner manual checks:
+
+- On an iOS Safari or Android Chrome phone, allow camera and microphone, record a short script, keep it, reload Studio, play the saved take and export it. Repeat once after opening the site inside a social-app browser to confirm the open-in-browser guidance.
+
+Next: M5.

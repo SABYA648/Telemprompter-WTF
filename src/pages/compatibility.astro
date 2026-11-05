@@ -97,7 +97,7 @@ const schema = [
             </tr>
             <tr>
               <th scope="row">Screen / Camera Recording</th>
-              <td>WebM (VP8/Opus)</td>
+              <td>MP4 or WebM, checked in browser</td>
               <td>WebM (VP8/Opus)</td>
               <td>MP4 (H.264/AAC)</td>
               <td>Camera only</td>
@@ -162,7 +162,8 @@ const schema = [
         Different browsers support different container formats:
       </p>
       <ul>
-        <li><strong>Chromium & Firefox:</strong> Generates `video/webm;codecs=vp8,opus` files.</li>
+        <li><strong>Chromium:</strong> Studio prefers MP4 when supported, then WebM.</li>
+        <li><strong>Firefox:</strong> Studio saves WebM.</li>
         <li><strong>Safari (macOS 14+):</strong> Generates `video/mp4;codecs=avc1,mp4a` files.</li>
         <li>
           <strong>Mobile Devices:</strong> Display capture (`getDisplayMedia`) is restricted by iOS and
@@ -172,6 +173,13 @@ const schema = [
       <p>
         All recordings are generated as client-side Blobs. No video chunk is ever streamed to a
         remote server.
+      </p>
+      <p>
+        Studio checks the formats offered by your browser before recording. It prefers MP4 when
+        available and otherwise saves WebM. Studio writes recording chunks to local browser storage
+        about once per second so a take can be recovered after an interrupted session. Some Safari
+        versions ignore the one-second chunk interval and deliver video only when recording stops; a
+        killed tab on those versions may have no recoverable video.
       </p>
 
       <h2>Hardware teleprompter rigs & beam-splitter glass</h2>

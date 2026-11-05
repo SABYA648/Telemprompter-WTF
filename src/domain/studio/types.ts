@@ -22,10 +22,33 @@ export interface StudioScript {
   takeCount: number;
 }
 
+export type TakeStatus = 'recording' | 'ready' | 'recovered' | 'failed';
+export interface TimelineMark {
+  t: number;
+  line: number;
+  section: number;
+}
 export interface StudioTake {
   id: string;
   scriptId: string | null;
+  sectionIndex: number | null;
+  number: number;
+  status: TakeStatus;
+  mimeType: string;
+  container: 'mp4' | 'webm';
+  width: number;
+  height: number;
+  frameRate: number;
+  facing: 'front' | 'back' | 'external';
+  durationMs: number;
+  sizeBytes: number;
+  chunkCount: number;
+  kept: boolean;
+  starred: boolean;
+  exportedAt: number | null;
   createdAt: number;
+  timeline: TimelineMark[];
+  trim: { startMs: number; endMs: number } | null;
 }
 export interface TakeChunk {
   takeId: string;

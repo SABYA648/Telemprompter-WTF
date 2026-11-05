@@ -12,5 +12,5 @@ export async function openInStudio(text: string, opts: { embedId?: string } = {}
         })
       : createScript({ id, title: id === 'quick' ? 'Quick script' : 'Guide script', body: text }));
   }
-  location.href = text.trim() ? `/studio#/scripts/${id}` : '/studio#/';
+  location.href = text.trim() ? `/studio#/record/${id}` : '/studio#/';
 }

@@ -41,7 +41,7 @@ for (const page of await pages(root)) {
   }
   for (const href of entrypoints) await addModule(href);
   const pagePath = page.slice(root.length).replace(/\/index\.html$/, '/') || '/';
-  const max = pagePath === '/studio/' || pagePath === '/studio.html' ? 90 * 1024 : 60 * 1024;
+  const max = pagePath === '/studio/' || pagePath === '/studio.html' ? 130 * 1024 : 60 * 1024;
   console.log(
     `${pagePath}: ${(bytes / 1024).toFixed(1)} KB gzip (max ${(max / 1024).toFixed(0)} KB)`,
   );

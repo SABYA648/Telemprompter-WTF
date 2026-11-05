@@ -19,6 +19,14 @@ import { durationAtWpm, fitForTarget, sectionDurations } from '../domain/studio/
 import { readabilityWarning } from '../domain/studio/words';
 import { isMemoryStorage } from '../domain/studio/db';
 import { routeFromHash, bootHash, type Route } from './router';
+import RecordScreen from './RecordScreen';
+import { TakesScreen, TakeScreen } from './TakesScreen';
+import { recoverTakes } from '../domain/studio/takesRepo';
+import {
+  browserHandoffScript,
+  browserHandoffUrl,
+  isInAppBrowser,
+} from '../domain/studio/inAppBrowser';
 
 function go(path: string): void {
   location.hash = path;
@@ -42,6 +50,7 @@ export default function StudioApp(): preact.JSX.Element {
   const [scripts, setScripts] = useState<StudioScript[]>([]);
   const [ready, setReady] = useState(false);
   const [memory, setMemory] = useState(false);
+  const [recovered, setRecovered] = useState(false);
   const refreshRequest = useRef(0);
   const refresh = async () => {
     const request = ++refreshRequest.current;
@@ -54,6 +63,18 @@ export default function StudioApp(): preact.JSX.Element {
         await migrateQuickScript();
         await purgeDeletedScripts();
         await ensureFirstScript();
+        const handoff = browserHandoffScript(location.hash);
+        if (handoff) {
+          const imported = await createScript(handoff);
+          history.replaceState(null, '', `#/record/${imported.id}`);
+          setRoute({ screen: 'record', id: imported.id });
+        }
+        const recoveredTakes = await recoverTakes();
+        if (recoveredTakes.length) {
+          setRecovered(true);
+          for (let index = 0; index < recoveredTakes.length; index++)
+            analytics.track('recovered_take');
+        }
         if (routeFromHash(location.hash).id === 'new') {
           const script = await createScript();
           go(`/scripts/${script.id}`);
@@ -62,7 +83,7 @@ export default function StudioApp(): preact.JSX.Element {
         const boot = bootHash(location.search);
         if (boot && !location.hash) location.hash = boot;
         analytics.track('opened_studio', {
-          entry: studioEntry(),
+          entry: handoff ? 'link' : studioEntry(),
           display: displayMode(),
           device_class: deviceClass(),
         });
@@ -107,11 +128,35 @@ export default function StudioApp(): preact.JSX.Element {
     );
   const active = scripts.filter((script) => !script.deletedAt);
   const deleted = scripts.filter((script) => script.deletedAt);
+  const inApp = isInAppBrowser(navigator.userAgent);
+  const handoffScript = active.find((script) => script.id === route.id) ?? active[0] ?? null;
   return (
     <div class="studio-shell">
+      {inApp && route.screen !== 'record' && (
+        <div class="studio-storage-warning" role="status">
+          Instagram's browser can't record video. Open this page in{' '}
+          {/Android/i.test(navigator.userAgent) ? 'Chrome' : 'Safari'}.
+          <button
+            class="studio-button studio-button--quiet"
+            onClick={() =>
+              void navigator.clipboard.writeText(browserHandoffUrl(location.origin, handoffScript))
+            }
+          >
+            Copy link with script
+          </button>
+        </div>
+      )}
       {memory && (
         <p class="studio-storage-warning" role="status">
-          Private browsing: your scripts may be lost when you close this tab.
+          Private browsing: takes are lost when you close this tab.
+        </p>
+      )}
+      {recovered && (
+        <p
+          class={`studio-storage-warning ${route.screen === 'record' ? 'studio-recovery-notice' : ''}`}
+          role="status"
+        >
+          We recovered a take from your last session. <a href="#/takes">View take</a>
         </p>
       )}
       {route.screen === 'home' && <Home scripts={active} />}
@@ -119,21 +164,12 @@ export default function StudioApp(): preact.JSX.Element {
         <Scripts scripts={active} deleted={deleted} refresh={refresh} />
       )}
       {route.screen === 'editor' && <Editor id={route.id ?? ''} refresh={refresh} />}
-      {route.screen === 'record' && (
-        <Placeholder title="Record" text="Camera recording arrives in the next milestone." />
-      )}
+      {route.screen === 'record' && <RecordScreen id={route.id ?? 'quick'} memory={memory} />}
       {route.screen === 'practice' && (
         <Placeholder title="Practice" text="Practice arrives in the next milestone." />
       )}
-      {route.screen === 'take' && (
-        <Placeholder title="Take" text="Your take will appear here after recording." />
-      )}
-      {route.screen === 'takes' && (
-        <Placeholder
-          title="Takes"
-          text="Your recorded takes will appear here in the next milestone."
-        />
-      )}
+      {route.screen === 'take' && <TakeScreen id={route.id ?? ''} />}
+      {route.screen === 'takes' && <TakesScreen />}
       {route.screen === 'settings' && (
         <Placeholder
           title="Settings"
@@ -187,7 +223,7 @@ function Home({ scripts }: { scripts: StudioScript[] }) {
             : 'Create a script to begin.'}
         </p>
         <div class="studio-actions">
-          <a class="studio-button" href={`#/scripts/${quick?.id ?? 'quick'}`}>
+          <a class="studio-button" href={`#/record/${quick?.id ?? 'quick'}`}>
             Record now
           </a>
           <a class="studio-button studio-button--quiet" href="#/scripts/new">
