@@ -245,3 +245,9 @@ Decision: D-029 defines reminder download and ask semantics; calendar import rem
 Gates: `npm run check` pass (221/221 unit tests); `npm run test:e2e` pass (105/105); separate media project pass (8/8); `npm run budget` pass (47.1 KB Studio / 27.8 KB largest content page). Docker resource gates remain with the orchestrator.
 
 Next: M8 after M7 PR review and owner device QA.
+
+## M7 independent approval and PR - 2026-11-05
+
+Gates rerun by Hermes with Node 22: `npm ci`, `npm run check` (221/221 unit), `npm run test:e2e` (105/105), media (8/8), `npm run budget` (Studio 47.1 KB / 130 KB). Docker read-only image 84,325,731 bytes: `/health` and `/studio` 200, `/private-voice-tracking` 301, manifest valid, CSP and Permissions-Policy present, `/sw.js` no-cache. Container SEO crawl passed. Mobile Lighthouse homepage 99 Performance, 100 Accessibility, 100 Best Practices, 100 SEO (LCP 1.8 s, TBT 60 ms, CLS 0). iPhone 15 and Pixel 7 emulation across `/`, `/studio`, `/features`, `/compatibility`, `/privacy`: no console errors or horizontal overflow. Targeted fix review: P0=0, P1=0.
+
+PR: [#8](https://github.com/SABYA648/Telemprompter-WTF/pull/8) from `codex/creator-studio` into `main`, open and unmerged. The owner must complete [DEVICE-QA.md](DEVICE-QA.md) and explicitly approve before any merge or production deployment. M8 proceeds on the integration branch.
