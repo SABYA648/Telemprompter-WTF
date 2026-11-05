@@ -226,12 +226,12 @@ export default function StudioApp(): preact.JSX.Element {
           <TransferControls />
         </div>
       )}
-      <Tabs route={route.screen} />
+      <Tabs route={route} />
     </div>
   );
 }
 
-function Tabs({ route }: { route: Route['screen'] }) {
+function Tabs({ route }: { route: Route }) {
   return (
     <nav class="studio-tabs" aria-label="Studio navigation">
       {tabItems(route).map((tab) => (

@@ -521,19 +521,24 @@
 }
 .sheet-backdrop {
   position: fixed;
-  inset: 0;
+  inset: 0 0 calc(56px + env(safe-area-inset-bottom));
   background: #000a;
   z-index: 10;
   display: flex;
   align-items: flex-end;
   justify-content: center;
 }
+@media (min-width: 1024px) {
+  .sheet-backdrop {
+    bottom: 0;
+  }
+}
 .record-sheet {
   background: #1a1c18;
   color: #fff;
   border-radius: 18px 18px 0 0;
   width: min(100%, 640px);
-  max-height: 85dvh;
+  max-height: min(85dvh, calc(100dvh - 56px - env(safe-area-inset-bottom)));
   overflow: auto;
   padding: 20px;
   display: grid;
@@ -973,7 +978,7 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  padding: calc(env(safe-area-inset-top) + 4px) 4% calc(env(safe-area-inset-bottom) + 12px);
+  padding: calc(env(safe-area-inset-top) + 4px) 4% calc(env(safe-area-inset-bottom) + 68px);
   overflow-y: auto;
   background: #000;
 }

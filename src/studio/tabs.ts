@@ -25,7 +25,14 @@ const TAB_FOR_SCREEN: Record<Route['screen'], TabId> = {
 };
 
 /** Every route belongs to exactly one tab, so exactly one item can ever be current. */
-export function tabItems(screen: Route['screen']) {
-  const active = TAB_FOR_SCREEN[screen];
-  return TABS.map((tab) => ({ ...tab, current: tab.id === active }));
+export function tabItems(route: Route) {
+  const active = TAB_FOR_SCREEN[route.screen];
+  return TABS.map((tab) => ({
+    ...tab,
+    href:
+      tab.id === 'record' && route.screen === 'record'
+        ? `#/record/${route.id ?? 'quick'}`
+        : tab.href,
+    current: tab.id === active,
+  }));
 }

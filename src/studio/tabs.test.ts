@@ -3,7 +3,7 @@ import { routeFromHash } from './router';
 import { tabItems } from './tabs';
 
 const current = (hash: string) =>
-  tabItems(routeFromHash(hash).screen)
+  tabItems(routeFromHash(hash))
     .filter((tab) => tab.current)
     .map((tab) => tab.id);
 
@@ -27,4 +27,13 @@ describe('bottom navigation', () => {
   ])('%s has exactly one current item: %s', (hash, tab) => {
     expect(current(hash)).toEqual([tab]);
   });
+});
+
+it('keeps the Record tab on the current script', () => {
+  expect(
+    tabItems(routeFromHash('#/record/my-script')).find((tab) => tab.id === 'record')?.href,
+  ).toBe('#/record/my-script');
+  expect(tabItems(routeFromHash('#/scripts')).find((tab) => tab.id === 'record')?.href).toBe(
+    '#/record/quick',
+  );
 });

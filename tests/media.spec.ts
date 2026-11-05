@@ -49,6 +49,76 @@ test('Record tab stays active and camera controls clear the navigation at phone 
   }
 });
 
+for (const viewport of [
+  { width: 320, height: 640 },
+  { width: 360, height: 800 },
+  { width: 390, height: 844 },
+]) {
+  test(`active take stays on its script and review actions clear nav at ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/studio#/scripts/new');
+    await page.getByLabel('Title', { exact: true }).fill('Mobile recording target');
+    await page.getByLabel('Script', { exact: true }).fill('This take belongs to my new script.');
+    await expect(page.getByText('Saved')).toBeVisible();
+    const scriptId = page.url().split('#/scripts/')[1];
+    await openRecordFromEditor(page);
+    const allow = page.getByRole('button', { name: 'Allow camera and mic' });
+    const start = page.getByRole('button', { name: 'Start recording' });
+    await expect(allow.or(start)).toBeVisible();
+    if (await allow.isVisible()) await allow.click();
+    await page.getByRole('button', { name: 'Quick settings' }).click();
+    await page.getByLabel('Countdown').selectOption('0');
+    await page
+      .getByRole('dialog', { name: 'Quick settings' })
+      .getByRole('button', { name: 'Close' })
+      .click();
+    await start.click();
+    await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
+    const recordTab = page
+      .getByRole('navigation', { name: 'Studio navigation' })
+      .getByRole('link', { name: 'Record' });
+    await expect(recordTab).toHaveAttribute('href', `#/record/${scriptId}`);
+    await recordTab.click();
+    await expect(page).toHaveURL(new RegExp(`#\\/record\\/${scriptId}$`));
+    await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
+    await page.waitForTimeout(700);
+    await page.getByRole('button', { name: 'Stop recording' }).click();
+    const review = page.getByRole('dialog', { name: 'Review take' });
+    await expect(review).toBeVisible();
+    const keep = review.getByRole('button', { name: 'Keep', exact: true });
+    await keep.scrollIntoViewIfNeeded();
+    const target = (await keep.boundingBox())!;
+    const nav = (await page.locator('.studio-tabs').boundingBox())!;
+    expect(target.y + target.height).toBeLessThanOrEqual(nav.y);
+    expect(
+      await keep.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+        return hit === element || element.contains(hit);
+      }),
+    ).toBe(true);
+    await keep.click();
+    await expect.poll(async () => (await storedTakes(page))[0]?.kept).toBe(true);
+    expect((await storedTakes(page))[0]?.scriptId).toBe(scriptId);
+    const statuses = await page.evaluate(
+      () =>
+        new Promise<Array<{ id: string; status: string }>>((resolve, reject) => {
+          const open = indexedDB.open('teleprompter-wtf');
+          open.onerror = () => reject(open.error);
+          open.onsuccess = () => {
+            const rows = open.result.transaction('scripts').objectStore('scripts').getAll();
+            rows.onerror = () => reject(rows.error);
+            rows.onsuccess = () => resolve(rows.result);
+          };
+        }),
+    );
+    expect(statuses.find((script) => script.id === scriptId)?.status).toBe('recorded');
+    expect(statuses.find((script) => script.id === 'quick')?.status).not.toBe('recorded');
+  });
+}
+
 test('practice camera preview is optional and stops with the toggle', async ({ page }) => {
   await page.goto('/studio#/practice/quick');
   await expect(page.locator('video')).toHaveCount(0);
@@ -198,6 +268,7 @@ async function storedTakes(page: import('@playwright/test').Page) {
           chunkCount: number;
           sizeBytes: number;
           status: string;
+          scriptId: string | null;
           kept: boolean;
           sectionIndex: number | null;
           exportedAt: number | null;

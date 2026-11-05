@@ -66,6 +66,32 @@ for (const viewport of [
   { width: 360, height: 800 },
   { width: 390, height: 844 },
 ]) {
+  test(`practice actions clear bottom navigation at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/studio#/practice/quick');
+    await page.getByRole('button', { name: 'Start practice' }).click();
+    for (const name of ['Finish practice', 'Restart']) {
+      const button = page.getByRole('button', { name });
+      await page.locator('.studio-practice').evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+      });
+      const target = (await button.boundingBox())!;
+      const nav = (await page.locator('.studio-tabs').boundingBox())!;
+      expect(target.y + target.height).toBeLessThanOrEqual(nav.y);
+      expect(
+        await button.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+          return hit === element || element.contains(hit);
+        }),
+      ).toBe(true);
+      await button.click();
+      if (name === 'Finish practice')
+        await expect(page.getByRole('region', { name: 'Practice summary' })).toBeVisible();
+    }
+    await expect(page.getByRole('region', { name: 'Practice summary' })).toHaveCount(0);
+  });
+
   test(`script cards keep the title wide and actions clear at ${viewport.width}px`, async ({
     page,
   }) => {
