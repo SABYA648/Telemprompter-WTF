@@ -26,6 +26,29 @@ async function recordAndKeep(page: import('@playwright/test').Page) {
   await review.getByRole('button', { name: 'Keep', exact: true }).click();
 }
 
+test('Record tab stays active and camera controls clear the navigation at phone widths', async ({
+  page,
+}) => {
+  for (const width of [360, 390]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('/studio#/record/quick');
+    const allow = page.getByRole('button', { name: 'Allow camera and mic' });
+    const start = page.getByRole('button', { name: 'Start recording' });
+    await expect(allow.or(start)).toBeVisible();
+    if (await allow.isVisible()) await allow.click();
+    await expect(start).toBeVisible();
+    const current = page
+      .getByRole('navigation', { name: 'Studio navigation' })
+      .locator('[aria-current]');
+    await expect(current).toHaveCount(1);
+    await expect(current).toHaveText('Record');
+    await expect(page.locator('.studio-tabs .is-active')).toHaveCount(1);
+    const nav = (await page.locator('.studio-tabs').boundingBox())!;
+    const controls = (await page.locator('.record-controls').boundingBox())!;
+    expect(controls.y + controls.height).toBeLessThanOrEqual(nav.y);
+  }
+});
+
 test('practice camera preview is optional and stops with the toggle', async ({ page }) => {
   await page.goto('/studio#/practice/quick');
   await expect(page.locator('video')).toHaveCount(0);
@@ -130,12 +153,12 @@ test('two-script batch produces two kept takes and summary', async ({ page }) =>
   }
   await page.goto('/studio#/scripts');
   await page
-    .locator('article.studio-list-item')
+    .locator('article.studio-script-card')
     .filter({ hasText: 'Batch first' })
     .getByRole('button', { name: 'Add to Up next' })
     .click();
   await page
-    .locator('article.studio-list-item')
+    .locator('article.studio-script-card')
     .filter({ hasText: 'Batch second' })
     .getByRole('button', { name: 'Add to Up next' })
     .click();

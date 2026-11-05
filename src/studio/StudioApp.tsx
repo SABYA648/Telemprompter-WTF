@@ -29,6 +29,7 @@ import { loadSettings } from '../domain/studio/settings';
 import { ReminderCard } from './ReminderCard';
 import { persistOnFirstStandaloneLaunch } from '../domain/studio/storage';
 import { routeFromHash, bootHash, type Route } from './router';
+import { tabItems } from './tabs';
 import RecordScreen from './RecordScreen';
 import PracticeScreen from './PracticeScreen';
 import SettingsScreen from './SettingsScreen';
@@ -225,29 +226,23 @@ export default function StudioApp(): preact.JSX.Element {
           <TransferControls />
         </div>
       )}
-      {route.screen !== 'record' && route.screen !== 'practice' && <Tabs route={route.screen} />}
+      <Tabs route={route.screen} />
     </div>
   );
 }
 
 function Tabs({ route }: { route: Route['screen'] }) {
-  const items: Array<[Route['screen'], string, string]> = [
-    ['home', 'Home', '#/'],
-    ['scripts', 'Scripts', '#/scripts'],
-    ['record', 'Record', '#/record/quick'],
-    ['takes', 'Takes', '#/takes'],
-    ['settings', 'Settings', '#/settings'],
-  ];
   return (
     <nav class="studio-tabs" aria-label="Studio navigation">
-      {items.map(([id, label, href], index) => (
+      {tabItems(route).map((tab) => (
         <a
-          class={
-            route === id && index !== 2 ? 'is-active' : index === 2 ? 'studio-record-link' : ''
-          }
-          href={href}
+          class={[tab.id === 'record' ? 'studio-record-link' : '', tab.current ? 'is-active' : '']
+            .filter(Boolean)
+            .join(' ')}
+          href={tab.href}
+          aria-current={tab.current ? 'page' : undefined}
         >
-          {label}
+          {tab.label}
         </a>
       ))}
     </nav>
@@ -371,6 +366,8 @@ function Scripts({
 }) {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<'all' | ScriptStatus>('all');
+  const [notice, setNotice] = useState('');
+  const statusRef = useRef<HTMLParagraphElement>(null);
   const visible = scripts.filter(
     (script) =>
       `${script.title} ${script.body}`.toLowerCase().includes(query.toLowerCase()) &&
@@ -409,33 +406,38 @@ function Scripts({
         <section class="studio-card">
           <h2>Up next</h2>
           <p>Choose the order for your next recording session.</p>
-          {queue.map((script, index) => (
-            <div class="studio-list-item" key={script.id}>
-              <span>
-                {index + 1}. {script.title}
-              </span>
-              <button
-                aria-label={`Move ${script.title} up`}
-                disabled={index === 0}
-                onClick={() => void changeQueue(moveInQueue(queueIds, index, -1))}
-              >
-                Move up
-              </button>
-              <button
-                aria-label={`Move ${script.title} down`}
-                disabled={index === queue.length - 1}
-                onClick={() => void changeQueue(moveInQueue(queueIds, index, 1))}
-              >
-                Move down
-              </button>
-              <button
-                aria-label={`Remove ${script.title} from Up next`}
-                onClick={() => void changeQueue(queueIds.filter((id) => id !== script.id))}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
+          <ol class="studio-row-list">
+            {queue.map((script, index) => (
+              <li class="studio-row" key={script.id}>
+                <span class="studio-row__title">{script.title || 'Untitled script'}</span>
+                <div class="studio-row__actions">
+                  <button
+                    class="studio-chip"
+                    aria-label={`Move ${script.title} up`}
+                    disabled={index === 0}
+                    onClick={() => void changeQueue(moveInQueue(queueIds, index, -1))}
+                  >
+                    Move up
+                  </button>
+                  <button
+                    class="studio-chip"
+                    aria-label={`Move ${script.title} down`}
+                    disabled={index === queue.length - 1}
+                    onClick={() => void changeQueue(moveInQueue(queueIds, index, 1))}
+                  >
+                    Move down
+                  </button>
+                  <button
+                    class="studio-chip"
+                    aria-label={`Remove ${script.title} from Up next`}
+                    onClick={() => void changeQueue(queueIds.filter((id) => id !== script.id))}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ol>
           {queue.length >= 2 && (
             <div class="studio-actions">
               <a class="studio-button" href="#/batch">
@@ -469,62 +471,156 @@ function Scripts({
           <option value="posted">Posted ({statusCount('posted')})</option>
         </select>
       </label>
+      <p
+        class="studio-visually-hidden"
+        aria-live="polite"
+        role={notice ? 'status' : undefined}
+        tabIndex={-1}
+        ref={statusRef}
+      >
+        {notice}
+      </p>
       <div class="studio-list">
         {visible.map((script) => (
-          <article class="studio-list-item">
-            <a href={`#/scripts/${script.id}`}>
-              <strong>{script.title || 'Untitled script'}</strong>
-              <span>
-                {parseMarkup(script.body).spokenWordCount} words ·{' '}
-                {FORMAT(durationAtWpm(parseMarkup(script.body).spokenWordCount, 140))} ·{' '}
-                {script.status}· {new Date(script.updatedAt).toLocaleDateString()}
-              </span>
-            </a>
-            <button
-              onClick={() => void changeQueue([...queueIds, script.id])}
-              disabled={queue.some((item) => item.id === script.id)}
-            >
-              Add to Up next
-            </button>
-            <button
-              onClick={async () => {
-                await duplicateScript(script.id);
-                await refresh();
-              }}
-            >
-              Duplicate
-            </button>
-            <button
-              aria-label={`Delete ${script.title}`}
-              onClick={async () => {
-                await softDelete(script.id);
-                await refresh();
-              }}
-            >
-              Delete
-            </button>
-          </article>
+          <ScriptCard
+            key={script.id}
+            script={script}
+            queued={queueIds.includes(script.id)}
+            onQueue={() => void changeQueue([...queueIds, script.id])}
+            onDuplicate={async () => {
+              await duplicateScript(script.id);
+              await refresh();
+            }}
+            onDelete={async () => {
+              await softDelete(script.id);
+              await refresh();
+              setNotice(`${script.title || 'Untitled script'} moved to Recently deleted.`);
+              statusRef.current?.focus();
+            }}
+          />
         ))}
       </div>
+      {!visible.length && <p>No scripts match.</p>}
       {deleted.length > 0 && (
         <section class="studio-deleted">
           <h2>Recently deleted</h2>
-          {deleted.map((script) => (
-            <div class="studio-list-item">
-              <span>{script.title}</span>
-              <button
-                onClick={async () => {
-                  await restoreScript(script.id);
-                  await refresh();
-                }}
-              >
-                Restore
-              </button>
-            </div>
-          ))}
+          <ul class="studio-row-list">
+            {deleted.map((script) => (
+              <li class="studio-row" key={script.id}>
+                <span class="studio-row__title">{script.title || 'Untitled script'}</span>
+                <div class="studio-row__actions">
+                  <button
+                    class="studio-chip"
+                    onClick={async () => {
+                      await restoreScript(script.id);
+                      await refresh();
+                    }}
+                  >
+                    Restore
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
     </section>
+  );
+}
+const STATUS_LABELS: Record<ScriptStatus, string> = {
+  idea: 'Idea',
+  draft: 'Draft',
+  ready: 'Ready',
+  recorded: 'Recorded',
+  posted: 'Posted',
+};
+/** Library card: title and details take the full width; actions sit below, small and secondary. */
+function ScriptCard({
+  script,
+  queued,
+  onQueue,
+  onDuplicate,
+  onDelete,
+}: {
+  script: StudioScript;
+  queued: boolean;
+  onQueue: () => void;
+  onDuplicate: () => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const deleteRef = useRef<HTMLButtonElement>(null);
+  const opened = useRef(false);
+  useEffect(() => {
+    if (confirming) cancelRef.current?.focus();
+    else if (opened.current) deleteRef.current?.focus();
+    opened.current = confirming;
+  }, [confirming]);
+  const title = script.title || 'Untitled script';
+  const words = parseMarkup(script.body).spokenWordCount;
+  // Non-breaking spaces keep each detail whole, so lines only break between details.
+  const details = [
+    `${words}\u00a0words`,
+    FORMAT(durationAtWpm(words, 140)),
+    STATUS_LABELS[script.status],
+    `Updated\u00a0${new Date(script.updatedAt).toLocaleDateString()}`,
+  ].join('\u00a0· ');
+  return (
+    <article class="studio-script-card">
+      <a class="studio-script-card__main" href={`#/scripts/${script.id}`}>
+        <strong class="studio-script-card__title">{title}</strong>
+        <span class="studio-script-card__meta">{details}</span>
+      </a>
+      {confirming ? (
+        <div
+          class="studio-script-card__actions is-confirming"
+          role="group"
+          aria-label={`Delete ${title}?`}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setConfirming(false);
+          }}
+        >
+          <span class="studio-script-card__question">Delete this script?</span>
+          <button ref={cancelRef} class="studio-chip" onClick={() => setConfirming(false)}>
+            Cancel
+          </button>
+          <button
+            class="studio-chip studio-chip--danger-solid"
+            aria-label={`Confirm delete ${title}`}
+            onClick={() => void onDelete()}
+          >
+            Delete
+          </button>
+        </div>
+      ) : (
+        <div class="studio-script-card__actions">
+          <button
+            class="studio-chip"
+            aria-label={queued ? `${title} is in Up next` : `Add to Up next: ${title}`}
+            disabled={queued}
+            onClick={onQueue}
+          >
+            {queued ? 'In Up next' : 'Up next'}
+          </button>
+          <button
+            class="studio-chip"
+            aria-label={`Duplicate ${title}`}
+            onClick={() => void onDuplicate()}
+          >
+            Duplicate
+          </button>
+          <button
+            ref={deleteRef}
+            class="studio-chip studio-chip--danger"
+            aria-label={`Delete ${title}`}
+            onClick={() => setConfirming(true)}
+          >
+            Delete
+          </button>
+        </div>
+      )}
+    </article>
   );
 }
 function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {

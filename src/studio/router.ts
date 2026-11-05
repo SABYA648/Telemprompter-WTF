@@ -25,6 +25,7 @@ export function routeFromHash(hash: string): Route {
   if (first === 'inbox' && parts.length === 1) return { screen: 'inbox' };
   if (first === 'receive' && second && parts.length === 2) return { screen: 'receive', id: second };
   if (first === 'batch' && parts.length === 1) return { screen: 'batch' };
+  if (first === 'record' && parts.length === 1) return { screen: 'record', id: 'quick' };
   if (first === 'record' && second && parts.length === 2) return { screen: 'record', id: second };
   if (first === 'practice' && second && parts.length === 2)
     return { screen: 'practice', id: second };

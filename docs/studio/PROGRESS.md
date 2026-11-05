@@ -291,3 +291,10 @@ Owner manual checks:
 - Run a two-script batch and use Save all on a phone share sheet.
 
 Next: M9.
+
+## M8 mobile UI hotfix - 2026-11-05
+
+- Rebuilt Scripts library cards so titles and metadata use the full card width at 320, 360 and 390 CSS px. Long titles remain readable; compact 44 px action chips sit below the details. Delete is visually distinct, requires confirmation, and announces completion. Up next and Recently deleted rows also wrap their controls cleanly.
+- Mapped every Studio route to one active navigation item, including Scripts subroutes, Practice and Record. The camera view reserves space for the Record tab and keeps its controls clear of the navigation.
+- Gates with Node 22: `npm run check` passed (266/266 unit tests, typecheck, lint, content lint, formatting, build and budget; Studio 56.7 KB gzip / 130 KB). Playwright passed across all spec files in bounded groups: 118/118 Chromium and 14/14 fake camera tests. Targeted card and navigation checks passed at 320, 360 and 390 px; browser PNG captures were inspected at 360×800 and 390×844, including the delete confirmation state.
+- The initial single Playwright command was terminated by the runner after 30 passing tests (exit 143); every spec file passed on the subsequent grouped runs. Physical phone checks remain with the owner.

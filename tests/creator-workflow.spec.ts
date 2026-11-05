@@ -86,9 +86,10 @@ test('Up next reorders, and Home records the first script', async ({ page }) => 
     await expect(page.getByText('Saved')).toBeVisible();
   }
   await page.goto('/studio#/scripts');
+  // A queued script's button changes name, so the first match is always the next unqueued one.
   await page.getByRole('button', { name: 'Add to Up next' }).first().click();
-  await page.getByRole('button', { name: 'Add to Up next' }).nth(1).click();
-  const firstQueued = page.getByText(/^1\. /);
+  await page.getByRole('button', { name: 'Add to Up next' }).first().click();
+  const firstQueued = page.locator('.studio-row__title').first();
   const before = await firstQueued.textContent();
   await page
     .getByRole('button', { name: /^Move .* down$/ })
@@ -97,7 +98,7 @@ test('Up next reorders, and Home records the first script', async ({ page }) => 
   await expect(firstQueued).not.toHaveText(before ?? '');
   await page.reload();
   await expect(firstQueued).not.toHaveText(before ?? '');
-  const title = ((await firstQueued.textContent()) ?? '').replace(/^1\. /, '');
+  const title = (await firstQueued.textContent()) ?? '';
   await page.goto('/studio#/');
   await expect(page.getByRole('link', { name: `Record ${title}` })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Start batch' })).toBeVisible();

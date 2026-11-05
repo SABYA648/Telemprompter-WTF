@@ -80,11 +80,16 @@ test('Studio works at phone width and library search, delete, restore work', asy
   await expect(page.getByText('Saved')).toBeVisible();
   await page.getByRole('link', { name: 'Scripts', exact: true }).first().click();
   await page.getByLabel('Search scripts').fill('unique content');
-  await expect(page.getByText('Searchable story')).toBeVisible();
+  await expect(page.getByText('Searchable story', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Delete Searchable story' }).click();
+  // Delete asks first; Cancel keeps the script and returns focus to Delete.
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('button', { name: 'Delete Searchable story' })).toBeFocused();
+  await page.getByRole('button', { name: 'Delete Searchable story' }).click();
+  await page.getByRole('button', { name: 'Confirm delete Searchable story' }).click();
   await expect(page.getByRole('heading', { name: 'Recently deleted' })).toBeVisible();
   await page.getByRole('button', { name: 'Restore' }).click();
-  await expect(page.getByText('Searchable story')).toBeVisible();
+  await expect(page.getByText('Searchable story', { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByText('Searchable story')).toBeVisible();
 });
