@@ -635,16 +635,16 @@
   display: none;
 }
 @media (min-width: 1280px) {
-  .record-screen .record-preview {
+  .record-screen.has-editor .record-preview {
     width: 60%;
     margin-left: 40%;
   }
-  .record-screen.dock-auto .prompter-window,
-  .record-screen.dock-top .prompter-window {
+  .record-screen.has-editor.dock-auto .prompter-window,
+  .record-screen.has-editor.dock-top .prompter-window {
     width: 27.6%;
     left: 56.2%;
   }
-  .record-screen .record-controls {
+  .record-screen.has-editor .record-controls {
     left: 40%;
     right: 0;
     width: 60%;
@@ -699,5 +699,188 @@
   }
   .record-desktop-editor a {
     justify-self: start;
+  }
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('/fonts/atkinson-hyperlegible/AtkinsonHyperlegible-Regular.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+.studio-settings-nav {
+  display: grid;
+  gap: 10px;
+}
+.studio-settings-nav .studio-card {
+  color: #fff;
+  text-decoration: none;
+  margin: 0;
+}
+.studio-settings-fields {
+  display: grid;
+  gap: 14px;
+  padding: 12px 0;
+}
+.studio-setting-field {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) minmax(120px, 1.3fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+.studio-setting-field input[type='checkbox'] {
+  width: 24px;
+  height: 24px;
+}
+.studio-setting-field select,
+.studio-setting-field input[type='range'] {
+  min-width: 0;
+  width: 100%;
+}
+.studio-setting-field output {
+  grid-column: 2;
+}
+.studio-setting-field button {
+  min-height: 44px;
+}
+.record-screen .prompter-window {
+  width: var(--prompter-width, 92%);
+  left: calc((100% - var(--prompter-width, 92%)) / 2);
+}
+.prompter-scroll.mirror-horizontal {
+  transform: scaleX(-1);
+}
+.prompter-scroll.mirror-vertical {
+  transform: scaleY(-1);
+}
+.prompter-scroll.mirror-both {
+  transform: scale(-1, -1);
+}
+.prompter-cue-band.cue-line {
+  height: 2px;
+  background: #ffe066;
+}
+.prompter-cue-band.cue-arrow {
+  height: 0;
+  border-top: 2px solid #ffe066;
+}
+.prompter-cue-band.cue-arrow::before {
+  content: '▶';
+  position: absolute;
+  left: 0;
+  top: -12px;
+  color: #ffe066;
+}
+.record-screen-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  border: solid #fff4e5;
+  box-shadow: inset 0 0 20px #fff4e5;
+}
+.record-screen-light.light-soft {
+  border-width: min(6vw, 6vh);
+}
+.record-screen-light.light-bright {
+  border-width: min(12vw, 12vh);
+}
+.record-level-overlay {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  pointer-events: none;
+  color: #ffe066;
+  font-size: 20px;
+}
+.record-level-overlay span {
+  display: inline-block;
+}
+.record-level-meter {
+  position: absolute;
+  z-index: 4;
+  left: 8px;
+  bottom: 155px;
+  width: 120px;
+  height: 12px;
+  background: #555;
+  border-radius: 9px;
+}
+.record-level-meter span {
+  display: block;
+  height: 100%;
+  background: #67d283;
+  border-radius: inherit;
+}
+.record-level-meter i {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 16px;
+  background: white;
+}
+.record-clip {
+  position: absolute;
+  z-index: 4;
+  left: 135px;
+  bottom: 150px;
+  color: #fff;
+  background: #b32419;
+  padding: 3px;
+}
+.readiness-chips {
+  position: absolute;
+  z-index: 4;
+  top: 75px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  pointer-events: none;
+}
+.readiness-chips span {
+  background: #35291e;
+  color: #fff;
+  border: 1px solid #ffc571;
+  border-radius: 12px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+.record-touch-lock {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  background: #0009;
+  display: grid;
+  align-content: center;
+  justify-content: center;
+  text-align: center;
+}
+@media (orientation: landscape) and (max-width: 1023px) {
+  .record-screen.dock-left .prompter-window {
+    left: 0;
+    width: 40%;
+  }
+  .record-screen.dock-right .prompter-window {
+    left: 60%;
+    width: 40%;
+  }
+}
+@media (min-width: 1280px) {
+  .record-screen.has-editor.dock-auto .prompter-window,
+  .record-screen.has-editor.dock-top .prompter-window {
+    width: calc(var(--prompter-width, 46%) * 0.6);
+    left: calc(40% + (60% - var(--prompter-width, 46%) * 0.6) / 2);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .record-screen * {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
   }
 }

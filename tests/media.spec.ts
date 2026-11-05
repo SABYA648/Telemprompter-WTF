@@ -150,3 +150,107 @@ test('in-app browser replaces Record with an opening notice', async ({ browser }
   await expect(page.getByRole('button', { name: 'Copy link with script' })).toBeVisible();
   await context.close();
 });
+
+test('quick camera and mic controls reacquire with selected constraints', async ({ page }) => {
+  await page.addInitScript(() => {
+    const media = navigator.mediaDevices;
+    const original = media.getUserMedia.bind(media);
+    const capabilities = MediaStreamTrack.prototype.getCapabilities;
+    MediaStreamTrack.prototype.getCapabilities = function () {
+      const c = capabilities.call(this);
+      return this.kind === 'video'
+        ? {
+            ...c,
+            width: { min: 640, max: 3840 },
+            height: { min: 480, max: 2160 },
+            frameRate: { min: 24, max: 60 },
+          }
+        : c;
+    };
+    const enumerate = media.enumerateDevices.bind(media);
+    Object.defineProperty(media, 'getUserMedia', {
+      configurable: true,
+      value: (constraints: MediaStreamConstraints) => {
+        ((window as typeof window & { mediaCalls?: MediaStreamConstraints[] }).mediaCalls ??=
+          []).push(constraints);
+        return original(constraints);
+      },
+    });
+    Object.defineProperty(media, 'enumerateDevices', {
+      configurable: true,
+      value: async () => [
+        ...(await enumerate()),
+        {
+          kind: 'videoinput',
+          deviceId: 'fake-camera-two',
+          groupId: 'fake',
+          label: 'Second camera',
+          toJSON() {
+            return this;
+          },
+        },
+        {
+          kind: 'audioinput',
+          deviceId: 'fake-mic-two',
+          groupId: 'fake',
+          label: 'USB microphone',
+          toJSON() {
+            return this;
+          },
+        },
+      ],
+    });
+  });
+  await page.goto('/studio#/record/quick');
+  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await expect(page.getByRole('button', { name: 'Start recording' })).toBeVisible();
+  const calls = () =>
+    page.evaluate(
+      () => (window as typeof window & { mediaCalls?: MediaStreamConstraints[] }).mediaCalls ?? [],
+    );
+  await page.getByRole('button', { name: 'Quick settings' }).click();
+  await page.getByLabel('Resolution').selectOption('720p');
+  await expect(page.getByRole('button', { name: 'Start recording' })).toBeVisible();
+  expect(
+    (await calls()).some(
+      (c) => (c.video as MediaTrackConstraints)?.height && JSON.stringify(c.video).includes('720'),
+    ),
+  ).toBe(true);
+  await page.getByRole('button', { name: 'Quick settings' }).click();
+  await page.getByLabel('Frame rate').selectOption('25');
+  await expect(page.getByRole('button', { name: 'Start recording' })).toBeVisible();
+  expect((await calls()).some((c) => JSON.stringify(c.video).includes('25'))).toBe(true);
+  await page.getByRole('button', { name: 'Quick settings' }).click();
+  await page.getByRole('combobox', { name: 'Camera', exact: true }).selectOption('fake-camera-two');
+  await expect(page.getByRole('button', { name: 'Start recording' })).toBeVisible();
+  expect((await calls()).some((c) => JSON.stringify(c.video).includes('fake-camera-two'))).toBe(
+    true,
+  );
+  await page.getByRole('button', { name: 'Quick settings' }).click();
+  await page
+    .getByRole('combobox', { name: 'Microphone', exact: true })
+    .selectOption('fake-mic-two');
+  await expect(page.getByRole('button', { name: 'Start recording' })).toBeVisible();
+  expect((await calls()).some((c) => JSON.stringify(c.audio).includes('fake-mic-two'))).toBe(true);
+});
+
+test('remote keys scroll, toggle, and prevent F5 reload', async ({ page }) => {
+  await page.goto('/studio#/record/quick');
+  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await expect(page.getByRole('button', { name: 'Start recording' })).toBeVisible();
+  const before = await page.locator('.prompter-scroll').evaluate((el) => el.scrollTop);
+  await page.keyboard.press('PageDown');
+  expect(await page.locator('.prompter-scroll').evaluate((el) => el.scrollTop)).toBeGreaterThan(
+    before,
+  );
+  await page.keyboard.press('b');
+  await expect(page.locator('.prompter-scroll')).toBeVisible();
+  await page.getByRole('button', { name: 'Quick settings' }).click();
+  await page.getByLabel('Countdown').selectOption('0');
+  await page.getByRole('button', { name: 'Close' }).click();
+  await page.keyboard.press('F5');
+  await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
+  await page.waitForTimeout(1100);
+  await page.keyboard.press('F5');
+  await expect(page.getByRole('dialog', { name: 'Review take' })).toBeVisible();
+});

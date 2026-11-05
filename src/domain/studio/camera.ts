@@ -14,6 +14,11 @@ export type CameraOptions = {
   frameRate: number;
   aspect: '9:16' | '16:9';
   audioDeviceId?: string | null;
+  processing?: 'standard' | 'raw' | 'custom';
+  echoCancellation?: boolean;
+  noiseSuppression?: boolean;
+  autoGainControl?: boolean;
+  channelCount?: 1 | 2;
 };
 const HEIGHT = { '720p': 720, '1080p': 1080, '2160p': 2160 };
 export function cameraConstraints(options: CameraOptions, step = 0): MediaStreamConstraints {
@@ -37,10 +42,25 @@ export function cameraConstraints(options: CameraOptions, step = 0): MediaStream
         ? false
         : {
             ...(options.audioDeviceId ? { deviceId: { ideal: options.audioDeviceId } } : {}),
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            channelCount: 1,
+            echoCancellation:
+              options.processing === 'raw'
+                ? false
+                : options.processing === 'custom'
+                  ? (options.echoCancellation ?? true)
+                  : true,
+            noiseSuppression:
+              options.processing === 'raw'
+                ? false
+                : options.processing === 'custom'
+                  ? (options.noiseSuppression ?? true)
+                  : true,
+            autoGainControl:
+              options.processing === 'raw'
+                ? false
+                : options.processing === 'custom'
+                  ? (options.autoGainControl ?? true)
+                  : true,
+            channelCount: options.channelCount ?? 1,
           },
   };
 }

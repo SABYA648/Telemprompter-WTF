@@ -20,6 +20,7 @@ import { readabilityWarning } from '../domain/studio/words';
 import { isMemoryStorage } from '../domain/studio/db';
 import { routeFromHash, bootHash, type Route } from './router';
 import RecordScreen from './RecordScreen';
+import SettingsScreen from './SettingsScreen';
 import { TakesScreen, TakeScreen } from './TakesScreen';
 import { recoverTakes } from '../domain/studio/takesRepo';
 import {
@@ -170,12 +171,7 @@ export default function StudioApp(): preact.JSX.Element {
       )}
       {route.screen === 'take' && <TakeScreen id={route.id ?? ''} />}
       {route.screen === 'takes' && <TakesScreen />}
-      {route.screen === 'settings' && (
-        <Placeholder
-          title="Settings"
-          text="Camera and prompter controls arrive in the next milestones."
-        />
-      )}
+      {route.screen === 'settings' && <SettingsScreen section={route.id} />}
       {route.screen !== 'record' && route.screen !== 'practice' && <Tabs route={route.screen} />}
     </div>
   );

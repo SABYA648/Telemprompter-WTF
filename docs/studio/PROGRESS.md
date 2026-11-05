@@ -132,3 +132,30 @@ Owner manual checks:
 - On an iOS Safari or Android Chrome phone, allow camera and microphone, record a short script, keep it, reload Studio, play the saved take and export it. Repeat once after opening the site inside a social-app browser to confirm the open-in-browser guidance.
 
 Next: M5.
+
+## M5 Pro settings, readiness, layouts and keys - 2026-11-05
+
+Shipped:
+
+- Added the Appendix B settings model, defaults selected on first use, sanitization, ordered IndexedDB writes, and a one-time import of M4 quick preferences. Camera, microphone, recording, prompter and remote key sections are available under `#/settings/:section`, with the Record quick sheet using the same object.
+- Wired camera, resolution, frame rate and microphone changes to media reacquisition. Added capability-filtered pro camera controls, processing modes, device pickers, a five-second mic check and RMS/peak/clip meter.
+- Added deterministic darkness, backlight, room-noise, clipping, quiet-mic, storage, battery and orientation checks; platform-specific approximate safe zones; grid, level and screen light overlays; landscape dock override; desktop distance presets and two-pane editor; mirror text; and the self-hosted Atkinson Hyperlegible font with its OFL license.
+- Added unit tests for settings, camera capability fixtures, readiness, keys and the audio meter. Added browser tests for media constraints, remote keys and settings reload. The browser tests could not execute in this sandbox, so their assertions remain pending.
+
+Files: `src/domain/studio` settings, camera controls, readiness, keymap and audio modules; `src/studio` Record and Settings screens; `src/content/studio/platformFacts.ts`; `src/styles/studio.css`; `public/fonts/atkinson-hyperlegible`; unit and browser tests.
+
+Gates: check pass, unit 121/121, e2e 65/65, media 6/6, budget 41.1 KB Studio / 27.8 KB largest content page, lighthouse not run.
+
+Deviations: D-019 migrates M4 quick preferences into the new object. The full Camera Settings screen also now captures the live track capabilities before filtering resolution and frame-rate choices, so its capability gating matches Quick settings.
+
+Known issues:
+
+- Camera exposure, focus, orientation and audio capability behavior depend on the physical device and browser.
+
+Owner manual checks:
+
+- On iPhone Safari and Android Chrome, switch cameras and microphones, test 4K and high frame rates where offered, verify front-preview mirroring against the saved file, and confirm level permission, external mic quality and mic check playback.
+- Rotate a phone through both landscape angles and verify the dock and controls stay on opposite sides. Check screen light, safe zones, readiness warnings and wake lock while recording.
+- On a desktop webcam, verify the two-pane editor, distance presets, clicker keys, F5 interception, and setting persistence after reload.
+
+Next: M6 after M5 browser gates and commit/push can run in a writable, browser-capable environment.
