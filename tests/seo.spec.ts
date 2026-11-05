@@ -61,6 +61,13 @@ test('homepage ships exactly one high-priority hero image', async ({ page }) => 
   await expect(hero).toHaveAttribute('height', '683');
 });
 
+test('Studio is noindex and absent from the sitemap', async ({ page, request }) => {
+  await page.goto('/studio');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
+  const sitemap = await request.get('/sitemap-0.xml');
+  expect(await sitemap.text()).not.toContain('/studio');
+});
+
 test('JSON-LD blocks parse as valid JSON', async ({ page }) => {
   for (const path of ['/', '/compatibility', '/guides/how-to-use-a-teleprompter']) {
     await page.goto(path);

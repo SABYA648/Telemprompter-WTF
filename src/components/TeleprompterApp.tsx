@@ -70,6 +70,15 @@ export default function TeleprompterApp({
       setScript(saved.script);
       setPreferences(restoredPreferences);
     }
+    const studioPresent =
+      !embedded && new URLSearchParams(location.search).has('studio-present')
+        ? sessionStorage.getItem('studio.presentScript')
+        : null;
+    if (studioPresent) {
+      sessionStorage.removeItem('studio.presentScript');
+      setScript(studioPresent);
+      setPresenting(true);
+    }
     setPrivacyConsent(saved.privacyConsent);
     setSaveStatus(hasSaved ? 'Restored from this device' : 'Saved only on this device');
     // Derived once at app start: a non-empty restored script means this session continues
@@ -205,6 +214,11 @@ export default function TeleprompterApp({
     setPresenting(true);
   };
 
+  const openStudio = async () => {
+    const { openInStudio } = await import('../domain/studio/handoff');
+    await openInStudio(script);
+  };
+
   const stopPresenting = () => {
     setPresenting(false);
     requestAnimationFrame(() => startButtonRef.current?.focus());
@@ -309,6 +323,15 @@ export default function TeleprompterApp({
         </div>
 
         <div class="editor-actions">
+          {!embedded && (
+            <button
+              class="button button--primary"
+              aria-label="Open Studio"
+              onClick={() => void openStudio()}
+            >
+              Record video <span aria-hidden="true">→</span>
+            </button>
+          )}
           <button
             ref={startButtonRef}
             class="button button--primary button--start"

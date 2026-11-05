@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import noindexRoutes from '../src/content/noindexRoutes.json' with { type: 'json' };
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const failures = [];
@@ -52,16 +53,18 @@ const hrefs = [];
 for (const file of htmlFiles) {
   const html = await readFile(file, 'utf8');
   const page = relative(resolve(root, 'dist'), file);
+  const route = `/${page.replace(/\/index\.html$/, '').replace(/\.html$/, '')}`;
+  const isNoindexRoute = noindexRoutes.includes(route);
   const title = html.match(/<title>([^<]+)<\/title>/)?.[1]?.trim();
   const description = html.match(/<meta name="description" content="([^"]+)"/)?.[1]?.trim();
   if (!title) failures.push(`${page}: missing title`);
   if (!description) failures.push(`${page}: missing meta description`);
-  if (!/<link rel="canonical" href="https:\/\/www\.teleprompter\.wtf\//.test(html)) {
+  if (!/<link rel="canonical" href="https:\/\/www\.teleprompter\.wtf\//.test(html))
     failures.push(`${page}: missing canonical`);
-  }
-  if (!/<h1(?:\s|>)/.test(html)) failures.push(`${page}: missing H1`);
-  if (/<meta name="robots" content="noindex/i.test(html))
-    failures.push(`${page}: accidental noindex`);
+  if (!isNoindexRoute && !/<h1(?:\s|>)/.test(html)) failures.push(`${page}: missing H1`);
+  const hasNoindex = /<meta name="robots" content="noindex,follow"/i.test(html);
+  if (isNoindexRoute && !hasNoindex) failures.push(`${page}: missing noindex,follow`);
+  if (hasNoindex && !isNoindexRoute) failures.push(`${page}: accidental noindex`);
   if (title) {
     if (titles.has(title)) failures.push(`${page}: duplicate title with ${titles.get(title)}`);
     titles.set(title, page);

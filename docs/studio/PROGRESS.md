@@ -79,3 +79,30 @@ Owner manual checks:
 - With Docker available, build and run the image and check the Nginx headers and redirect.
 
 Next: M3.
+
+## M3 Studio foundation - 2026-11-05
+
+Shipped:
+
+- Added the noindex Studio page, dark mobile shell and desktop rail. Browser checks at 390x844, 360x740, 768x1024 and 1440x900 found no horizontal overflow, and Studio home, library and editor passed automated accessibility scans.
+- Created every version 1 IndexedDB store, a memory fallback with a visible warning, one-time classic quick-script migration, a starter script, and a library with search, status filters, duplicate, 30-day soft delete and restore. Browser tests covered create, edit, reload, search, delete and restore; unit tests covered the data layer and migration.
+- Added the editor's cue toolbar, spoken-word and duration stats, target fit badges, section timing, readability and placeholder hints, and ordered 400 ms autosave. Unit tests covered all markup syntax, unknown brackets, nested emphasis, English, Hindi and Japanese words, and timing. A browser test checked deletion during a pending save.
+- Added the homepage Record video handoff, Studio header link and normalized virtual page views. A browser test verified that the homepage script opens in the Studio editor as the quick script.
+- Excluded Studio from the sitemap and marked it `noindex,follow`; content lint, SEO crawl and the browser sitemap check passed. The budget script measures Astro island entrypoints and static imports, with Studio at 21.4 KB gzip against 90 KB and the largest content page at 27.7 KB against 60 KB.
+- Refreshed the editor and presenter screenshots from the existing visual test.
+
+Files: `src/studio`, `src/domain/studio`, `src/content/studio`, `src/layouts/StudioLayout.astro`, `src/pages/studio.astro`, `src/styles/studio.css`, homepage handoff, SEO and budget scripts, tests and screenshots.
+
+Gates: check pass, unit 87/87, e2e 58/58, media not applicable, budget 21.4 KB Studio / 27.7 KB largest content page, SEO crawl pass, lighthouse not run. No M3 Docker gate was specified.
+
+Deviations: D-018 uses a same-origin handoff to the classic presenter for the M3 Present action.
+
+Known issues:
+
+- Record, Practice, Takes and Settings show planned placeholder screens until their later milestones.
+
+Owner manual checks:
+
+- On a physical phone, write a script in Studio, reload, and confirm it remains in the local library.
+
+Next: M4.

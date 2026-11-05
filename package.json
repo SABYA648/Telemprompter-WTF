@@ -22,13 +22,15 @@
     "test:e2e:docker": "PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 playwright test",
     "test:seo-crawl": "node scripts/seo-crawl-check.mjs",
     "test:lighthouse": "node scripts/lighthouse.mjs",
+    "budget": "node scripts/bundle-budget.mjs",
     "revenue:estimate": "node scripts/revenue-estimate.mjs",
-    "check": "npm run assets:verify && npm run typecheck && npm run lint && npm run content:lint && npm run format:check && npm run test && npm run build"
+    "check": "npm run assets:verify && npm run typecheck && npm run lint && npm run content:lint && npm run format:check && npm run test && npm run build && npm run budget"
   },
   "dependencies": {
     "@astrojs/preact": "^6.0.2",
     "@astrojs/sitemap": "^3.7.3",
     "astro": "^7.2.0",
+    "idb": "^8.0.4",
     "preact": "^10.29.8"
   },
   "devDependencies": {
@@ -40,6 +42,7 @@
     "chrome-launcher": "^1.2.1",
     "eslint": "^10.0.0",
     "eslint-plugin-astro": "^1.5.0",
+    "fake-indexeddb": "^6.2.7",
     "lighthouse": "^13.4.1",
     "prettier": "^3.6.2",
     "prettier-plugin-astro": "^0.14.1",

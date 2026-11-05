@@ -43,6 +43,7 @@ test('presenter starts, scrolls, pauses, resumes, changes speed and restarts', a
 
   await page.keyboard.press('ArrowUp');
   await expect(page.getByLabel('Scroll speed').getByRole('status')).toContainText('5');
+  await page.keyboard.press('Space');
   await page.keyboard.press('Home');
   await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeLessThan(10);
 });
