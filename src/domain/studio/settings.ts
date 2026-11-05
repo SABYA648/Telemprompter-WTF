@@ -79,7 +79,7 @@ export function defaultSettings(phone: boolean): StudioSettings {
       showRemaining: true,
     },
     keys: structuredClone(DEFAULT_KEYS),
-    reminders: { enabled: false, time: '19:00' },
+    reminders: { fileDownloaded: false, askEnabled: true, time: '19:00' },
     habit: { weeklyGoal: 5, streaksEnabled: true, dailyPromptEnabled: true },
   };
 }
@@ -209,7 +209,9 @@ export function sanitizeSettings(raw: unknown, phone: boolean): StudioSettings {
     },
     keys,
     reminders: {
-      enabled: bool(rem.enabled, false),
+      // Older settings used "enabled" for a download, though import cannot be observed.
+      fileDownloaded: bool(rem.fileDownloaded, bool(rem.enabled, false)),
+      askEnabled: bool(rem.askEnabled, true),
       time:
         typeof rem.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(rem.time)
           ? rem.time

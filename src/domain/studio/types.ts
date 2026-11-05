@@ -148,6 +148,6 @@ export interface StudioSettings {
     showRemaining: boolean;
   };
   keys: Record<KeyAction, string[]>;
-  reminders: { enabled: boolean; time: string };
+  reminders: { fileDownloaded: boolean; askEnabled: boolean; time: string };
   habit: { weeklyGoal: 3 | 5 | 7; streaksEnabled: boolean; dailyPromptEnabled: boolean };
 }

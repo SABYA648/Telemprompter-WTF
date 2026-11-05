@@ -49,8 +49,28 @@ test('reminder settings download a daily local calendar event', async ({ page })
   await expect(page.getByRole('heading', { name: 'Reminders' })).toBeVisible();
   await page.getByLabel('Reminder time').fill('18:30');
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Add to calendar' }).click();
+  await page.getByRole('button', { name: 'Download calendar file' }).click();
   expect((await download).suggestedFilename()).toBe('teleprompter-daily-reminder.ics');
+  await expect(page.getByText('Reminder file downloaded.')).toBeVisible();
+  await expect(page.getByText('Check your calendar to confirm you imported it.')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Reminder file downloaded.')).toBeVisible();
+});
+
+test('fresh standalone launch asks about reminders with zero active days and allows turning off the ask', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'standalone', { configurable: true, value: true });
+  });
+  await page.goto('/studio#/');
+  await expect(page.getByRole('heading', { name: 'Daily reminder' })).toBeVisible();
+  await page.goto('/studio#/settings/reminders');
+  await page.getByLabel('Show reminder suggestion on Home').uncheck();
+  await page.reload();
+  await expect(page.getByLabel('Show reminder suggestion on Home')).not.toBeChecked();
+  await page.goto('/studio#/');
+  await expect(page.getByRole('heading', { name: 'Daily reminder' })).toHaveCount(0);
 });
 
 test('practice credits the streak after 80 percent', async ({ page }) => {
@@ -62,4 +82,30 @@ test('practice credits the streak after 80 percent', async ({ page }) => {
   await expect(page.getByText('Practice counted for today.')).toBeVisible();
   await page.goto('/studio#/');
   await expect(page.getByText('1-day streak')).toBeVisible();
+});
+
+test('practice does not credit time spent in a hidden tab', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-05T12:00:00') });
+  await page.goto('/studio#/practice/quick');
+  await expect(page.getByRole('heading', { name: /Practice:/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Start practice' }).click();
+  await page.evaluate(() => {
+    const state = window as Window & { testVisibility?: 'visible' | 'hidden' };
+    state.testVisibility = 'hidden';
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => state.testVisibility,
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.clock.fastForward(60_000);
+  await expect(page.getByText('Practice counted for today.')).toHaveCount(0);
+  await page.evaluate(() => {
+    (window as Window & { testVisibility?: 'visible' | 'hidden' }).testVisibility = 'visible';
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.clock.fastForward(1_000);
+  await expect(page.getByText('Practice counted for today.')).toHaveCount(0);
+  await page.goto('/studio#/');
+  await expect(page.getByText('1-day streak')).toHaveCount(0);
 });

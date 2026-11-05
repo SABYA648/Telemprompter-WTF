@@ -12,7 +12,7 @@ export function ReminderCard({
   always?: boolean;
 }) {
   const [settings, setSettings] = useState<StudioSettings | null>(null);
-  const [installed, setInstalled] = useState(false);
+  const [installed, setInstalled] = useState(() => isStandaloneDisplay());
   useEffect(() => {
     void loadSettings().then(setSettings);
     const onInstalled = () => setInstalled(true);
@@ -22,13 +22,13 @@ export function ReminderCard({
   if (
     !settings ||
     (!always && activeDays < 2 && !installed) ||
-    (!always && settings.reminders.enabled)
+    (!always && (!settings.reminders.askEnabled || settings.reminders.fileDownloaded))
   )
     return null;
   const add = async () => {
     const ios = installPlatform(navigator.userAgent, navigator.maxTouchPoints) === 'ios';
     downloadReminder(settings.reminders.time, ios && isStandaloneDisplay());
-    const next = { ...settings, reminders: { ...settings.reminders, enabled: true } };
+    const next = { ...settings, reminders: { ...settings.reminders, fileDownloaded: true } };
     setSettings(next);
     await saveSettings(next);
   };
@@ -36,31 +36,56 @@ export function ReminderCard({
     <section class="studio-card" aria-label="Daily reminder">
       <h2>Daily reminder</h2>
       <p>
-        We will create a daily calendar alert at {settings.reminders.time}. You can change it in
-        your calendar.
+        Download a daily calendar reminder file for {settings.reminders.time}. Open and import it in
+        your calendar to turn on the alert.
       </p>
+      {always && settings.reminders.fileDownloaded && (
+        <p role="status">
+          Reminder file downloaded. Check your calendar to confirm you imported it.
+        </p>
+      )}
       {always && (
-        <label class="studio-label">
-          Reminder time
-          <input
-            type="time"
-            value={settings.reminders.time}
-            onInput={(event) => {
-              const next = {
-                ...settings,
-                reminders: {
-                  ...settings.reminders,
-                  time: (event.target as HTMLInputElement).value,
-                },
-              };
-              setSettings(next);
-              void saveSettings(next);
-            }}
-          />
-        </label>
+        <>
+          <label class="studio-label">
+            Reminder time
+            <input
+              type="time"
+              value={settings.reminders.time}
+              onInput={(event) => {
+                const next = {
+                  ...settings,
+                  reminders: {
+                    ...settings.reminders,
+                    time: (event.target as HTMLInputElement).value,
+                  },
+                };
+                setSettings(next);
+                void saveSettings(next);
+              }}
+            />
+          </label>
+          <label class="studio-setting-field">
+            <input
+              type="checkbox"
+              checked={settings.reminders.askEnabled}
+              onChange={(event) => {
+                const next = {
+                  ...settings,
+                  reminders: {
+                    ...settings.reminders,
+                    askEnabled: (event.target as HTMLInputElement).checked,
+                  },
+                };
+                setSettings(next);
+                void saveSettings(next);
+              }}
+            />{' '}
+            Show reminder suggestion on Home
+          </label>
+        </>
       )}
       <button class="studio-button" onClick={() => void add()}>
-        Add to calendar
+        Download calendar file
       </button>
     </section>
   );

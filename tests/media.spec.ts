@@ -81,6 +81,25 @@ test('records, reviews, keeps, lists, and downloads a real media file', async ({
   await expect(page.getByRole('button', { name: 'Unstar' })).toBeVisible();
 });
 
+test('keeping a take earns the Home streak badge', async ({ page }) => {
+  await page.goto('/studio#/record/quick');
+  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByRole('button', { name: 'Quick settings' }).click();
+  await page.getByLabel('Countdown').selectOption('0');
+  await page.getByRole('button', { name: 'Close' }).click();
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
+  await page.waitForTimeout(700);
+  await page.getByRole('button', { name: 'Stop recording' }).click();
+  const review = page.getByRole('dialog', { name: 'Review take' });
+  await expect(review).toBeVisible();
+  await review.getByRole('button', { name: 'Keep', exact: true }).click();
+  await expect.poll(async () => (await storedTakes(page))[0]?.kept).toBe(true);
+  await review.getByRole('button', { name: 'Done' }).click();
+  await page.goto('/studio#/');
+  await expect(page.getByText('1-day streak')).toBeVisible();
+});
+
 test('recovers persisted chunks after a reload during recording', async ({ page }) => {
   await page.goto('/studio#/record/quick');
   await page.getByRole('button', { name: 'Allow camera and mic' }).click();

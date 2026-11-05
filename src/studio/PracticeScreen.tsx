@@ -15,13 +15,30 @@ export default function PracticeScreen({ id }: { id: string }) {
   }, [id]);
   useEffect(() => {
     if (!running) return;
-    let last = performance.now();
-    const timer = setInterval(() => {
+    let last: number | null = document.visibilityState === 'visible' ? performance.now() : null;
+    const onVisibilityChange = () => {
       const now = performance.now();
-      setElapsed((old) => old + (now - last) / 1000);
+      if (document.visibilityState === 'visible') last = now;
+      else {
+        if (last !== null) {
+          const delta = (now - last) / 1000;
+          setElapsed((old) => old + delta);
+        }
+        last = null;
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    const timer = setInterval(() => {
+      if (document.visibilityState !== 'visible' || last === null) return;
+      const now = performance.now();
+      const delta = (now - last) / 1000;
+      setElapsed((old) => old + delta);
       last = now;
     }, 100);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [running]);
   const words = script ? parseMarkup(script.body) : null;
   const duration = Math.max(1, durationAtWpm(words?.spokenWordCount ?? 0, 140));

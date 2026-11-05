@@ -230,3 +230,18 @@ Owner manual checks:
 - Run every device and browser row in `docs/studio/DEVICE-QA.md` before merging the launch PR, especially iPhone and Android recording, save to Photos or Gallery, Instagram and YouTube uploads, offline install and `.ics` import.
 
 Next: M8.
+
+## M7 reviewer fix-up - 2026-11-05
+
+Shipped:
+
+- Recognized standalone display on a fresh launch so the reminder ask appears before two active days. Added a browser check for a new standalone app with zero active days.
+- Paused practice progress while the document is hidden and added a browser check that a hidden interval beyond the credit threshold earns no streak on return.
+- Described the `.ics` action as a file download, tracked that observed action separately from calendar import, and added a Settings switch to turn off the Home ask. Updated the privacy page to name the complete transfer payload and the sensitivity of shared codes and links.
+- Added a real fake-camera Keep-to-Home-badge integration check.
+
+Decision: D-029 defines reminder download and ask semantics; calendar import remains an owner device QA check.
+
+Gates: `npm run check` pass (221/221 unit tests); `npm run test:e2e` pass (105/105); separate media project pass (8/8); `npm run budget` pass (47.1 KB Studio / 27.8 KB largest content page). Docker resource gates remain with the orchestrator.
+
+Next: M8 after M7 PR review and owner device QA.
