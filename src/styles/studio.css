@@ -161,6 +161,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  color: var(--studio-text);
+  text-align: left;
 }
 .studio-list-item a {
   color: inherit;
@@ -395,6 +397,22 @@
 .record-speed {
   overflow-x: auto;
   white-space: nowrap;
+}
+.record-speed {
+  justify-content: safe center;
+}
+.record-sections label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 0 6px;
+  color: #fff;
+}
+.record-sections select {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45vw;
 }
 .record-screen button,
 .record-screen select,
@@ -932,11 +950,145 @@
   width: 100%;
   margin-top: 4px;
 }
+.studio-practice {
+  position: fixed;
+  z-index: 1;
+  inset: 0;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: calc(env(safe-area-inset-top) + 4px) 4% calc(env(safe-area-inset-bottom) + 12px);
+  overflow-y: auto;
+  background: #000;
+}
+.studio-practice > :not(video) {
+  width: min(100%, 760px);
+}
+.studio-practice-camera {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scaleX(-1);
+}
+.studio-practice-prompter {
+  flex: 0 0 38dvh;
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-practice-prompter {
+    scroll-behavior: auto;
+  }
+}
 .studio-practice-script {
+  margin: 0;
   white-space: pre-wrap;
   font-size: clamp(1.4rem, 4vw, 2.3rem);
   line-height: 1.55;
 }
+.studio-practice-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.studio-practice-heading a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  color: var(--studio-text);
+}
+.studio-practice .studio-practice-heading h1 {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 1rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.studio-practice-controls {
+  margin-top: auto;
+}
+.studio-practice-controls > p {
+  margin: 4px 0;
+}
+.studio-practice-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.studio-practice-strip button {
+  min-width: 48px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 10px;
+  background: #292b27;
+  color: var(--studio-text);
+  font: inherit;
+  cursor: pointer;
+}
+.studio-practice-strip label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+}
+.studio-practice-summary {
+  margin: 8px 0 16px;
+  padding-left: 1.2rem;
+}
 .studio-practice progress {
   width: 100%;
+}
+.studio-qr {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem auto;
+  background: white;
+  padding: 0.5rem;
+}
+.studio-disclosure summary {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.studio-idea-text {
+  white-space: pre-wrap;
+}
+.studio-next-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+}
+.studio-next-row a:first-child {
+  flex: 1 1 12rem;
+  color: inherit;
+}
+.studio-counted-field {
+  margin-top: 12px;
+}
+.studio-count {
+  margin: 4px 0 0;
+  color: var(--studio-muted);
+  font-size: 0.88rem;
+}
+.studio-count.is-over {
+  color: #ffd47b;
+  font-weight: 700;
 }

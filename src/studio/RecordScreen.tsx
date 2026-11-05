@@ -7,7 +7,7 @@ import {
   type CameraOptions,
   type CameraReason,
 } from '../domain/studio/camera';
-import { exportTake } from '../domain/studio/exportTake';
+import { exportTake, sizeBucket } from '../domain/studio/exportTake';
 import { browserHandoffUrl, isInAppBrowser } from '../domain/studio/inAppBrowser';
 import { mediaSupport } from '../domain/studio/mediaSupport';
 import { videoBitrate } from '../domain/studio/mime';
@@ -20,6 +20,8 @@ import {
 } from '../domain/studio/prompterScroll';
 import { StudioRecorder, type StopReason } from '../domain/studio/recorder';
 import { getScript, listScripts, saveScript } from '../domain/studio/scriptsRepo';
+import { advanceBatch, isBatchScript } from '../domain/studio/batch';
+import { upNext } from '../domain/studio/queue';
 import { deleteTake, saveTake, takeBlob } from '../domain/studio/takesRepo';
 import type { StudioScript, StudioTake, TimelineMark } from '../domain/studio/types';
 import { TimeBasedScrollController } from '../domain/scrollController';
@@ -73,8 +75,9 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
     defaultSettings(deviceClass() !== 'desktop'),
   );
   const [stream, setStream] = useState<MediaStream | null>(null);
+  // Starts on 'opening' so a returning user never sees the priming sheet flash before the camera.
   const [permission, setPermission] = useState<'priming' | 'opening' | 'ready' | 'error'>(
-    'priming',
+    'opening',
   );
   const [reason, setReason] = useState<CameraReason>('unknown');
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
@@ -92,6 +95,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
+  const [sectionMode, setSectionMode] = useState(false);
   const sectionEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [touchLocked, setTouchLocked] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -202,7 +206,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
     let active = true;
     void (async () => {
       const [item, saved] = await Promise.all([
-        id === 'next' ? listScripts().then((items) => items[0]) : getScript(id),
+        id === 'next' ? listScripts().then((items) => upNext(items)[0] ?? items[0]) : getScript(id),
         loadSettings(),
       ]);
       if (!active) return;
@@ -338,13 +342,13 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
         }
         if (
           recorder.current &&
-          settings.recording.stopAtSectionEnd &&
+          (sectionMode || settings.recording.stopAtSectionEnd) &&
           selectedSection !== null &&
           !sectionEndTimer.current
         ) {
           const end =
             sections.current[selectedSection + 1] ?? el.scrollHeight - el.clientHeight * 0.7;
-          if (snapshot.scrollTop + cueOffset.current >= end)
+          if (snapshot.isPlaying && snapshot.scrollTop + cueOffset.current >= end)
             sectionEndTimer.current = setTimeout(() => recorder.current?.stop('section_end'), 800);
         }
         if (recorder.current) {
@@ -382,6 +386,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
     settings.prompter.lineHeight,
     settings.prompter.autoPauseMarkers,
     settings.recording.stopAtSectionEnd,
+    sectionMode,
     selectedSection,
   ]);
   useEffect(() => {
@@ -637,6 +642,17 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
       removeEventListener('resize', checks);
     };
   }, [stream, settings.camera.aspect, settings.mic.audioBitrate]);
+  /** Rewind the prompter, to the chosen section's start line when one section is being recorded. */
+  const rewindPrompter = () => {
+    controller.current?.restart();
+    consumed.current.clear();
+    if (selectedSection !== null && (sectionMode || settings.recording.stopAtSectionEnd))
+      moveToSection(selectedSection);
+  };
+  const moveToSection = (index: number) => {
+    if (scroller.current)
+      scroller.current.scrollTop = Math.max(0, (sections.current[index] ?? 0) - cueOffset.current);
+  };
   const begin = async () => {
     if (!stream || recording || starting.current || recorder.current) return;
     try {
@@ -688,6 +704,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
       const session = await StudioRecorder.start({
         stream,
         scriptId: hasScript ? (script?.id ?? null) : null,
+        sectionIndex: sectionMode ? selectedSection : null,
         facing: settings.camera.facing === 'user' ? 'front' : 'back',
         resolution: settings.camera.resolution,
         frameRate: videoSettings?.frameRate ?? 30,
@@ -698,6 +715,8 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
         onStop: (take, why, blob) => {
           instantBlob.current = { id: take.id, blob };
           recorder.current = null;
+          if (sectionEndTimer.current) clearTimeout(sectionEndTimer.current);
+          sectionEndTimer.current = null;
           setRecording(false);
           setElapsed(take.durationMs);
           controller.current?.pause();
@@ -743,13 +762,18 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
           ? (Math.round(videoSettings?.frameRate ?? 30) as 24 | 25 | 30 | 50 | 60)
           : 'other',
         facing: settings.camera.facing === 'user' ? 'front' : 'back',
-        mode: hasScript ? 'full' : 'free',
+        mode: isBatchScript(script?.id)
+          ? 'batch'
+          : sectionMode
+            ? 'section'
+            : hasScript
+              ? 'full'
+              : 'free',
         countdown: settings.recording.countdownSeconds,
         has_target: Boolean(targetMs),
       });
       if (hasScript && settings.recording.autoStartScroll) {
-        controller.current?.restart();
-        consumed.current.clear();
+        rewindPrompter();
         controller.current?.start();
       }
     } catch (error) {
@@ -792,6 +816,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
         takeCount: script.takeCount + 1,
         lastRecordedAt: Date.now(),
         status: 'recorded',
+        order: 0,
       });
     const db = await getDb();
     if (!(await db.get('kv', 'storage.persistRequested'))) {
@@ -809,6 +834,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
             : 'on_target'
         : 'no_target',
     });
+    if (script && (await advanceBatch(script.id, next.id))) location.hash = '#/batch';
   };
   const discard = async () => {
     if (!review) return;
@@ -828,14 +854,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
     analytics.track('exported_take', {
       method,
       container: review.container,
-      size_bucket:
-        review.sizeBytes < 1e7
-          ? 'under_10mb'
-          : review.sizeBytes < 5e7
-            ? '10_50mb'
-            : review.sizeBytes < 2e8
-              ? '50_200mb'
-              : '200mb_plus',
+      size_bucket: sizeBucket(review.sizeBytes),
     });
     dispatchEvent(new Event('studio-take-exported'));
     setNotice('Video saved.');
@@ -1217,6 +1236,43 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
         </div>
       )}
       <div class="record-controls">
+        {parsed?.sections.length ? (
+          <div class="record-speed record-sections">
+            <label>
+              <input
+                type="checkbox"
+                checked={sectionMode}
+                disabled={recording}
+                onChange={(e) => {
+                  const enabled = e.currentTarget.checked;
+                  setSectionMode(enabled);
+                  if (enabled && selectedSection === null) {
+                    setSelectedSection(0);
+                    moveToSection(0);
+                  }
+                }}
+              />{' '}
+              Record one section
+            </label>
+            <select
+              aria-label="Section"
+              value={selectedSection ?? ''}
+              disabled={recording}
+              onChange={(e) => {
+                const value = (e.target as HTMLSelectElement).value;
+                setSelectedSection(value === '' ? null : Number(value));
+                if (value !== '') moveToSection(Number(value));
+              }}
+            >
+              <option value="" disabled={sectionMode}>
+                Sections
+              </option>
+              {parsed.sections.map((section, index) => (
+                <option value={index}>{section.title}</option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         <div class="record-speed">
           <button onClick={() => setSpeed(wpm - 5)} aria-label="Slower">
             −
@@ -1231,21 +1287,6 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
           <button onClick={() => setFontSize(font + 2)} aria-label="Larger text">
             A+
           </button>
-          {parsed?.sections.length ? (
-            <select
-              aria-label="Section"
-              onChange={(e) => {
-                const index = Number((e.target as HTMLSelectElement).value);
-                setSelectedSection(Number.isFinite(index) ? index : null);
-                if (scroller.current) scroller.current.scrollTop = sections.current[index] ?? 0;
-              }}
-            >
-              <option>Sections</option>
-              {parsed.sections.map((section, index) => (
-                <option value={index}>{section.title}</option>
-              ))}
-            </select>
-          ) : null}
           <button
             onClick={() => {
               const value = fitWpm(parsed?.spokenWordCount ?? 0, script?.targetSeconds ?? 0);
@@ -1422,10 +1463,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
                 <button
                   class="studio-button studio-button--quiet"
                   onClick={() => {
-                    void discard().then(() => {
-                      controller.current?.restart();
-                      consumed.current.clear();
-                    });
+                    void discard().then(rewindPrompter);
                   }}
                 >
                   Retake

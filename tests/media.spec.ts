@@ -1,5 +1,169 @@
 import { expect, test } from '@playwright/test';
 
+async function openRecordFromEditor(page: import('@playwright/test').Page) {
+  await page.locator('.studio-editor').getByRole('link', { name: 'Record', exact: true }).click();
+}
+
+async function recordAndKeep(page: import('@playwright/test').Page) {
+  // The priming sheet appears once; later scripts in a session open straight on the camera.
+  const allow = page.getByRole('button', { name: 'Allow camera and mic' });
+  const start = page.getByRole('button', { name: 'Start recording' });
+  await expect(allow.or(start)).toBeVisible();
+  if (await allow.isVisible()) await allow.click();
+  await expect(start).toBeVisible();
+  await page.getByRole('button', { name: 'Quick settings' }).click();
+  await page.getByLabel('Countdown').selectOption('0');
+  await page
+    .getByRole('dialog', { name: 'Quick settings' })
+    .getByRole('button', { name: 'Close' })
+    .click();
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
+  await page.waitForTimeout(700);
+  await page.getByRole('button', { name: 'Stop recording' }).click();
+  const review = page.getByRole('dialog', { name: 'Review take' });
+  await expect(review).toBeVisible();
+  await review.getByRole('button', { name: 'Keep', exact: true }).click();
+}
+
+test('practice camera preview is optional and stops with the toggle', async ({ page }) => {
+  await page.goto('/studio#/practice/quick');
+  await expect(page.locator('video')).toHaveCount(0);
+  await page.getByLabel('Camera preview').check();
+  const video = page.locator('video');
+  await expect(video).toBeVisible();
+  await expect
+    .poll(() => video.evaluate((el: HTMLVideoElement) => el.srcObject !== null))
+    .toBe(true);
+  await page.getByLabel('Camera preview').uncheck();
+  await expect(page.locator('video')).toHaveCount(0);
+});
+
+test('template to script to kept take', async ({ page }) => {
+  await page.goto('/studio#/scripts/new?template=30-second-reel-script');
+  await expect(page.getByLabel('Script', { exact: true })).toHaveValue(/# Hook/);
+  await openRecordFromEditor(page);
+  await recordAndKeep(page);
+  await expect.poll(async () => (await storedTakes(page))[0]?.kept).toBe(true);
+});
+
+const longSection = Array(150).fill('word').join(' ');
+
+test('section recording stops at the section end, groups takes and saves in order', async ({
+  page,
+}) => {
+  await page.goto('/studio#/scripts/new');
+  await page
+    .getByLabel('Script', { exact: true })
+    .fill(`# First\nHello there my friend today.\n# Second\n${longSection}`);
+  await expect(page.getByText('Saved')).toBeVisible();
+  await openRecordFromEditor(page);
+  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByLabel('Record one section').check();
+  await page.getByRole('button', { name: 'Quick settings' }).click();
+  await page.getByLabel('Countdown').selectOption('0');
+  await page
+    .getByRole('dialog', { name: 'Quick settings' })
+    .getByRole('button', { name: 'Close' })
+    .click();
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  // No Stop tap here: reaching the second section ends the take.
+  const review = page.getByRole('dialog', { name: 'Review take' });
+  await expect(review).toBeVisible({ timeout: 20_000 });
+  await review.getByRole('button', { name: 'Keep', exact: true }).click();
+  await review.getByRole('button', { name: 'Star' }).click();
+  await expect(review.getByRole('button', { name: 'Unstar' })).toBeVisible();
+  await expect.poll(async () => (await storedTakes(page))[0]?.sectionIndex).toBe(0);
+  await page.goto('/studio#/takes');
+  await expect(page.getByRole('heading', { name: 'Section 1: First' })).toBeVisible();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Save starred takes' }).click();
+  expect((await download).suggestedFilename()).toMatch(/section1-take1-\d+\./);
+  await expect(page.getByRole('status')).toContainText('Starred takes saved.');
+});
+
+test('section recording saves its section index', async ({ page }) => {
+  await page.goto('/studio#/scripts/new');
+  await page
+    .getByLabel('Script', { exact: true })
+    .fill(`# First\nHello there.\n# Second\n${longSection}`);
+  await expect(page.getByText('Saved')).toBeVisible();
+  await openRecordFromEditor(page);
+  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByLabel('Record one section').check();
+  await page.getByLabel('Section', { exact: true }).selectOption('1');
+  await page.getByRole('button', { name: 'Quick settings' }).click();
+  await page.getByLabel('Countdown').selectOption('0');
+  await page
+    .getByRole('dialog', { name: 'Quick settings' })
+    .getByRole('button', { name: 'Close' })
+    .click();
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
+  await page.waitForTimeout(700);
+  await page.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(page.getByRole('dialog', { name: 'Review take' })).toBeVisible();
+  const takes = await page.evaluate(
+    () =>
+      new Promise<Array<{ sectionIndex: number | null }>>((resolve) => {
+        const open = indexedDB.open('teleprompter-wtf');
+        open.onsuccess = () => {
+          const request = open.result.transaction('takes').objectStore('takes').getAll();
+          request.onsuccess = () => resolve(request.result);
+        };
+      }),
+  );
+  expect(takes[0]?.sectionIndex).toBe(1);
+});
+
+test('two-script batch produces two kept takes and summary', async ({ page }) => {
+  for (const [title, body] of [
+    ['Batch first', 'First batch script.'],
+    ['Batch second', 'Second batch script.'],
+  ] as const) {
+    await page.goto('/studio#/scripts/new');
+    // The same-document hash change leaves the previous editor up until the new script exists.
+    await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Untitled script');
+    await page.getByLabel('Title', { exact: true }).fill(title);
+    await page.getByLabel('Script', { exact: true }).fill(body);
+    await expect(page.getByText('Saved')).toBeVisible();
+  }
+  await page.goto('/studio#/scripts');
+  await page
+    .locator('article.studio-list-item')
+    .filter({ hasText: 'Batch first' })
+    .getByRole('button', { name: 'Add to Up next' })
+    .click();
+  await page
+    .locator('article.studio-list-item')
+    .filter({ hasText: 'Batch second' })
+    .getByRole('button', { name: 'Add to Up next' })
+    .click();
+  await page.goto('/studio#/batch');
+  await page.getByRole('button', { name: 'Start batch' }).click();
+  await recordAndKeep(page);
+  await expect(page.getByRole('heading', { name: /Next up/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Record next now' }).click();
+  await recordAndKeep(page);
+  await expect(page.getByRole('heading', { name: 'Batch complete' })).toBeVisible();
+  await expect(page.getByText('2 kept takes from 2 scripts.')).toBeVisible();
+  await expect(page.getByText('Batch day badge unlocked.')).toBeVisible();
+  const takes = (await storedTakes(page)).filter((take) => take.kept);
+  expect(takes).toHaveLength(2);
+  const downloads: string[] = [];
+  page.on('download', (download) => downloads.push(download.suggestedFilename()));
+  await page.getByRole('button', { name: 'Save all' }).click();
+  await expect(page.getByText('Takes saved.')).toBeVisible();
+  await expect.poll(() => downloads.length).toBe(2);
+  await expect
+    .poll(async () => (await storedTakes(page)).every((take) => take.exportedAt))
+    .toBe(true);
+  // Recorded scripts have left the queue, so the next session starts clean.
+  await page.getByRole('button', { name: 'Done' }).click();
+  await page.goto('/studio#/batch');
+  await expect(page.getByRole('button', { name: 'Start batch' })).toBeDisabled();
+});
+
 async function storedTakes(page: import('@playwright/test').Page) {
   return page.evaluate(
     () =>
@@ -12,6 +176,8 @@ async function storedTakes(page: import('@playwright/test').Page) {
           sizeBytes: number;
           status: string;
           kept: boolean;
+          sectionIndex: number | null;
+          exportedAt: number | null;
         }>
       >((resolve, reject) => {
         const open = indexedDB.open('teleprompter-wtf');

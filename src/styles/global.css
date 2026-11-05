@@ -185,6 +185,14 @@ button {
 .site-header__studio-mobile {
   display: none;
 }
+@media (max-width: 850px) {
+  .site-header nav a:not(.site-header__studio) {
+    display: none;
+  }
+}
+.site-footer nav {
+  flex-wrap: wrap;
+}
 .home-hero__actions {
   display: flex;
   flex-wrap: wrap;
@@ -2864,4 +2872,60 @@ kbd {
 
 .tool-page .related-guides a {
   min-height: 0;
+}
+/* Creator content pages share the existing site type and spacing scale. */
+.creator-content {
+  max-width: 960px;
+  padding-bottom: 4rem;
+}
+.creator-content > section,
+.creator-content > h2,
+.creator-content > p,
+.creator-content > ul,
+.creator-content > ol {
+  margin-top: 1.5rem;
+}
+.creator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+.creator-card {
+  border: 1px solid #d8d0c4;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: #fffdf8;
+}
+.creator-card h2 {
+  margin-top: 0;
+}
+.creator-script {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f4efe5;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  font: inherit;
+  line-height: 1.55;
+}
+.creator-hook {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #d8d0c4;
+}
+.creator-hook p {
+  margin: 0.25rem 0;
+}
+.creator-hook button {
+  margin: 0.25rem 0.5rem 0.25rem 0;
+  padding: 0.5rem 0.75rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+.creator-content > ul li + li {
+  margin-top: 0.5rem;
+}
+.creator-content > ul a {
+  display: inline-block;
+  padding: 0.35rem 0;
 }

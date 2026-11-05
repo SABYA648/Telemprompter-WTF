@@ -659,7 +659,7 @@ export function normalizeStudioPath(path: string): string {
     const sections = ['camera', 'mic', 'recording', 'prompter', 'keys', 'reminders', 'data'];
     return second && sections.includes(second) ? `/studio/settings/${second}` : '/studio/settings';
   }
-  if (['record', 'practice', 'inbox', 'receive', 'challenge'].includes(first))
+  if (['record', 'practice', 'inbox', 'receive', 'batch', 'challenge'].includes(first))
     return `/studio/${first}`;
   return '/studio/home';
 }

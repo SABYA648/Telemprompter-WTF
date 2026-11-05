@@ -15,6 +15,10 @@ const routes = [
   { name: 'guides-hub', path: '/guides' },
   { name: 'guide', path: '/guides/teleprompter-for-zoom' },
   { name: 'tool', path: '/tools/teleprompter-speed-calculator' },
+  { name: 'templates-hub', path: '/templates' },
+  { name: 'template', path: '/templates/30-second-reel-script' },
+  { name: 'hooks-hub', path: '/hooks' },
+  { name: 'hooks', path: '/hooks/fitness' },
   // The genuine 404 path returns an error status, which Lighthouse scores as an errored
   // document. The nginx production origin serves /404.html directly with status 200, so
   // audit that URL; its SEO score stays low on purpose because the page is noindex.

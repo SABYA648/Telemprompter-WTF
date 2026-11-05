@@ -1,3 +1,4 @@
+import { analytics } from '../analytics';
 import { getTake, saveTake, takeBlob } from './takesRepo';
 import type { StudioTake } from './types';
 export function takeFilename(title: string | null, take: StudioTake): string {
@@ -10,7 +11,21 @@ export function takeFilename(title: string | null, take: StudioTake): string {
     .replace(/-$/, '');
   const date = new Date(take.createdAt);
   const day = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
-  return `${slug ? `${slug}-` : ''}take${take.number}-${day}.${take.container}`;
+  const section = (take.sectionIndex ?? null) === null ? '' : `section${take.sectionIndex! + 1}-`;
+  return `${slug ? `${slug}-` : ''}${section}take${take.number}-${day}.${take.container}`;
+}
+function uniqueFilename(name: string, used: Set<string>): string {
+  let candidate = name;
+  const dot = name.lastIndexOf('.');
+  for (let copy = 2; used.has(candidate); copy++)
+    candidate = `${name.slice(0, dot)}-${copy}${name.slice(dot)}`;
+  used.add(candidate);
+  return candidate;
+}
+export function sizeBucket(bytes: number) {
+  if (bytes < 1e7) return 'under_10mb' as const;
+  if (bytes < 5e7) return '10_50mb' as const;
+  return bytes < 2e8 ? ('50_200mb' as const) : ('200mb_plus' as const);
 }
 export async function exportTake(
   take: StudioTake,
@@ -43,5 +58,59 @@ export async function exportTake(
     const latest = await getTake(take.id);
     if (latest) await saveTake({ ...latest, exportedAt: Date.now() });
   }
+  return method;
+}
+
+/** Save several takes as one multi-file share, in the order given, then record the export. */
+export async function exportTakes(
+  takes: StudioTake[],
+  titles: Record<string, string> = {},
+): Promise<'share' | 'download' | 'cancel'> {
+  if (!takes.length) return 'cancel';
+  const used = new Set<string>();
+  const files = await Promise.all(
+    takes.map(async (take) => {
+      const blob = await takeBlob(take);
+      if (!blob.size) throw new Error('No recorded video to export');
+      const name = takeFilename(titles[take.scriptId ?? ''] ?? null, take);
+      return { name, blob, type: take.mimeType };
+    }),
+  ).then((rows) =>
+    rows.map(({ name, blob, type }) => new File([blob], uniqueFilename(name, used), { type })),
+  );
+  let method: 'share' | 'download' = 'download';
+  if (navigator.canShare?.({ files }) && navigator.share) {
+    try {
+      await navigator.share({ files });
+      method = 'share';
+    } catch (error) {
+      const name = (error as Error).name;
+      if (name === 'AbortError') return 'cancel';
+      // Reading large takes can outlast the tap that allowed the share; downloads still work.
+      if (name !== 'NotAllowedError') throw error;
+    }
+  }
+  if (method === 'download') {
+    for (const file of files) {
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    }
+  }
+  for (const take of takes) {
+    const latest = await getTake(take.id);
+    if (latest) await saveTake({ ...latest, exportedAt: Date.now() });
+    analytics.track('exported_take', {
+      method,
+      container: take.container,
+      size_bucket: sizeBucket(take.sizeBytes),
+    });
+  }
+  dispatchEvent(new Event('studio-take-exported'));
   return method;
 }

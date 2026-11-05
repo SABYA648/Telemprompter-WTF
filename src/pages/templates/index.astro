@@ -1,0 +1,70 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { templates, templatesHub } from '../../content/studio';
+const seo = templatesHub.seo;
+const base = 'https://www.teleprompter.wtf';
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: seo.h1,
+    description: seo.description,
+    url: `${base}/templates`,
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: templates.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: item.name,
+        url: `${base}/templates/${item.id}`,
+      })),
+    },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: base },
+      { '@type': 'ListItem', position: 2, name: 'Templates', item: `${base}/templates` },
+    ],
+  },
+];
+---
+
+<Layout title={seo.title} description={seo.description} schema={schema}>
+  <section class="listing-page section-wrap creator-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><span aria-current="page">Templates</span>
+    </nav>
+    <header class="page-intro">
+      <p class="eyebrow">Write your next video</p><h1>{seo.h1}</h1>{
+        templatesHub.intro.map((p) => <p>{p}</p>)
+      }
+    </header>
+    <div class="creator-grid">
+      {
+        templates.map((item) => (
+          <article class="creator-card">
+            <>
+              <h2>
+                <a href={`/templates/${item.id}`}>{item.name}</a>
+              </h2>
+              <p>{item.summary}</p>
+              <p>
+                {item.targetSeconds ? `${item.targetSeconds} seconds` : 'Open length'} ·{' '}
+                {item.format}
+              </p>
+              <a href={`/studio#/scripts/new?template=${item.id}`}>Use this template</a>
+            </>
+          </article>
+        ))
+      }
+    </div>
+    <section>
+      <h2>{templatesHub.howToChoose.heading}</h2>{
+        templatesHub.howToChoose.paragraphs.map((p) => <p>{p}</p>)
+      }
+    </section>
+    <p>Need an opening line first? <a href="/hooks">Browse hooks by niche</a>.</p>
+  </section>
+</Layout>

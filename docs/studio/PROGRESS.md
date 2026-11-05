@@ -251,3 +251,43 @@ Next: M8 after M7 PR review and owner device QA.
 Gates rerun by Hermes with Node 22: `npm ci`, `npm run check` (221/221 unit), `npm run test:e2e` (105/105), media (8/8), `npm run budget` (Studio 47.1 KB / 130 KB). Docker read-only image 84,325,731 bytes: `/health` and `/studio` 200, `/private-voice-tracking` 301, manifest valid, CSP and Permissions-Policy present, `/sw.js` no-cache. Container SEO crawl passed. Mobile Lighthouse homepage 99 Performance, 100 Accessibility, 100 Best Practices, 100 SEO (LCP 1.8 s, TBT 60 ms, CLS 0). iPhone 15 and Pixel 7 emulation across `/`, `/studio`, `/features`, `/compatibility`, `/privacy`: no console errors or horizontal overflow. Targeted fix review: P0=0, P1=0.
 
 PR: [#8](https://github.com/SABYA648/Telemprompter-WTF/pull/8) from `codex/creator-studio` into `main`, open and unmerged. The owner must complete [DEVICE-QA.md](DEVICE-QA.md) and explicitly approve before any merge or production deployment. M8 proceeds on the integration branch.
+
+## M8 Creator workflow - 2026-11-05
+
+Shipped:
+
+- Public `/templates`, `/templates/[slug]` (20), `/hooks` and `/hooks/[niche]` (8) pages built from the merged content packs, with Article or CollectionPage plus BreadcrumbList schema, one primary Studio CTA each, header and footer links in the 8.2 order, homepage links and `llms.txt` entries. Each template links to its two related templates, its hooks niche, and the previous and next template. "Record this hook" opens Record on a new script; Copy reports failure instead of throwing.
+- In Studio: a Template picker (search, duration and format filters) behind a disclosure on Scripts and through `#/scripts/new?template=<id>`; a Hook picker in the editor with Shuffle (always a different hook) and Insert at the cursor; the Ideas inbox with add, delete, "Make script" with a chosen template, and the share-target landing (`?shared=1` and `?shared=error`); Up next with add, move up, move down and remove, plus Home's Up next rows with Record, "Record next" (`#/record/next`) and quick actions (+ Script, + Idea, Templates, Practice); status filter options with live counts; caption, hashtag, YouTube title and description counters from `platformFacts.ts` with over-limit text.
+- Practice (9.7): prompter under the lens, an optional mirrored front camera that is off by default, a WPM stepper, tap to pause, and a summary of duration, average WPM over active time, pauses and target fit, with a Record link. Streak credit at 80% is unchanged.
+- Section mode: "Record one section" plus the section picker (locked while recording) starts the prompter at the section's cue line, tags takes with `sectionIndex`, stops at the section end, and rewinds to the section on Retake. Takes are grouped by script, then by section with the section title. "Save starred takes" shares one script's starred takes as one multi-file share in section order, with section numbers in the file names.
+- Batch mode (J6): Start batch from Up next, `started_take` with mode `batch`, Keep then a 5-second "Next up" card, End batch, a summary, Save all as one multi-file share, and the `batch_day` badge once.
+- Send to phone (11.7, J3): an `S1.` link with a lazy-loaded QR code (error correction L, 280 px) up to 1,500 characters, otherwise the "Too long for a QR code" note; Copy link and Share link. `#/receive/S1...` shows the title, word count and duration, "Save and record", and the iOS "Copy transfer code" hint with a manual-copy fallback. Shared links drop the sender's queue position and take history.
+- Fixes found while finishing: Studio now resyncs the route when the hash changes between first render and listener setup (a test caught Record staying on screen after navigation); Record opens on "Opening camera" instead of flashing the priming sheet for returning users; the footer nav wraps so the extra links no longer overflow at 768 to 850 px; the section-end timer resets after each take.
+
+Files: `src/pages/templates/*`, `src/pages/hooks/*`, `src/studio/{CreatorTools,SendReceive,BatchScreen,PracticeScreen,TakesScreen,RecordScreen,StudioApp}.tsx`, `src/domain/studio/{queue,batch,ideasRepo,practice,exportTake,transfer,handoff}.ts`, layout, homepage, styles, `scripts/lighthouse.mjs`, unit tests and `tests/creator-workflow.spec.ts`, `tests/media.spec.ts`.
+
+Acceptance, all with the fake camera in the `media` project:
+
+- Template to script to kept take: `template to script to kept take`, plus the public `Use this template` path in `creator-workflow.spec.ts`.
+- Idea to script: `idea becomes a script with a chosen template`.
+- Section takes carry `sectionIndex`: two media tests, one of which reaches the section end with no Stop tap, then checks the Takes section heading and the starred-take download name.
+- `#/receive/S1...` creates a script: `S1 link previews and saves a new script`, plus QR, too-long and bad-link tests.
+- Batch over 2 scripts gives 2 kept takes and a summary, then Save all exports both and the queue is empty.
+
+Gates (Node 22): `npm run check` pass (content lint 62 pages, unit 251/251), `npm run test:e2e` 126/126, `npx playwright test --project=media` 13/13, `npm run budget` pass (Studio 56.1 KB / 130 KB, largest content page 27.8 KB / 60 KB). SEO crawl against `serve dist`: pass, 60 sitemap URLs. Lighthouse mobile against `serve dist` with Playwright's Chromium: `/templates`, `/templates/30-second-reel-script`, `/hooks` and `/hooks/fitness` all 100 Performance, 100 Accessibility, 100 Best Practices, 100 SEO, LCP 1.4 s, TBT 0 ms, CLS 0; `/` 100/100/100/100.
+
+Deviations: D-030 (Practice component and WPM-based progress), D-031 (Up next after Keep, `updatedAt`, `#/record/next`), D-032 (no `/record/*` links before M10, previous and next template links, new script for hooks), D-033 (batch never starts a take on a timer, End batch), D-034 (lazy content packs). The Lighthouse and SEO runs used a static `serve` of `dist`, not the nginx Docker image.
+
+Known issues:
+
+- One full e2e run in three saw chrome-headless-shell crash with SIGSEGV while creating a new context in a PWA test, on a different test each time. Those tests pass on rerun and alone, and the final full run was clean. I did not establish whether this predates M8.
+- Section end is detected from the prompter position, so a take for a very short first section can end early if the cue line already sits near the next heading.
+- Batch state is per tab (`sessionStorage`); closing the tab mid-batch keeps the takes but drops the batch summary.
+
+Owner manual checks:
+
+- On a phone, scan a Send to phone QR code from a desktop, then "Save and record". On iPhone, also try "Copy transfer code" and Paste scripts in the Home Screen app.
+- Record a section take and confirm it stops at the section end, then share starred takes as one multi-file share to Photos or Files.
+- Run a two-script batch and use Save all on a phone share sheet.
+
+Next: M9.

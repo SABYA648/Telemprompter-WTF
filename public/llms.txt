@@ -16,7 +16,9 @@ teleprompter.wtf is a free, open-source browser teleprompter and local video rec
 ## Creator pages
 
 - [Studio video recording](https://www.teleprompter.wtf/studio)
-- Script templates, niche hooks, creator tools and more guides are planned but not yet published.
+- [Video script templates](https://www.teleprompter.wtf/templates)
+- [Niche hooks](https://www.teleprompter.wtf/hooks)
+- Creator tools and more guides are planned but not yet published.
 
 ## Tools
 

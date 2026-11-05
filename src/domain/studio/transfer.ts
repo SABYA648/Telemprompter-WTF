@@ -150,10 +150,10 @@ export async function encodeTransfer(payload: unknown): Promise<string> {
   result.set(bytes, 1);
   return `T1.${encodeBase64(result)}`;
 }
-/** Unpack and parse a transfer code without trusting anything in it. Never reads the database. */
-export async function decodeTransfer(code: string): Promise<TransferPayload> {
+/** Unpack bytes before field validation; both code types use the same size bound. */
+async function unpack(code: string, prefix: 'T1.' | 'S1.'): Promise<unknown> {
   const trimmed = code.trim();
-  if (!trimmed.startsWith('T1.')) throw new Error(INVALID);
+  if (!trimmed.startsWith(prefix)) throw new Error(INVALID);
   const bytes = decodeBase64(trimmed.slice(3));
   const data = bytes.subarray(1);
   let raw: Uint8Array;
@@ -177,9 +177,34 @@ export async function decodeTransfer(code: string): Promise<TransferPayload> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(raw));
-  } catch {
-    throw new Error(INVALID);
+  } catch (error) {
+    throw new Error(INVALID, { cause: error });
   }
+  return parsed;
+}
+/** Pack one script as `S1.`; local queue and recording history stay on this device. */
+export async function encodeSingleScript(value: StudioScript): Promise<string> {
+  const shared = {
+    ...value,
+    order: 0,
+    plannedFor: null,
+    deletedAt: null,
+    lastRecordedAt: null,
+    takeCount: 0,
+  };
+  return `S1.${(await encodeTransfer(shared)).slice(3)}`;
+}
+export async function decodeSingleScript(code: string): Promise<StudioScript> {
+  try {
+    return script(await unpack(code, 'S1.'));
+  } catch (error) {
+    if (error instanceof Error && error.message === TOO_LARGE) throw error;
+    throw new Error(INVALID, { cause: error });
+  }
+}
+/** Unpack and parse a transfer code without trusting anything in it. Never reads the database. */
+export async function decodeTransfer(code: string): Promise<TransferPayload> {
+  const parsed = await unpack(code, 'T1.');
   if (!parsed || typeof parsed !== 'object') throw new Error(INVALID);
   const p = parsed as Record<string, unknown>;
   if (

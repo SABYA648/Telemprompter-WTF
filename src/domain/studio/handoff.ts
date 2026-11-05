@@ -14,3 +14,8 @@ export async function openInStudio(text: string, opts: { embedId?: string } = {}
   }
   location.href = text.trim() ? `/studio#/record/${id}` : '/studio#/';
 }
+/** Open a new script on Record without replacing the visitor's quick script. */
+export async function recordNewScript(title: string, body: string): Promise<void> {
+  const script = await createScript({ title, body });
+  location.href = `/studio#/record/${script.id}`;
+}

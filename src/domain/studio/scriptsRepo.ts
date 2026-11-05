@@ -91,6 +91,7 @@ export async function duplicateScript(id: string): Promise<StudioScript | undefi
     ...original,
     id: randomId(),
     title: `${original.title} copy`,
+    order: 0,
     createdAt: Date.now(),
     updatedAt: Date.now(),
     deletedAt: null,

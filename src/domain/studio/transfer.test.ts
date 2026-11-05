@@ -4,7 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getDb, resetDbForTests } from './db';
 import { blankScript } from './scriptsRepo';
 import { defaultSettings, loadSettings, saveSettings } from './settings';
-import { decodeTransfer, encodeTransfer, exportTransfer, importTransfer } from './transfer';
+import {
+  decodeSingleScript,
+  decodeTransfer,
+  encodeSingleScript,
+  encodeTransfer,
+  exportTransfer,
+  importTransfer,
+} from './transfer';
 import type { StudioScript } from './types';
 
 const DID = 'AbCdEfGhIjKlMnOpQrStUv';
@@ -312,5 +319,36 @@ describe('transfer validation', () => {
     expect(settings).not.toHaveProperty('evil');
     expect(settings.prompter.wpm).toBeLessThan(999999);
     expect(settings.prompter.dock).not.toBe('bad');
+  });
+});
+
+describe('single script links', () => {
+  it('round-trips an S1 code without local queue or take history', async () => {
+    const code = await encodeSingleScript(
+      script({ order: 4, takeCount: 7, lastRecordedAt: 99, plannedFor: '2026-11-06' }),
+    );
+    expect(code.startsWith('S1.')).toBe(true);
+    expect(await decodeSingleScript(code)).toMatchObject({
+      title: 'Exported title',
+      body: 'Exported body',
+      order: 0,
+      takeCount: 0,
+      lastRecordedAt: null,
+      plannedFor: null,
+    });
+  });
+
+  it('refuses the wrong prefix, damaged payloads and invalid fields', async () => {
+    const full = await encodeSingleScript(script());
+    await expect(decodeSingleScript(`T1.${full.slice(3)}`)).rejects.toThrow();
+    await expect(decodeSingleScript('S1.@@@')).rejects.toThrow();
+    const bad = await encodeTransfer({ ...script(), aspect: '4:3' });
+    await expect(decodeSingleScript(`S1.${bad.slice(3)}`)).rejects.toThrow();
+  });
+
+  it('refuses an oversized link with the size message', async () => {
+    const huge = await encodeSingleScript(script({ body: Array(1000).fill('word').join(' ') }));
+    expect(huge.length).toBeGreaterThan(3);
+    await expect(decodeSingleScript(`S1.${'A'.repeat(2 * MB)}`)).rejects.toThrow();
   });
 });

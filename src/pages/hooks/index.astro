@@ -1,0 +1,64 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { hookNiches, hooksHub } from '../../content/studio';
+const seo = hooksHub.seo;
+const base = 'https://www.teleprompter.wtf';
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: seo.h1,
+    description: seo.description,
+    url: `${base}/hooks`,
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: hookNiches.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: item.name,
+        url: `${base}/hooks/${item.id}`,
+      })),
+    },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: base },
+      { '@type': 'ListItem', position: 2, name: 'Hooks', item: `${base}/hooks` },
+    ],
+  },
+];
+---
+
+<Layout title={seo.title} description={seo.description} schema={schema}>
+  <section class="listing-page section-wrap creator-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><span aria-current="page">Hooks</span>
+    </nav>
+    <header class="page-intro">
+      <p class="eyebrow">Start strong</p><h1>{seo.h1}</h1>{hooksHub.intro.map((p) => <p>{p}</p>)}
+    </header>
+    <div class="creator-grid">
+      {
+        hookNiches.map((item) => (
+          <article class="creator-card">
+            <>
+              <h2>
+                <a href={`/hooks/${item.id}`}>{item.name}</a>
+              </h2>
+              <p>{item.intro[0]}</p>
+              <a href={`/hooks/${item.id}`}>Explore 25 hooks</a>
+            </>
+          </article>
+        ))
+      }
+    </div>
+    <section>
+      <h2>{hooksHub.howToChoose.heading}</h2>{
+        hooksHub.howToChoose.paragraphs.map((p) => <p>{p}</p>)
+      }
+    </section>
+    <p>Ready to shape a full script? <a href="/templates">Choose a video template</a>.</p>
+  </section>
+</Layout>

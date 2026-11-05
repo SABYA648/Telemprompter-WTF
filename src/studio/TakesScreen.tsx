@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { analytics, deviceClass } from '../domain/analytics';
-import { exportTake } from '../domain/studio/exportTake';
+import { exportTake, exportTakes, sizeBucket } from '../domain/studio/exportTake';
+import { parseMarkup } from '../domain/studio/markup';
 import { getScript } from '../domain/studio/scriptsRepo';
 import { deleteTake, getTake, listTakes, saveTake, takeBlob } from '../domain/studio/takesRepo';
 import { formatBytes, minutesLeft, storageEstimate } from '../domain/studio/storage';
@@ -54,25 +55,60 @@ function TakePlayer({ take }: { take: StudioTake }) {
     <p>Loading video...</p>
   );
 }
+const sectionOf = (take: StudioTake) => take.sectionIndex ?? -1;
+/** Whole-script takes first, then section order, oldest first, so a share reads as the video does. */
+const inSectionOrder = (takes: StudioTake[]) =>
+  [...takes].sort((a, b) => sectionOf(a) - sectionOf(b) || a.createdAt - b.createdAt);
+function TakeRow({ take }: { take: StudioTake }) {
+  return (
+    <a class="take-row" href={`#/takes/${take.id}`}>
+      <span>
+        Take {take.number} · {Math.round(take.durationMs / 1000)}s · {take.container.toUpperCase()}
+      </span>
+      <span>
+        {!take.exportedAt ? 'Unsaved ' : ''}
+        {take.starred ? 'Starred ' : ''}
+        {take.status === 'recovered' ? 'Recovered' : ''}
+      </span>
+    </a>
+  );
+}
 export function TakesScreen() {
   const [takes, setTakes] = useState<StudioTake[]>([]);
   const [titles, setTitles] = useState<Record<string, string>>({});
+  const [sectionTitles, setSectionTitles] = useState<Record<string, string[]>>({});
+  const [message, setMessage] = useState('');
   const refresh = async () => {
     const rows = (await listTakes()).filter((t) => t.kept || t.status === 'recovered');
     setTakes(rows);
     const names: Record<string, string> = {};
+    const sections: Record<string, string[]> = {};
     for (const take of rows) {
-      if (take.scriptId && !names[take.scriptId])
-        names[take.scriptId] = (await getScript(take.scriptId))?.title ?? 'Deleted script';
+      if (take.scriptId && !names[take.scriptId]) {
+        const script = await getScript(take.scriptId);
+        names[take.scriptId] = script?.title ?? 'Deleted script';
+        sections[take.scriptId] = script
+          ? parseMarkup(script.body).sections.map((section) => section.title)
+          : [];
+      }
     }
     setTitles(names);
+    setSectionTitles(sections);
   };
   useEffect(() => {
     void refresh();
   }, []);
+  const saveStarred = async (rows: StudioTake[]) => {
+    try {
+      const method = await exportTakes(inSectionOrder(rows.filter((t) => t.starred)), titles);
+      if (method !== 'cancel') setMessage('Starred takes saved.');
+      await refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not save takes.');
+    }
+  };
   const grouped = takes.reduce<Record<string, StudioTake[]>>((groups, take) => {
-    const key = take.scriptId ?? 'free';
-    (groups[key] ??= []).push(take);
+    (groups[take.scriptId ?? 'free'] ??= []).push(take);
     return groups;
   }, {});
   return (
@@ -83,24 +119,39 @@ export function TakesScreen() {
         <p class="studio-storage-warning">Save it to Photos now. Browser storage can be cleared.</p>
       )}
       {!takes.length && <p>No takes yet. Record a video to see it here.</p>}
-      {Object.entries(grouped).map(([id, rows]) => (
-        <div class="studio-card">
-          <h2>{id === 'free' ? 'Free records' : (titles[id] ?? 'Script')}</h2>
-          {rows?.map((take) => (
-            <a class="take-row" href={`#/takes/${take.id}`}>
-              <span>
-                Take {take.number} · {Math.round(take.durationMs / 1000)}s ·{' '}
-                {take.container.toUpperCase()}
-              </span>
-              <span>
-                {!take.exportedAt ? 'Unsaved ' : ''}
-                {take.starred ? 'Starred ' : ''}
-                {take.status === 'recovered' ? 'Recovered' : ''}
-              </span>
-            </a>
-          ))}
-        </div>
-      ))}
+      {message && <p role="status">{message}</p>}
+      {Object.entries(grouped).map(([id, rows]) => {
+        const hasSections = rows.some((take) => sectionOf(take) >= 0);
+        const parts = [...new Set(rows.map(sectionOf))].sort((a, b) => a - b);
+        return (
+          <div class="studio-card" key={id}>
+            <h2>{id === 'free' ? 'Free records' : (titles[id] ?? 'Script')}</h2>
+            {!hasSections && rows.map((take) => <TakeRow take={take} />)}
+            {hasSections &&
+              parts.map((part) => (
+                <div key={part}>
+                  <h3>
+                    {part < 0
+                      ? 'Whole script'
+                      : `Section ${part + 1}${sectionTitles[id]?.[part] ? `: ${sectionTitles[id][part]}` : ''}`}
+                  </h3>
+                  {rows
+                    .filter((take) => sectionOf(take) === part)
+                    .map((take) => (
+                      <TakeRow take={take} />
+                    ))}
+                </div>
+              ))}
+            {rows.some((take) => take.starred) && (
+              <div class="studio-actions">
+                <button class="studio-button" onClick={() => void saveStarred(rows)}>
+                  Save starred takes
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
       <button
         class="studio-button studio-button--danger"
         onClick={async () => {
@@ -134,14 +185,7 @@ export function TakeScreen({ id }: { id: string }) {
     analytics.track('exported_take', {
       method,
       container: take.container,
-      size_bucket:
-        take.sizeBytes < 1e7
-          ? 'under_10mb'
-          : take.sizeBytes < 5e7
-            ? '10_50mb'
-            : take.sizeBytes < 2e8
-              ? '50_200mb'
-              : '200mb_plus',
+      size_bucket: sizeBucket(take.sizeBytes),
     });
     dispatchEvent(new Event('studio-take-exported'));
     setTake({ ...take, exportedAt: Date.now() });

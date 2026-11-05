@@ -87,7 +87,7 @@ test('manifest shortcuts open their screens', async ({ page }) => {
   await expect(page).toHaveURL(/#\/scripts$/);
   await page.goto('about:blank');
   await page.goto('/studio?go=idea&utm_source=pwa&utm_medium=shortcut');
-  await expect(page.getByRole('heading', { name: 'Shared ideas' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ideas inbox' })).toBeVisible();
   await page.goto('about:blank');
   await page.goto('/studio?go=record&utm_source=pwa&utm_medium=shortcut');
   await expect(page).toHaveURL(/#\/record\/quick$/);
@@ -231,7 +231,7 @@ test('offline Studio keeps working on saved scripts', async ({ page, context }) 
   await context.setOffline(true);
   await page.reload();
   await page.getByRole('button', { name: '+ Script' }).click();
-  await page.getByLabel('Title').fill('Written offline');
+  await page.getByLabel('Title', { exact: true }).fill('Written offline');
   await expect(page.getByText('Saved')).toBeVisible();
   await page.goto('/studio#/scripts');
   await expect(page.getByText('Written offline')).toBeVisible();
@@ -245,8 +245,8 @@ test('transfer code restores script and device identity in a fresh context', asy
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/studio#/scripts');
   await page.getByRole('button', { name: '+ Script' }).click();
-  await page.getByLabel('Title').fill('Transfer title');
-  await page.getByLabel('Script').fill('The script crosses storage contexts.');
+  await page.getByLabel('Title', { exact: true }).fill('Transfer title');
+  await page.getByLabel('Script', { exact: true }).fill('The script crosses storage contexts.');
   await expect
     .poll(() =>
       page.evaluate(async () => {
@@ -343,7 +343,7 @@ test('transfer code restores script and device identity in a fresh context', asy
   await expect(importedPage.getByText('An idea to move')).toBeVisible();
   await importedPage.goto('/studio#/scripts');
   await importedPage.getByRole('link', { name: /Transfer title/ }).click();
-  await importedPage.getByLabel('Title').fill('Locally newer title');
+  await importedPage.getByLabel('Title', { exact: true }).fill('Locally newer title');
   await expect(importedPage.getByText('Saved')).toBeVisible();
   await importedPage.goto('/studio#/settings');
   await importedPage.evaluate((code) => navigator.clipboard.writeText(code), exported);
@@ -433,7 +433,7 @@ test('share target stores an idea and lands on the inbox like a share sheet', as
     url: 'https://example.org/story',
   });
   await expect(page).toHaveURL(/\/studio#\/inbox$/);
-  await expect(page.getByRole('heading', { name: 'Shared ideas' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ideas inbox' })).toBeVisible();
   await expect(page.getByRole('status')).toContainText('Idea saved.');
   await expect(
     page.getByText(/Shared headline\s+Shared body\s+https:\/\/example.org\/story/),
@@ -463,7 +463,7 @@ test('share target stores an idea and lands on the inbox like a share sheet', as
     calls.filter((call) => JSON.stringify(call).includes('captured_idea')).length;
   expect(captures()).toBe(1);
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Shared ideas' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ideas inbox' })).toBeVisible();
   await expect(page.getByRole('status')).toHaveCount(0);
   expect(captures()).toBe(1);
 });
@@ -473,7 +473,7 @@ test('share target says nothing was saved for an empty share', async ({ page }) 
   await waitForController(page);
   await submitShare(page, { title: '   ', url: 'javascript:alert(1)' });
   await expect(page).toHaveURL(/\/studio#\/inbox$/);
-  await expect(page.getByText('No shared ideas yet.')).toBeVisible();
+  await expect(page.getByText('No ideas yet.')).toBeVisible();
   await expect(page.getByRole('status')).toHaveCount(0);
 });
 

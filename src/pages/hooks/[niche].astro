@@ -1,0 +1,133 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { hookNiches, templateById } from '../../content/studio';
+export function getStaticPaths() {
+  return hookNiches.map((niche) => ({ params: { niche: niche.id }, props: { niche } }));
+}
+const { niche } = Astro.props;
+const base = 'https://www.teleprompter.wtf';
+const url = `${base}/hooks/${niche.id}`;
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: niche.h1,
+    description: niche.seoDescription,
+    datePublished: '2026-11-05',
+    dateModified: '2026-11-05',
+    author: { '@id': 'https://sabya.pm/#person' },
+    publisher: { '@type': 'Organization', name: 'teleprompter.wtf' },
+    mainEntityOfPage: url,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: base },
+      { '@type': 'ListItem', position: 2, name: 'Hooks', item: `${base}/hooks` },
+      { '@type': 'ListItem', position: 3, name: niche.name, item: url },
+    ],
+  },
+];
+---
+
+<Layout title={niche.seoTitle} description={niche.seoDescription} schema={schema} ogType="article">
+  <article class="guide-page section-wrap creator-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><a href="/hooks">Hooks</a><span>/</span><span
+        aria-current="page">{niche.name}</span
+      >
+    </nav>
+    <header class="guide-header">
+      <p class="eyebrow">25 fill-in-the-blank openings</p><h1>{niche.h1}</h1>{
+        niche.intro.map((p) => <p>{p}</p>)
+      }
+      <a
+        class="button button--primary"
+        href="/studio#/scripts/new"
+        data-analytics-cta="inline"
+        data-page-type="hooks">Write your script in Studio</a
+      >
+    </header>
+    {
+      niche.groups.map((group) => (
+        <section>
+          <>
+            <h2>{group.name}</h2>
+            <p>{group.why}</p>
+            <ol>
+              {group.hooks.map((hook) => (
+                <li class="creator-hook">
+                  <p>{hook.text}</p>
+                  <button type="button" data-copy-hook data-niche={niche.id}>
+                    Copy
+                  </button>
+                  <button type="button" data-record-hook data-niche={niche.id}>
+                    Record this hook
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </>
+        </section>
+      ))
+    }
+    <h2>How to adapt a hook</h2>{niche.howToAdapt.map((p) => <p>{p}</p>)}
+    <h2>Questions</h2>{
+      niche.faq.map((item) => (
+        <section>
+          <>
+            <h3>{item.question}</h3>
+            <p>{item.answer}</p>
+          </>
+        </section>
+      ))
+    }
+    <h2>Related niches</h2><ul>
+      {
+        niche.relatedNiches.map((id) => {
+          const related = hookNiches.find((item) => item.id === id);
+          return (
+            related && (
+              <li>
+                <a href={`/hooks/${id}`}>{related.name}</a>
+              </li>
+            )
+          );
+        })
+      }
+    </ul>
+    <p>
+      Build from this hook with the <a href={`/templates/${niche.suggestedTemplateId}`}
+        >{templateById.get(niche.suggestedTemplateId)?.name} template</a
+      >.
+    </p>
+  </article>
+  <script>
+    import { analytics } from '../../domain/analytics';
+    document.addEventListener('click', (event) => {
+      const button = (event.target as Element).closest<HTMLButtonElement>(
+        '[data-copy-hook], [data-record-hook]',
+      );
+      const text = button?.closest('li')?.querySelector('p')?.textContent;
+      if (!button || !text) return;
+      const niche = button.dataset.niche as 'fitness';
+      if ('copyHook' in button.dataset) {
+        navigator.clipboard.writeText(text).then(
+          () => {
+            button.textContent = 'Copied';
+            analytics.track('copied_hook', { niche, surface: 'page' });
+          },
+          () => {
+            button.textContent = 'Copy failed';
+          },
+        );
+        return;
+      }
+      analytics.track('inserted_hook', { niche });
+      void import('../../domain/studio/handoff').then(({ recordNewScript }) =>
+        recordNewScript(text.slice(0, 80), `${text}\n\n`),
+      );
+    });
+  </script>
+</Layout>

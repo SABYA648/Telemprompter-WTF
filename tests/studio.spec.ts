@@ -6,13 +6,15 @@ test('Studio creates a script and persists it after reload', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'Scripts' })).toBeVisible();
   await page.getByRole('button', { name: '+ Script' }).click();
   await expect(page.getByRole('heading', { name: 'Editor' })).toBeVisible();
-  await page.getByLabel('Title').fill('A persistent Studio script');
-  await page.getByLabel('Script').fill('A few words for a stored script.');
+  await page.getByLabel('Title', { exact: true }).fill('A persistent Studio script');
+  await page.getByLabel('Script', { exact: true }).fill('A few words for a stored script.');
   await expect(page.getByText('Saved')).toBeVisible();
   await page.waitForTimeout(500);
   await page.reload();
-  await expect(page.getByLabel('Title')).toHaveValue('A persistent Studio script');
-  await expect(page.getByLabel('Script')).toHaveValue('A few words for a stored script.');
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('A persistent Studio script');
+  await expect(page.getByLabel('Script', { exact: true })).toHaveValue(
+    'A few words for a stored script.',
+  );
 });
 
 test('homepage Record video hands the classic script to Studio', async ({ page }) => {
@@ -23,7 +25,9 @@ test('homepage Record video hands the classic script to Studio', async ({ page }
   await expect(page).toHaveURL(/\/studio#\/record\/quick/);
   await page.getByRole('link', { name: 'Not now' }).click();
   await expect(page).toHaveURL(/\/studio#\/scripts\/quick/);
-  await expect(page.getByLabel('Script')).toHaveValue('A handoff script from the homepage.');
+  await expect(page.getByLabel('Script', { exact: true })).toHaveValue(
+    'A handoff script from the homepage.',
+  );
 });
 
 test('console canary stays clean on site, Studio, a guide and a tool', async ({ page }) => {
@@ -71,8 +75,8 @@ test('Studio works at phone width and library search, delete, restore work', asy
     .click();
   await expect(page.getByRole('heading', { name: 'Scripts' })).toBeVisible();
   await page.getByRole('button', { name: '+ Script' }).click();
-  await page.getByLabel('Title').fill('Searchable story');
-  await page.getByLabel('Script').fill('A body with unique content.');
+  await page.getByLabel('Title', { exact: true }).fill('Searchable story');
+  await page.getByLabel('Script', { exact: true }).fill('A body with unique content.');
   await expect(page.getByText('Saved')).toBeVisible();
   await page.getByRole('link', { name: 'Scripts', exact: true }).first().click();
   await page.getByLabel('Search scripts').fill('unique content');
@@ -109,8 +113,8 @@ test('Studio home, library and editor pass accessibility scans', async ({ page }
 test('deleting a just-edited script does not restore it on reload', async ({ page }) => {
   await page.goto('/studio#/scripts');
   await page.getByRole('button', { name: '+ Script' }).click();
-  await page.getByLabel('Title').fill('Delete immediately');
-  await page.getByLabel('Script').fill('Unsaved words');
+  await page.getByLabel('Title', { exact: true }).fill('Delete immediately');
+  await page.getByLabel('Script', { exact: true }).fill('Unsaved words');
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Scripts' })).toBeVisible();
   await page.reload();

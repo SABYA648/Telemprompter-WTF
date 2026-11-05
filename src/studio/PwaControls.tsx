@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { analytics } from '../domain/analytics';
-import { getDb } from '../domain/studio/db';
 import { exportTransfer, importTransfer } from '../domain/studio/transfer';
 import { installPlatform, isStandaloneDisplay } from '../domain/studio/install';
-import type { StudioIdea } from '../domain/studio/types';
 
 export function ServiceWorkerUpdate({ hidden }: { hidden: boolean }) {
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
@@ -151,41 +149,6 @@ export function StandaloneTransferCard({ empty }: { empty: boolean }) {
       <h2>Bring your scripts from Safari</h2>
       <p>Open Studio in Safari, copy your transfer code, then paste it here.</p>
       <PasteScripts />
-    </section>
-  );
-}
-const SHARE_NOTES: Record<string, string> = {
-  '1': 'Idea saved.',
-  error: 'We could not save that share. Try sharing it again.',
-};
-export function SharedInbox() {
-  const [ideas, setIdeas] = useState<StudioIdea[]>([]);
-  const [note, setNote] = useState('');
-  useEffect(() => {
-    const shared = new URLSearchParams(location.hash.split('?')[1] ?? '').get('shared') ?? '';
-    if (SHARE_NOTES[shared]) {
-      setNote(SHARE_NOTES[shared]);
-      if (shared === '1') analytics.track('captured_idea', { source: 'share_target' });
-      // A reload of this landing must not count the same share twice.
-      history.replaceState(null, '', '#/inbox');
-    }
-    void getDb()
-      .then((db) => db.getAll('ideas'))
-      .then((items) => setIdeas((items as StudioIdea[]).sort((a, b) => b.createdAt - a.createdAt)));
-  }, []);
-  return (
-    <section class="studio-screen">
-      <h1>Shared ideas</h1>
-      <p>Saved on this device.</p>
-      {note && <p role="status">{note}</p>}
-      <div class="studio-list">
-        {ideas.map((idea) => (
-          <article class="studio-card" key={idea.id}>
-            <p style={{ whiteSpace: 'pre-wrap' }}>{idea.text}</p>
-          </article>
-        ))}
-      </div>
-      {!ideas.length && <p>No shared ideas yet.</p>}
     </section>
   );
 }

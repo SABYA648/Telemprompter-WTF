@@ -61,6 +61,7 @@ describe('analytics taxonomy', () => {
     expect(normalizeStudioPath('/studio#/scripts/private-title')).toBe('/studio/editor');
     expect(normalizeStudioPath('#/takes/secret')).toBe('/studio/take');
     expect(normalizeStudioPath('#/receive/private')).toBe('/studio/receive');
+    expect(normalizeStudioPath('#/batch')).toBe('/studio/batch');
     expect(normalizeStudioPath('#/settings/camera')).toBe('/studio/settings/camera');
     expect(normalizeStudioPath('#/settings/private')).toBe('/studio/settings');
   });

@@ -18,6 +18,11 @@ import type { ScriptStatus, StudioScript } from '../domain/studio/types';
 import { durationAtWpm, fitForTarget, sectionDurations } from '../domain/studio/timing';
 import { readabilityWarning } from '../domain/studio/words';
 import { isMemoryStorage } from '../domain/studio/db';
+import { moveInQueue, upNext, setUpNext } from '../domain/studio/queue';
+import BatchScreen from './BatchScreen';
+import { limits, verifiedOn } from '../content/studio/platformFacts';
+import { TemplatePicker, HookPicker, IdeasInbox, createFromTemplate } from './CreatorTools';
+import { SendToPhone, ReceiveScreen } from './SendReceive';
 import { isStandaloneDisplay } from '../domain/studio/install';
 import { localDay, readStreak, type Streak } from '../domain/studio/streak';
 import { loadSettings } from '../domain/studio/settings';
@@ -30,12 +35,7 @@ import SettingsScreen from './SettingsScreen';
 import { TakesScreen, TakeScreen } from './TakesScreen';
 import { recoverTakes } from '../domain/studio/takesRepo';
 import InstallSheet from './InstallSheet';
-import {
-  ServiceWorkerUpdate,
-  SharedInbox,
-  StandaloneTransferCard,
-  TransferControls,
-} from './PwaControls';
+import { ServiceWorkerUpdate, StandaloneTransferCard, TransferControls } from './PwaControls';
 import {
   browserHandoffScript,
   browserHandoffUrl,
@@ -58,6 +58,15 @@ const wordBucket = (words: number): (typeof SCRIPT_SIZE_BUCKETS)[number] =>
           : '1501_plus';
 const FORMAT = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+
+/** Handle `#/scripts/new`, with `?template=<id>` when a template page or picker sent the visitor. */
+async function createRoutedScript(): Promise<StudioScript> {
+  const templateId = new URLSearchParams(location.hash.split('?')[1] ?? '').get('template');
+  const fromTemplate = templateId ? await createFromTemplate(templateId) : null;
+  if (fromTemplate) return fromTemplate;
+  analytics.track('created_script', { source: 'blank' });
+  return createScript();
+}
 
 export default function StudioApp(): preact.JSX.Element {
   const [route, setRoute] = useState<Route>(routeFromHash(location.hash));
@@ -104,7 +113,7 @@ export default function StudioApp(): preact.JSX.Element {
             analytics.track('recovered_take');
         }
         if (routeFromHash(location.hash).id === 'new') {
-          const script = await createScript();
+          const script = await createRoutedScript();
           go(`/scripts/${script.id}`);
         }
         await refresh();
@@ -126,13 +135,17 @@ export default function StudioApp(): preact.JSX.Element {
     const onHash = async () => {
       const next = routeFromHash(location.hash);
       if (next.screen === 'editor' && next.id === 'new') {
-        const script = await createScript();
-        analytics.track('created_script', { source: 'blank' });
+        const script = await createRoutedScript();
         await refresh();
         go(`/scripts/${script.id}`);
       } else setRoute(next);
     };
     addEventListener('hashchange', onHash);
+    // Effects run after paint, so a hash change since the first render has no listener to catch it.
+    const latest = routeFromHash(location.hash);
+    setRoute((route) =>
+      route.screen === latest.screen && route.id === latest.id ? route : latest,
+    );
     analytics.initialize();
     return () => removeEventListener('hashchange', onHash);
   }, []);
@@ -195,7 +208,9 @@ export default function StudioApp(): preact.JSX.Element {
         </p>
       )}
       {route.screen === 'home' && <Home scripts={active} />}
-      {route.screen === 'inbox' && <SharedInbox />}
+      {route.screen === 'inbox' && <IdeasInbox refreshScripts={refresh} />}
+      {route.screen === 'receive' && <ReceiveScreen code={route.id ?? ''} />}
+      {route.screen === 'batch' && <BatchScreen />}
       {route.screen === 'scripts' && (
         <Scripts scripts={active} deleted={deleted} refresh={refresh} />
       )}
@@ -253,6 +268,8 @@ function Home({ scripts }: { scripts: StudioScript[] }) {
     scripts[0]?.id === 'quick' &&
     scripts[0]?.title === 'Introduce yourself in 30 seconds';
   const quick = scripts.find((script) => script.id === 'quick') ?? scripts[0];
+  const queue = upNext(scripts);
+  const shownNext = (queue.length ? queue : scripts).slice(0, 3);
   return (
     <section class="studio-screen studio-home">
       <p class="studio-kicker">teleprompter.wtf Studio</p>
@@ -294,16 +311,46 @@ function Home({ scripts }: { scripts: StudioScript[] }) {
         <>
           <h2>Up next</h2>
           <div class="studio-list">
-            {scripts.slice(0, 3).map((script) => (
-              <a class="studio-card" href={`#/scripts/${script.id}`}>
-                {script.title || 'Untitled script'}
-              </a>
+            {shownNext.map((script) => (
+              <article class="studio-card studio-next-row" key={script.id}>
+                <a href={`#/scripts/${script.id}`}>{script.title || 'Untitled script'}</a>
+                <a
+                  class="studio-button"
+                  href={`#/record/${script.id}`}
+                  aria-label={`Record ${script.title || 'Untitled script'}`}
+                >
+                  Record
+                </a>
+              </article>
             ))}
+          </div>
+          <div class="studio-actions">
+            {queue[0] && (
+              <a class="studio-button" href="#/record/next">
+                Record next
+              </a>
+            )}
+            {queue.length >= 2 && (
+              <a class="studio-button studio-button--quiet" href="#/batch">
+                Start batch
+              </a>
+            )}
           </div>
           <div class="studio-actions">
             <a class="studio-button" href="#/scripts/new">
               + Script
             </a>
+            <a class="studio-button studio-button--quiet" href="#/inbox">
+              + Idea
+            </a>
+            <a class="studio-button studio-button--quiet" href="#/scripts?templates=1">
+              Templates
+            </a>
+            {quick && (
+              <a class="studio-button studio-button--quiet" href={`#/practice/${quick.id}`}>
+                Practice
+              </a>
+            )}
             <a class="studio-button studio-button--quiet" href="#/scripts">
               All scripts
             </a>
@@ -329,11 +376,19 @@ function Scripts({
       `${script.title} ${script.body}`.toLowerCase().includes(query.toLowerCase()) &&
       (status === 'all' || script.status === status),
   );
+  const statusCount = (value: ScriptStatus) =>
+    scripts.filter((script) => script.status === value).length;
   const add = async () => {
     const script = await createScript();
     analytics.track('created_script', { source: 'blank' });
     await refresh();
     go(`/scripts/${script.id}`);
+  };
+  const queue = upNext(scripts);
+  const queueIds = queue.map((item) => item.id);
+  const changeQueue = async (ids: string[]) => {
+    await setUpNext(ids);
+    await refresh();
   };
   return (
     <section class="studio-screen">
@@ -346,6 +401,50 @@ function Scripts({
           + Script
         </button>
       </div>
+      <TemplatePicker
+        onCreated={() => void refresh()}
+        open={new URLSearchParams(location.hash.split('?')[1] ?? '').has('templates')}
+      />
+      {queue.length > 0 && (
+        <section class="studio-card">
+          <h2>Up next</h2>
+          <p>Choose the order for your next recording session.</p>
+          {queue.map((script, index) => (
+            <div class="studio-list-item" key={script.id}>
+              <span>
+                {index + 1}. {script.title}
+              </span>
+              <button
+                aria-label={`Move ${script.title} up`}
+                disabled={index === 0}
+                onClick={() => void changeQueue(moveInQueue(queueIds, index, -1))}
+              >
+                Move up
+              </button>
+              <button
+                aria-label={`Move ${script.title} down`}
+                disabled={index === queue.length - 1}
+                onClick={() => void changeQueue(moveInQueue(queueIds, index, 1))}
+              >
+                Move down
+              </button>
+              <button
+                aria-label={`Remove ${script.title} from Up next`}
+                onClick={() => void changeQueue(queueIds.filter((id) => id !== script.id))}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+          {queue.length >= 2 && (
+            <div class="studio-actions">
+              <a class="studio-button" href="#/batch">
+                Start batch
+              </a>
+            </div>
+          )}
+        </section>
+      )}
       <label class="studio-label">
         Search scripts
         <input
@@ -362,12 +461,12 @@ function Scripts({
             setStatus((event.target as HTMLSelectElement).value as typeof status)
           }
         >
-          <option value="all">All statuses</option>
-          <option value="idea">Idea</option>
-          <option value="draft">Draft</option>
-          <option value="ready">Ready</option>
-          <option value="recorded">Recorded</option>
-          <option value="posted">Posted</option>
+          <option value="all">All statuses ({scripts.length})</option>
+          <option value="idea">Idea ({statusCount('idea')})</option>
+          <option value="draft">Draft ({statusCount('draft')})</option>
+          <option value="ready">Ready ({statusCount('ready')})</option>
+          <option value="recorded">Recorded ({statusCount('recorded')})</option>
+          <option value="posted">Posted ({statusCount('posted')})</option>
         </select>
       </label>
       <div class="studio-list">
@@ -381,6 +480,12 @@ function Scripts({
                 {script.status}· {new Date(script.updatedAt).toLocaleDateString()}
               </span>
             </a>
+            <button
+              onClick={() => void changeQueue([...queueIds, script.id])}
+              disabled={queue.some((item) => item.id === script.id)}
+            >
+              Add to Up next
+            </button>
             <button
               onClick={async () => {
                 await duplicateScript(script.id);
@@ -425,6 +530,7 @@ function Scripts({
 function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
   const [script, setScript] = useState<StudioScript | null>(null);
   const [saved, setSaved] = useState('Loading...');
+  const [showSend, setShowSend] = useState(false);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const currentRef = useRef<StudioScript | null>(null);
   const pendingRef = useRef(false);
@@ -570,6 +676,7 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
           placeholder="Write your script"
         />
       </label>
+      <HookPicker insert={insert} />
       <div class="studio-stats">
         <span>{parsed.spokenWordCount} spoken words</span>
         <span>{FORMAT(durationAtWpm(parsed.spokenWordCount, 140))} at 140 WPM</span>
@@ -643,6 +750,45 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
           </select>
         </label>
       </div>
+      <section class="studio-card">
+        <h2>Captions and title</h2>
+        <CountedField
+          label="Instagram caption"
+          multiline
+          value={script.caption}
+          count={script.caption.length}
+          limit={limits.instagramCaption}
+          unit="characters"
+          note={`About ${limits.instagramCaptionVisible} show before the more link.`}
+          onInput={(caption) => edit({ ...script, caption })}
+        />
+        <CountedField
+          label="Hashtags"
+          value={script.hashtags}
+          count={(script.hashtags.match(/#[\p{L}\p{N}_]+/gu) ?? []).length}
+          limit={limits.instagramHashtags}
+          unit="hashtags"
+          onInput={(hashtags) => edit({ ...script, hashtags })}
+        />
+        <CountedField
+          label="YouTube title"
+          value={script.youtubeTitle}
+          count={script.youtubeTitle.length}
+          limit={limits.youtubeTitle}
+          unit="characters"
+          onInput={(youtubeTitle) => edit({ ...script, youtubeTitle })}
+        />
+        <CountedField
+          label="YouTube description"
+          multiline
+          value={script.youtubeDescription}
+          count={script.youtubeDescription.length}
+          limit={limits.youtubeDescription}
+          unit="characters"
+          onInput={(youtubeDescription) => edit({ ...script, youtubeDescription })}
+        />
+        <p>Platform facts checked {verifiedOn}. Limits can change.</p>
+      </section>
       <div class="studio-actions">
         <a class="studio-button" href={`#/record/${script.id}`}>
           Record
@@ -650,6 +796,12 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
         <a class="studio-button studio-button--quiet" href={`#/practice/${script.id}`}>
           Practice
         </a>
+        <button
+          class="studio-button studio-button--quiet"
+          onClick={() => void flush().then(() => setShowSend(!showSend))}
+        >
+          Send to phone
+        </button>
         <button
           class="studio-button studio-button--quiet"
           onClick={async () => {
@@ -672,7 +824,47 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
           Delete
         </button>
       </div>
+      {showSend && <SendToPhone script={script} />}
     </section>
+  );
+}
+function CountedField({
+  label,
+  value,
+  count,
+  limit,
+  unit,
+  note,
+  multiline,
+  onInput,
+}: {
+  label: string;
+  value: string;
+  count: number;
+  limit: number;
+  unit: string;
+  note?: string;
+  multiline?: boolean;
+  onInput: (value: string) => void;
+}) {
+  const hintId = `count-${label.replace(/\W+/g, '-').toLowerCase()}`;
+  const over = count > limit;
+  const update = (event: Event) => onInput((event.target as HTMLInputElement).value);
+  return (
+    <div class="studio-counted-field">
+      <label class="studio-label">
+        {label}
+        {multiline ? (
+          <textarea value={value} aria-describedby={hintId} onInput={update} />
+        ) : (
+          <input value={value} aria-describedby={hintId} onInput={update} />
+        )}
+      </label>
+      <p id={hintId} class={over ? 'studio-count is-over' : 'studio-count'}>
+        {count}/{limit} {unit}
+        {over ? `. ${count - limit} over the limit.` : ''} {note}
+      </p>
+    </div>
   );
 }
 function Placeholder({ title, text }: { title: string; text: string }) {
