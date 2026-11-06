@@ -6,6 +6,7 @@ import ProCameraControls from './ProCameraControls';
 import { assignKey } from '../domain/studio/keymap';
 import { KEY_ACTIONS, loadSettings, saveSettings } from '../domain/studio/settings';
 import type { KeyAction, StudioSettings } from '../domain/studio/types';
+import { PLATFORM_FACTS_VERIFIED_ON } from '../content/studio/platformFacts';
 
 type Section = 'camera' | 'mic' | 'recording' | 'prompter' | 'keys' | 'reminders' | 'habit';
 const sections: [Section, string][] = [
@@ -364,7 +365,10 @@ export function SettingsFields({
         );
       })}
       {section === 'camera' && (
-        <p>Safe zones are approximate. If lights flicker, switch between 25/50 and 30/60 fps.</p>
+        <p>
+          Safe zones are approximate, because apps change their UI (checked{' '}
+          {PLATFORM_FACTS_VERIFIED_ON}). If lights flicker, switch between 25/50 and 30/60 fps.
+        </p>
       )}
       {section === 'mic' && (
         <p>

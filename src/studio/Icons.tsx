@@ -33,7 +33,11 @@ export type IconName =
   | 'print'
   | 'fullscreen'
   | 'mirror'
-  | 'storage';
+  | 'storage'
+  | 'text-smaller'
+  | 'text-larger'
+  | 'fit'
+  | 'format';
 
 const paths: Record<IconName, preact.JSX.Element> = {
   home: (
@@ -198,6 +202,15 @@ const paths: Record<IconName, preact.JSX.Element> = {
       <ellipse cx="12" cy="6" rx="8" ry="3" />
       <path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6" />
       <path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
+    </>
+  ),
+  'text-smaller': <path d="m3 19 5-14 5 14M5 14h6M16 12h6" />,
+  'text-larger': <path d="m3 19 5-14 5 14M5 14h6M16 12h6M19 9v6" />,
+  fit: <path d="M4 5v14M20 5v14M8 12h8m-5-3-3 3 3 3m2-6 3 3-3 3" />,
+  format: (
+    <>
+      <path d="m2 19 5-14 5 14M4 14h6M21.5 12v7" />
+      <circle cx="18" cy="15.5" r="3.5" />
     </>
   ),
 };

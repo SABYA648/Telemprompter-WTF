@@ -14,6 +14,7 @@ import { analytics, progressBucket } from '../domain/analytics';
 import type { KeyAction, StudioScript } from '../domain/studio/types';
 import { watchGamepads } from '../domain/studio/gamepad';
 import { PrompterBroadcast, operatorRequested } from '../domain/studio/operator';
+import { Icon } from './Icons';
 
 const FIT_COPY: Record<PracticeFit, string> = {
   under: 'Under target',
@@ -192,7 +193,9 @@ export default function PracticeScreen({ id }: { id: string }) {
         <p class="studio-practice-script">{words?.spokenText}</p>
       </div>
       <div class="studio-practice-heading">
-        <a href={`#/scripts/${script.id}`}>Editor</a>
+        <a href={`#/scripts/${script.id}`} aria-label="Close practice">
+          <Icon name="close" />
+        </a>
         <h1>Practice: {script.title}</h1>
       </div>
       <div class="studio-practice-controls">

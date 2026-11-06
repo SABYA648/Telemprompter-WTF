@@ -1039,8 +1039,13 @@
 }
 .studio-practice-heading a {
   display: inline-flex;
+  flex: none;
   align-items: center;
+  justify-content: center;
+  min-width: 48px;
   min-height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
   color: var(--studio-text);
 }
 .studio-practice .studio-practice-heading h1 {
@@ -1451,6 +1456,8 @@ ol.studio-row-list .studio-row__title::before {
   --studio-text: #f4f1ea;
   --studio-muted: #8a8a8f;
   --studio-accent: #f0472a;
+  /* Accent as text on dark surfaces: 5.7:1 on #202024, 6.4:1 on #161618 (WCAG AA). */
+  --studio-accent-text: #ff6a4d;
   --studio-on-accent: #0a0a0b;
   --studio-card: #161618;
   --studio-raised: #202024;
@@ -1645,7 +1652,7 @@ ol.studio-row-list .studio-row__title::before {
 }
 .studio-tabs a.is-active {
   background: transparent;
-  color: var(--studio-accent);
+  color: var(--studio-accent-text);
   font-weight: 700;
 }
 .studio-tabs .studio-record-link {
@@ -1668,7 +1675,7 @@ ol.studio-row-list .studio-row__title::before {
 /* On Record itself the shutter is the action, so the active tab turns tinted like the others. */
 .studio-tabs .studio-record-link.is-active {
   background: var(--studio-raised);
-  color: var(--studio-accent);
+  color: var(--studio-accent-text);
   box-shadow:
     0 0 0 4px var(--studio-bg),
     0 0 0 5px var(--studio-accent);
@@ -1851,6 +1858,7 @@ ol.studio-row-list .studio-row__title::before {
   color: var(--studio-muted);
   font-size: 0.8125rem;
 }
+/* Row record buttons are ghost circles: the accent stays on the one primary action. */
 .studio-round-action {
   display: grid;
   place-items: center;
@@ -1858,8 +1866,8 @@ ol.studio-row-list .studio-row__title::before {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--studio-accent);
-  color: var(--studio-on-accent);
+  background: var(--studio-raised);
+  color: var(--studio-text);
   text-decoration: none;
 }
 .studio-progress {
@@ -1932,12 +1940,55 @@ ol.studio-row-list .studio-row__title::before {
   font-weight: 600;
 }
 
-/* Record screen: icon controls around a native-camera shutter, clear of the raised tab. */
+/* Record screen: a full-bleed live camera with no tab bar; the X is the way out (M12 P3). */
+.studio-shell.is-full-bleed {
+  padding-bottom: 0;
+}
 .record-screen {
-  inset: 0 0 var(--studio-nav);
+  inset: 0;
 }
 .record-controls {
-  bottom: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+}
+/* The mic meter sits in the control stack, so it can never cover the speed row. */
+.record-meter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 16px;
+  padding: 0 8px;
+}
+.record-screen .record-level-meter {
+  position: relative;
+  inset: auto;
+  flex: 0 1 120px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.25);
+}
+.record-screen .record-level-meter i {
+  top: -3px;
+  height: 12px;
+}
+.record-screen .record-clip {
+  position: static;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+.record-screen .record-speed {
+  gap: 4px;
+  padding: 4px;
+  border-radius: 16px;
+}
+.record-screen .record-speed > span {
+  padding: 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+.record-screen .record-speed button {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 12px;
 }
 .record-screen .record-main-controls {
   display: grid;
@@ -1961,12 +2012,13 @@ ol.studio-row-list .studio-row__title::before {
 .record-screen.controls-dim .record-side:focus-within {
   opacity: 1;
 }
-/* Sheets live inside the record screen's stacking context, so they stop above the tab bar. */
+/* Sheets live inside the full-bleed record screen, so they can use its whole height. */
 .sheet-backdrop {
-  bottom: var(--studio-nav);
+  bottom: 0;
 }
 .record-sheet {
-  max-height: min(85dvh, calc(100dvh - var(--studio-nav) - 12px));
+  max-height: min(85dvh, calc(100dvh - 12px));
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
 }
 .record-main-controls .record-button {
   position: relative;
@@ -2134,12 +2186,21 @@ ol.studio-row-list .studio-row__title::before {
 .studio-editor .studio-label textarea {
   min-height: 40dvh;
 }
+/* Markup lives behind one Aa button, so the row never clips at 360px (M12 P3). */
 .studio-editor .studio-toolbar {
-  overflow-x: auto;
   flex-wrap: nowrap;
-  scrollbar-width: none;
+  align-items: center;
 }
-.studio-editor .studio-toolbar button,
+.studio-toolbar .studio-overflow summary {
+  width: 48px;
+  height: 48px;
+  background: var(--studio-raised);
+}
+.studio-toolbar .studio-overflow__menu {
+  left: 0;
+  right: auto;
+}
+.studio-editor .studio-toolbar > button,
 .studio-editor .studio-cue-label {
   flex: none;
   min-height: 44px;
@@ -2196,6 +2257,26 @@ ol.studio-row-list .studio-row__title::before {
 }
 .studio-toggle {
   white-space: nowrap;
+}
+.studio-target-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--studio-text);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.studio-target-custom input {
+  width: 4ch;
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  text-align: right;
 }
 .studio-aspect-field {
   grid-column: 1 / -1;
@@ -2397,14 +2478,14 @@ ol.studio-row-list .studio-row__title::before {
     padding-inline: max(8px, calc(50vw - 260px));
   }
   .record-screen {
-    inset: 0 0 var(--studio-nav);
+    inset: 0;
   }
   .studio-takes-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 .studio-practice {
-  padding-bottom: calc(var(--studio-nav) + 16px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
 }
 
 /* M11: bottom sheets for take and script tools. One accent action per sheet. */
@@ -2643,4 +2724,83 @@ ol.studio-row-list .studio-row__title::before {
     color: #555;
     font-size: 12pt;
   }
+}
+
+/* M12 P3: a badge is a toast where it was earned, never a Home card. */
+.studio-toast-region {
+  position: fixed;
+  z-index: 200;
+  top: calc(env(safe-area-inset-top) + 12px);
+  right: 12px;
+  left: 12px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.studio-toast.studio-celebration {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 6px 16px 6px 6px;
+  border-radius: 999px;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  font-size: 0.9375rem;
+}
+.studio-toast .studio-celebration__burst {
+  width: 36px;
+  height: 36px;
+  background: var(--studio-card);
+}
+
+/* The recording-feel rating, inline in the take review right after Keep. */
+.studio-take-rating {
+  display: grid;
+  gap: 8px;
+}
+.studio-take-rating__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.studio-take-rating h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+.record-sheet .studio-take-rating__dismiss {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--studio-muted);
+  cursor: pointer;
+}
+.studio-take-rating .studio-rating {
+  gap: 6px;
+  margin: 0;
+}
+.studio-take-rating p {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+/* Progress: one line, then at most one ghost Share and a quiet challenge link. */
+.studio-progress__line {
+  color: var(--studio-muted);
+}
+.studio-progress__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
 }

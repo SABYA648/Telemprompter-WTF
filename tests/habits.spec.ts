@@ -88,40 +88,17 @@ test('share cards download as full-size PNGs over 10 KB', async ({ page }) => {
   expect(bytes.readUInt32BE(20)).toBe(1920);
 });
 
-test('quick rating appears after the third kept take and is asked once', async ({ page }) => {
+// The rating itself is asked in the take review right after Keep (media.spec.ts covers it).
+test('Home never shows the recording rating, even after the third kept take', async ({ page }) => {
   await returning(page, 'Three takes');
   await seed(page, {
     takes: [0, 1, 2].map(() => ({ scriptId: 'quick', at: Date.now() })),
   });
   await page.goto('/studio#/');
-  const rating = page.getByRole('region', { name: 'Rate recording' });
-  await expect(
-    rating.getByRole('heading', { name: 'How did recording feel today?' }),
-  ).toBeVisible();
-  await rating.getByRole('button', { name: 'Rate 4 out of 5' }).click();
-  await expect(page.getByText('Thanks for sharing.')).toBeVisible();
-  await page.reload();
   await expect(page.getByRole('heading', { name: "Today's prompt" })).toBeVisible();
-  await expect(rating).toHaveCount(0);
-});
-
-test('all five rating targets fit at 320px and stay at least 48px wide', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 640 });
-  await returning(page, 'Rating bounds');
-  await seed(page, {
-    takes: [0, 1, 2].map(() => ({ scriptId: 'quick', at: Date.now() })),
-  });
-  await page.goto('/studio#/');
-  const buttons = page
-    .getByRole('region', { name: 'Rate recording' })
-    .locator('.studio-rating button');
-  await expect(buttons).toHaveCount(5);
-  for (const button of await buttons.all()) {
-    const bounds = (await button.boundingBox())!;
-    expect(bounds.width).toBeGreaterThanOrEqual(48);
-    expect(bounds.x).toBeGreaterThanOrEqual(0);
-    expect(bounds.x + bounds.width).toBeLessThanOrEqual(320);
-  }
+  await page.waitForTimeout(300);
+  await expect(page.getByRole('region', { name: 'Rate recording' })).toHaveCount(0);
+  await expect(page.getByText('How did recording feel today?')).toHaveCount(0);
 });
 
 test('Monday recap uses only the previous week for best streak', async ({ page }) => {
@@ -171,11 +148,13 @@ test('Home shows one ask per session and the milestone share card once', async (
   expect((await download).suggestedFilename()).toBe('teleprompter-wtf-streak.png');
   await second.close();
 
-  // Offered once: the next session moves on to the rating.
+  // Offered once: the next session has no ask left, since the rating moved to the take review.
   const third = await page.context().newPage();
   await third.clock.setFixedTime(new Date(2026, 10, 12, 12));
   await third.goto('/studio#/');
-  await expect(third.getByRole('region', { name: 'Rate recording' })).toBeVisible();
+  await expect(third.getByRole('heading', { name: "Today's prompt" })).toBeVisible();
+  await third.waitForTimeout(300);
+  await expect(third.getByRole('region', { name: 'Rate recording' })).toHaveCount(0);
   await expect(third.getByRole('region', { name: 'Share your progress' })).toHaveCount(0);
   await third.close();
 });
@@ -248,15 +227,15 @@ for (const width of [320, 360, 390]) {
       takes: [{ scriptId: 'quick', at: Date.now() }],
     });
     await page.goto('/studio#/');
-    const celebration = page.getByRole('status', { name: 'Badge unlocked' });
-    await expect(celebration.getByRole('heading', { name: 'First take' })).toBeVisible();
-    expect(await celebration.evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
     await expect(page.getByRole('heading', { name: "Today's prompt" })).toBeVisible();
+    // An unseen badge is a toast after Keep, never a card on Home.
+    await page.waitForTimeout(300);
+    await expect(page.locator('.studio-celebration')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
     const buttons = page.locator(
-      '.studio-streak summary, .studio-today button, .studio-celebration button, [aria-label="Your progress"] .studio-button',
+      '.studio-streak summary, .studio-today button, [aria-label="Your progress"] .studio-button',
     );
     for (const box of await buttons.evaluateAll((els) =>
       els
@@ -277,7 +256,5 @@ for (const width of [320, 360, 390]) {
     const nav = await page.getByRole('navigation', { name: 'Studio navigation' }).boundingBox();
     const box = await last.boundingBox();
     expect(box && nav && box.y + box.height <= nav.y).toBe(true);
-    await celebration.getByRole('button', { name: 'Nice' }).click();
-    await expect(celebration).toHaveCount(0);
   });
 }

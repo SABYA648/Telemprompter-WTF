@@ -1,16 +1,18 @@
 import type { ComponentChildren, Ref } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
-import { Icon } from './Icons';
+import { Icon, type IconName } from './Icons';
 
 /** A small "..." menu for secondary actions. Closes on an outside tap, Escape, or a choice. */
 export function Overflow({
   label,
   up = false,
+  icon = 'more',
   summaryRef,
   children,
 }: {
   label: string;
   up?: boolean;
+  icon?: IconName;
   summaryRef?: Ref<HTMLElement> | undefined;
   children: ComponentChildren;
 }) {
@@ -41,7 +43,7 @@ export function Overflow({
       }}
     >
       <summary ref={summaryRef ?? fallback} aria-label={label}>
-        <Icon name="more" />
+        <Icon name={icon} />
       </summary>
       <div class="studio-overflow__menu">{children}</div>
     </details>

@@ -104,6 +104,7 @@ test('Studio markup controls and stats update safely', async ({ page }) => {
   await body.fill('# Intro\nHello **friend** [pause] {name}');
   await expect(page.getByText('3 spoken words')).toBeVisible();
   await expect(page.getByText('1 placeholder left')).toBeVisible();
+  await page.getByLabel('Format').click();
   await page.getByRole('button', { name: 'Pause' }).click();
   await expect(body).toHaveValue(/\[pause\]/);
 });

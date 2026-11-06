@@ -92,7 +92,7 @@ test('Studio identifies persisted buckets before boot and updates identity after
     });
 });
 
-test('Record tab stays active and camera controls clear the navigation at phone widths', async ({
+test('the live camera is full-bleed with no tab bar, and the X is the exit, at phone widths', async ({
   page,
 }) => {
   for (const width of [360, 390]) {
@@ -101,17 +101,59 @@ test('Record tab stays active and camera controls clear the navigation at phone 
     const allow = page.getByRole('button', { name: 'Allow camera' });
     const start = page.getByRole('button', { name: 'Start recording' });
     await expect(allow.or(start)).toBeVisible();
-    if (await allow.isVisible()) await allow.click();
+    if (await allow.isVisible()) {
+      // The permission screen still has the tab bar.
+      await expect(page.locator('.studio-tabs')).toHaveCount(1);
+      await allow.click();
+    }
     await expect(start).toBeVisible();
-    const current = page
-      .getByRole('navigation', { name: 'Studio navigation' })
-      .locator('[aria-current]');
-    await expect(current).toHaveCount(1);
-    await expect(current).toHaveText('Record');
-    await expect(page.locator('.studio-tabs .is-active')).toHaveCount(1);
-    const nav = (await page.locator('.studio-tabs').boundingBox())!;
+    // One red record action: the shutter. No nav Record under it.
+    await expect(page.locator('.studio-tabs')).toHaveCount(0);
+    const screen = (await page.locator('.record-screen').boundingBox())!;
+    expect(screen.y + screen.height).toBe(800);
     const controls = (await page.locator('.record-controls').boundingBox())!;
-    expect(controls.y + controls.height).toBeLessThanOrEqual(nav.y);
+    expect(controls.y + controls.height).toBeLessThanOrEqual(800);
+    // The safe-zone frame stays, with no visible caption, and nothing covers the speed row.
+    await page.getByRole('button', { name: 'Quick settings' }).click();
+    await page.getByLabel('Safe zones').selectOption('instagram');
+    await page
+      .getByRole('dialog', { name: 'Quick settings' })
+      .getByRole('button', { name: 'Close' })
+      .click();
+    await expect(page.locator('.record-safe-zone')).toBeVisible();
+    await expect(page.locator('.record-safe-zone')).toHaveText('');
+    await expect(page.locator('.record-safe-zone')).toHaveAttribute('aria-hidden', 'true');
+    const speed = (await page.locator('.record-speed').last().boundingBox())!;
+    expect(speed.x + speed.width).toBeLessThanOrEqual(width);
+    const covered = await page
+      .locator('.record-speed')
+      .last()
+      .evaluate(
+        (row) =>
+          [...row.querySelectorAll('button')].filter((button) => {
+            const rect = button.getBoundingClientRect();
+            const hit = document.elementFromPoint(
+              rect.x + rect.width / 2,
+              rect.y + rect.height / 2,
+            );
+            return !(hit === button || button.contains(hit));
+          }).length,
+      );
+    expect(covered).toBe(0);
+    for (const name of ['Smaller text', 'Larger text', 'Fit speed to target length']) {
+      const button = page.getByRole('button', { name });
+      await expect(button).toBeVisible();
+      await expect(button.locator('svg')).toHaveCount(1);
+      expect(((await button.textContent()) ?? '').trim()).toBe('');
+      const box = (await button.boundingBox())!;
+      expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
+    }
+    // The quick script opens on real words, not fill-in blanks.
+    await expect(page.locator('.prompter-scroll')).not.toContainText('{');
+    await expect(page.locator('.prompter-scroll')).not.toContainText("I'm name");
+    await page.getByRole('link', { name: 'Close recording' }).click();
+    await expect(page).toHaveURL(/#\/scripts\/quick$/);
+    await expect(page.locator('.studio-tabs')).toHaveCount(1);
   }
 });
 
@@ -142,13 +184,9 @@ for (const viewport of [
       .click();
     await start.click();
     await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
-    const recordTab = page
-      .getByRole('navigation', { name: 'Studio navigation' })
-      .getByRole('link', { name: 'Record' });
-    await expect(recordTab).toHaveAttribute('href', `#/record/${scriptId}`);
-    await recordTab.click();
+    // No tab bar while recording, so nothing under the shutter can reload the route.
+    await expect(page.locator('.studio-tabs')).toHaveCount(0);
     await expect(page).toHaveURL(new RegExp(`#\\/record\\/${scriptId}$`));
-    await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
     await page.waitForTimeout(700);
     await page.getByRole('button', { name: 'Stop recording' }).click();
     const review = page.getByRole('dialog', { name: 'Review take' });
@@ -156,8 +194,7 @@ for (const viewport of [
     const keep = review.getByRole('button', { name: 'Keep', exact: true });
     await keep.scrollIntoViewIfNeeded();
     const target = (await keep.boundingBox())!;
-    const nav = (await page.locator('.studio-tabs').boundingBox())!;
-    expect(target.y + target.height).toBeLessThanOrEqual(nav.y);
+    expect(target.y + target.height).toBeLessThanOrEqual(viewport.height);
     expect(
       await keep.evaluate((element) => {
         const rect = element.getBoundingClientRect();
@@ -214,7 +251,10 @@ test('the nav Record in the editor opens Record on the edited script', async ({ 
   await expect(page.locator('.prompter-scroll')).toContainText(
     'These are the words I just edited.',
   );
-  // Away from the editor, the center button is plain Record again.
+  // The live camera has no tab bar. Away from the editor, the center button is plain Record
+  // again, and it opens the most recently edited script.
+  await expect(page.locator('.studio-tabs')).toHaveCount(0);
+  await page.goto('/studio#/takes');
   await expect(
     page
       .getByRole('navigation', { name: 'Studio navigation' })
@@ -764,19 +804,102 @@ test('a freeze earned on day 7 covers a skipped day and the streak continues', a
   await expect(page.getByText('Recorded today. See you tomorrow.')).toBeVisible();
 });
 
-test('a real kept take unlocks and celebrates the first badge once', async ({ page }) => {
+test('a real kept take celebrates the first badge once, as a toast right after Keep', async ({
+  page,
+}) => {
   await page.goto('/studio#/record/quick');
   await recordAndKeep(page);
+  const toast = page.locator('.studio-toast');
+  await expect(toast).toContainText('First take badge unlocked');
+  await expect(toast).toHaveCount(0, { timeout: 8000 });
   await page.goto('/studio#/');
-  const celebration = page.getByRole('status', { name: 'Badge unlocked' });
-  await expect(celebration.getByRole('heading', { name: 'First take' })).toBeVisible();
-  await celebration.getByRole('button', { name: 'Nice' }).click();
-  await page.reload();
   await expect(page.getByRole('heading', { name: "Today's prompt" })).toBeVisible();
-  await expect(celebration).toHaveCount(0);
+  await page.waitForTimeout(300);
+  await expect(toast).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Your progress' })).toContainText('1 badge');
+});
+
+/** Seeds kept takes so the next real Keep is the third. */
+async function seedKeptTakes(page: import('@playwright/test').Page, count: number) {
+  await page.goto('/studio#/scripts/quick');
+  await expect(page.getByLabel('Title', { exact: true })).toBeVisible();
+  await page.evaluate(async (n) => {
+    const request = indexedDB.open('teleprompter-wtf');
+    const db = await new Promise<IDBDatabase>((resolve) => {
+      request.onsuccess = () => resolve(request.result);
+    });
+    const tx = db.transaction('takes', 'readwrite');
+    for (let i = 0; i < n; i++)
+      tx.objectStore('takes').put({
+        id: `seed-rating-${i}`,
+        scriptId: 'quick',
+        kept: true,
+        durationMs: 30000,
+        wordsRead: 70,
+        createdAt: Date.now(),
+        exportedAt: null,
+      });
+    await new Promise<void>((resolve) => {
+      tx.oncomplete = () => resolve();
+    });
+    db.close();
+  }, count);
+}
+
+test('the recording rating follows the third kept take, once a day, and fits 320px', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await seedKeptTakes(page, 2);
+  await page.goto('/studio#/record/quick');
+  await recordAndKeep(page);
+  const review = page.getByRole('dialog', { name: 'Review take' });
+  const rating = review.getByRole('region', { name: 'Rate recording' });
   await expect(
-    page.getByRole('region', { name: 'Your progress' }).getByText('First take'),
+    rating.getByRole('heading', { name: 'How did recording feel today?' }),
   ).toBeVisible();
+  const buttons = rating.locator('.studio-rating button');
+  await expect(buttons).toHaveCount(5);
+  for (const button of await buttons.all()) {
+    await button.scrollIntoViewIfNeeded();
+    const bounds = (await button.boundingBox())!;
+    expect(bounds.width).toBeGreaterThanOrEqual(48);
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(320);
+  }
+  // Dismissing it is "not today": the next kept take today does not ask again.
+  await rating.getByRole('button', { name: 'Not now' }).click();
+  await expect(rating).toHaveCount(0);
+  await review.getByRole('button', { name: 'Done' }).click();
+  await page.goto('/studio#/record/quick');
+  await recordAndKeep(page);
+  await expect(page.getByRole('dialog', { name: 'Review take' })).toBeVisible();
+  await page.waitForTimeout(300);
+  await expect(page.getByRole('region', { name: 'Rate recording' })).toHaveCount(0);
+});
+
+test('a rating answered after Keep is stored once and reported', async ({ page }) => {
+  await seedKeptTakes(page, 2);
+  await page.goto('/studio#/record/quick');
+  await recordAndKeep(page);
+  const rating = page.getByRole('region', { name: 'Rate recording' });
+  await rating.getByRole('button', { name: 'Rate 4 out of 5' }).click();
+  await expect(page.getByText('Thanks for sharing.')).toBeVisible();
+  const stored = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const open = indexedDB.open('teleprompter-wtf');
+        open.onsuccess = () => {
+          const get = open.result.transaction('kv').objectStore('kv').get('asks.rating');
+          get.onsuccess = () => resolve(get.result);
+        };
+      }),
+  );
+  expect(stored).toBe(4);
+  // Answered means done: Home never asks it.
+  await page.goto('/studio#/');
+  await expect(page.getByRole('heading', { name: "Today's prompt" })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Rate recording' })).toHaveCount(0);
 });
 
 test('a real kept take exports scroll-timed captions and offers MP4 only when encodable', async ({

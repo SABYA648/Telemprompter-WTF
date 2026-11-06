@@ -50,7 +50,8 @@ import {
 } from '../domain/studio/readiness';
 import ProCameraControls from './ProCameraControls';
 import { Icon } from './Icons';
-import { SAFE_ZONES, PLATFORM_FACTS_VERIFIED_ON } from '../content/studio/platformFacts';
+import { TakeRating } from './HabitUI';
+import { SAFE_ZONES } from '../content/studio/platformFacts';
 import { SettingsFields } from './SettingsScreen';
 import type { StudioSettings, KeyAction } from '../domain/studio/types';
 
@@ -82,7 +83,16 @@ function setting(name: string) {
 function wake(): Promise<WakeLockSentinel | undefined> {
   return navigator.wakeLock?.request('screen').catch(() => undefined) ?? Promise.resolve(undefined);
 }
-export default function RecordScreen({ id, memory }: { id: string; memory: boolean }) {
+export default function RecordScreen({
+  id,
+  memory,
+  onCameraLive,
+}: {
+  id: string;
+  memory: boolean;
+  /** True while the camera is opening or live, when the screen is full-bleed with no tab bar. */
+  onCameraLive?: (live: boolean) => void;
+}) {
   const [script, setScript] = useState<StudioScript | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [settings, setSettings] = useState<StudioSettings>(
@@ -251,6 +261,11 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
   useEffect(() => {
     if (loaded && inApp) analytics.track('camera_failed', { reason: 'in_app_browser' });
   }, [loaded, inApp]);
+  useEffect(() => {
+    onCameraLive?.(!inApp && (permission === 'opening' || permission === 'ready'));
+  }, [permission, inApp]);
+  // The next Record visit starts on the camera again.
+  useEffect(() => () => onCameraLive?.(true), []);
   useEffect(() => {
     const update = () => setAngle(screen.orientation?.angle ?? 0);
     screen.orientation?.addEventListener?.('change', update);
@@ -1173,18 +1188,17 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
       )}
       {settings.camera.grid === 'thirds' && <div class="record-thirds" aria-label="Thirds grid" />}
       {settings.camera.safeZone !== 'off' && (
+        // A quiet frame only; camera settings explain that safe zones are approximate.
         <div
           class="record-safe-zone"
+          aria-hidden="true"
           style={{
             top: `${SAFE_ZONES[settings.camera.safeZone].top}%`,
             bottom: `${SAFE_ZONES[settings.camera.safeZone].bottom}%`,
             left: `${SAFE_ZONES[settings.camera.safeZone].left}%`,
             right: `${SAFE_ZONES[settings.camera.safeZone].right}%`,
           }}
-        >
-          {settings.camera.safeZone.replace('_', ' ')} safe zone · approximate, apps change their UI
-          · verified {PLATFORM_FACTS_VERIFIED_ON}
-        </div>
+        />
       )}
       {hasScript && (
         <div
@@ -1285,26 +1299,6 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
         />
       )}
       {settings.camera.level && <LevelOverlay />}
-      <div
-        class="record-level-meter"
-        role="meter"
-        aria-label="Microphone level"
-        aria-valuemin={-60}
-        aria-valuemax={0}
-        aria-valuenow={Math.max(-60, Math.round(20 * Math.log10(level.rms || 0.000001)))}
-      >
-        <span
-          style={{
-            width: `${Math.min(100, Math.max(0, ((20 * Math.log10(level.rms || 0.000001) + 60) / 60) * 100))}%`,
-          }}
-        />
-        <i
-          style={{
-            left: `${Math.min(100, Math.max(0, ((20 * Math.log10(level.hold || 0.000001) + 60) / 60) * 100))}%`,
-          }}
-        />
-      </div>
-      {level.peak >= Math.pow(10, -1 / 20) && <span class="record-clip">CLIP</span>}
       {!!chips.length && (
         <div class="readiness-chips" aria-live="polite">
           {chips.map((message) => (
@@ -1318,6 +1312,28 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
         </div>
       )}
       <div class="record-controls">
+        <div class="record-meter-row">
+          <div
+            class="record-level-meter"
+            role="meter"
+            aria-label="Microphone level"
+            aria-valuemin={-60}
+            aria-valuemax={0}
+            aria-valuenow={Math.max(-60, Math.round(20 * Math.log10(level.rms || 0.000001)))}
+          >
+            <span
+              style={{
+                width: `${Math.min(100, Math.max(0, ((20 * Math.log10(level.rms || 0.000001) + 60) / 60) * 100))}%`,
+              }}
+            />
+            <i
+              style={{
+                left: `${Math.min(100, Math.max(0, ((20 * Math.log10(level.hold || 0.000001) + 60) / 60) * 100))}%`,
+              }}
+            />
+          </div>
+          {level.peak >= Math.pow(10, -1 / 20) && <span class="record-clip">CLIP</span>}
+        </div>
         {parsed?.sections.length ? (
           <div class="record-speed record-sections">
             <label>
@@ -1364,12 +1380,14 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
             +
           </button>
           <button onClick={() => setFontSize(font - 2)} aria-label="Smaller text">
-            A−
+            <Icon name="text-smaller" />
           </button>
           <button onClick={() => setFontSize(font + 2)} aria-label="Larger text">
-            A+
+            <Icon name="text-larger" />
           </button>
           <button
+            aria-label="Fit speed to target length"
+            title="Fit speed to target length"
             onClick={() => {
               const value = fitWpm(parsed?.spokenWordCount ?? 0, targetSeconds);
               setWpm(value);
@@ -1379,7 +1397,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
               );
             }}
           >
-            Fit
+            <Icon name="fit" />
           </button>
         </div>
         <div class="record-main-controls">
@@ -1569,6 +1587,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
             ) : (
               <>
                 <p>Save it to Photos now. Browser storage can be cleared.</p>
+                <TakeRating />
                 <div class="studio-actions">
                   <button class="studio-button" onClick={() => void save()}>
                     {mobile ? 'Save video' : `Download ${review.container.toUpperCase()}`}

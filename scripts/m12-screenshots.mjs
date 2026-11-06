@@ -1,7 +1,8 @@
 // M12 mobile audit: screenshots of the core Studio screens at phone widths, plus layout checks.
 // Usage: npm run build && node scripts/m12-screenshots.mjs [outDir]
-// Fails (exit 1) on horizontal overflow, tap targets under 44px, overlapping targets, or
-// content that cannot scroll clear of the fixed bottom bar.
+// Fails (exit 1) on horizontal overflow, tap targets under 44px, overlapping targets, content
+// that cannot scroll clear of the fixed bottom bar, or a tab bar where it should (not) be: the
+// live camera and Practice are full-bleed with no tab bar (M12 P3); every other screen has one.
 /* global document, window, getComputedStyle, innerHeight -- audit() and covered() run in the page. */
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
@@ -117,9 +118,11 @@ function covered() {
 }
 
 const problems = [];
-async function shoot(page, name, width) {
+async function shoot(page, name, width, { nav = true } = {}) {
   await page.waitForTimeout(250);
   const result = await page.evaluate(audit);
+  const tabs = await page.locator('.studio-tabs').count();
+  const active = await page.locator('.studio-tabs .is-active').count();
   await page.screenshot({ path: `${outDir}/${name}-${width}.png` });
   const hidden = await page.evaluate(covered);
   await page.screenshot({ path: `${outDir}/${name}-${width}-bottom.png` });
@@ -130,6 +133,9 @@ async function shoot(page, name, width) {
     result.small.length && `small: ${result.small.join(', ')}`,
     result.overlaps.length && `overlap: ${result.overlaps.join(', ')}`,
     hidden.length && `under nav: ${hidden.join(', ')}`,
+    nav && tabs !== 1 && 'tab bar missing',
+    nav && active !== 1 && `${active} active tabs`,
+    !nav && tabs !== 0 && 'tab bar over the live camera',
   ].filter(Boolean);
   console.log(issues.length ? `${line}\n  ${issues.join('\n  ')}` : `${line}, ok`);
   if (issues.length) problems.push(line);
@@ -164,7 +170,7 @@ try {
       .getByRole('dialog', { name: 'Quick settings' })
       .getByRole('button', { name: 'Close' })
       .click();
-    await page.screenshot({ path: `${outDir}/record-camera-${w}.png` });
+    await shoot(page, 'record-camera', w, { nav: false });
     for (let take = 0; take < 3; take++) {
       if (take) {
         await page.goto(`${base}/studio#/record/quick`);
@@ -208,6 +214,10 @@ try {
     await page.goto(`${base}/studio#/takes`);
     await page.locator('.studio-take-tile').first().waitFor();
     await shoot(page, 'takes', w);
+
+    await page.goto(`${base}/studio#/practice/quick`);
+    await page.getByRole('button', { name: 'Start practice' }).waitFor();
+    await shoot(page, 'practice', w, { nav: false });
 
     await page.goto(`${base}/studio#/`);
     await page.getByRole('heading', { level: 1 }).first().waitFor();

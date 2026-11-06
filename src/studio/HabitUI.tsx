@@ -8,7 +8,6 @@ import {
   promptScriptBody,
   readHabits,
   markBadgeSeen,
-  unseenBadges,
   type BadgeId,
   type HabitSnapshot,
 } from '../domain/studio/habits';
@@ -33,6 +32,7 @@ import {
   markMilestoneOffered,
   nextAsk,
   offeredMilestones,
+  claimTakeRating,
   ratingDone,
   saveRating,
   sessionAsk,
@@ -99,11 +99,13 @@ export function CardShare({
   number,
   label,
   text = 'Share card',
+  icon = false,
 }: {
   kind: CardKind;
   number: number;
   label: CardLabel;
   text?: string;
+  icon?: boolean;
 }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -120,6 +122,7 @@ export function CardShare({
             .finally(() => setBusy(false));
         }}
       >
+        {icon && <Icon name="share" size={20} />}
         {text}
       </button>
       {error && <p role="alert">{error}</p>}
@@ -199,45 +202,95 @@ export function HabitSummary({
   );
 }
 
-/** Badge celebration. Motion is CSS only and is removed under prefers-reduced-motion. */
-export function BadgeCelebration({ settings, snap }: Pick<HabitData, 'settings' | 'snap'>) {
-  const [queue, setQueue] = useState<BadgeId[]>([]);
+/**
+ * Badge unlock: a short toast right where it happened (after a kept take, or a save), shown
+ * once. Badges never sit on Home as a card. Motion is CSS only and off under reduced motion.
+ */
+export function BadgeToast() {
+  const [id, setId] = useState<BadgeId | null>(null);
   useEffect(() => {
-    const load = () => void unseenBadges().then(setQueue);
-    load();
-    addEventListener('studio-badge-unlocked', load);
-    return () => removeEventListener('studio-badge-unlocked', load);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const show = (event: Event) => {
+      const badge = (event as CustomEvent<BadgeId>).detail;
+      void loadSettings().then((settings) => {
+        if (!settings.habit.badgesEnabled || !BADGES[badge]) return;
+        void markBadgeSeen(badge);
+        setId(badge);
+        clearTimeout(timer);
+        timer = setTimeout(() => setId(null), 5000);
+      });
+    };
+    addEventListener('studio-badge-unlocked', show);
+    return () => {
+      removeEventListener('studio-badge-unlocked', show);
+      clearTimeout(timer);
+    };
   }, []);
-  const id = queue[0];
-  if (!id || !settings?.habit.badgesEnabled) return null;
   return (
-    <section class="studio-card studio-celebration" role="status" aria-label="Badge unlocked">
-      <span class="studio-celebration__burst" aria-hidden="true">
-        <Icon name="star" />
-      </span>
-      <div class="studio-celebration__text">
-        <h2>{BADGES[id].label}</h2>
-        <p>{BADGES[id].detail}</p>
-      </div>
-      <div class="studio-actions">
-        {settings.habit.shareCardsEnabled && (
-          <CardShare
-            kind="badge"
-            number={snap?.badges.length ?? 1}
-            label="Badges earned"
-            text="Share badge card"
-          />
-        )}
+    <div class="studio-toast-region" aria-live="polite" aria-atomic="true">
+      {id && (
+        <p class="studio-toast studio-celebration">
+          <span class="studio-celebration__burst" aria-hidden="true">
+            <Icon name="star" size={20} />
+          </span>
+          <span>
+            <strong>{BADGES[id].label}</strong> badge unlocked
+          </span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Right after a kept take: how did recording feel? From the third kept take, at most once a
+ * day, until it is answered. The X dismisses it for today.
+ */
+export function TakeRating() {
+  const [state, setState] = useState<'hidden' | 'asking' | 'thanks'>('hidden');
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const settings = await loadSettings();
+      if (!settings.habit.ratingEnabled) return;
+      const snap = await readHabits();
+      if (active && (await claimTakeRating(snap.takes, localDay(new Date())))) setState('asking');
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+  const rate = async (score: 1 | 2 | 3 | 4 | 5) => {
+    if (await saveRating(score)) analytics.track('rated_recording', { score });
+    setState('thanks');
+  };
+  if (state === 'thanks') return <p role="status">Thanks for sharing.</p>;
+  if (state !== 'asking') return null;
+  return (
+    <section class="studio-take-rating" aria-label="Rate recording">
+      <div class="studio-take-rating__head">
+        <h3>How did recording feel today?</h3>
         <button
-          class="studio-button studio-button--quiet"
-          onClick={() => {
-            setQueue((q) => q.slice(1));
-            void markBadgeSeen(id);
-          }}
+          class="studio-take-rating__dismiss"
+          aria-label="Not now"
+          onClick={() => setState('hidden')}
         >
-          Nice
+          <Icon name="close" size={20} />
         </button>
       </div>
+      <div class="studio-rating">
+        {([1, 2, 3, 4, 5] as const).map((score) => (
+          <button
+            key={score}
+            class="studio-button studio-button--quiet"
+            aria-label={`Rate ${score} out of 5`}
+            onClick={() => void rate(score)}
+          >
+            {score}
+          </button>
+        ))}
+      </div>
+      <p class="studio-muted">1 is hard, 5 is easy.</p>
     </section>
   );
 }
@@ -254,11 +307,11 @@ function sessionMilestone(): Milestone | null {
   }
 }
 
-/** The one Home ask this session may show (4.3), plus the storage guardrail, which always shows. */
+/** The one Home ask this session may show (4.3), plus the storage guardrail, which always shows.
+ * The rating is not a Home ask any more: TakeRating asks it in the take review sheet. */
 export function HomeAsk({ streak, snap, settings }: HabitData) {
   const [ask, setAsk] = useState<SessionAsk | null>(null);
   const [milestone, setMilestone] = useState<Milestone | null>(null);
-  const [rated, setRated] = useState('');
   const [storage, setStorage] = useState(0);
   const decided = useRef(false);
   useEffect(() => {
@@ -298,7 +351,8 @@ export function HomeAsk({ streak, snap, settings }: HabitData) {
           install: false,
           reminder: settings.reminders.askEnabled && !settings.reminders.fileDownloaded && !snoozed,
           share_card: settings.habit.shareCardsEnabled && Boolean(found),
-          rating: settings.habit.ratingEnabled,
+          // The rating moved to the take review sheet (TakeRating), right after a kept take.
+          rating: false,
         },
       );
       if (!kind || !claimSessionAsk(kind)) return;
@@ -331,11 +385,6 @@ export function HomeAsk({ streak, snap, settings }: HabitData) {
       },
     );
   }, []);
-  const rate = async (score: 0 | 1 | 2 | 3 | 4 | 5) => {
-    if ((await saveRating(score)) && score) analytics.track('rated_recording', { score });
-    setAsk(null);
-    setRated(score ? 'Thanks for sharing.' : '');
-  };
   const snooze = async () => {
     await (await getDb()).put('kv', Date.now(), REMINDER_SNOOZE);
     setAsk(null);
@@ -393,30 +442,6 @@ export function HomeAsk({ streak, snap, settings }: HabitData) {
           </div>
         </section>
       )}
-      {ask === 'rating' && (
-        <section class="studio-card" aria-label="Rate recording">
-          <h2>How did recording feel today?</h2>
-          <p class="studio-muted">1 is hard, 5 is easy.</p>
-          <div class="studio-rating">
-            {([1, 2, 3, 4, 5] as const).map((score) => (
-              <button
-                key={score}
-                class="studio-button studio-button--quiet"
-                aria-label={`Rate ${score} out of 5`}
-                onClick={() => void rate(score)}
-              >
-                {score}
-              </button>
-            ))}
-          </div>
-          <div class="studio-actions">
-            <button class="studio-button studio-button--quiet" onClick={() => void rate(0)}>
-              Skip
-            </button>
-          </div>
-        </section>
-      )}
-      {rated && <p role="status">{rated}</p>}
     </>
   );
 }
@@ -515,76 +540,54 @@ export function WeeklyRecap({ streak, snap, settings }: HabitData) {
         </div>
       </dl>
       <p>{snap.previousWeekGoalMet ? 'Goal reached. Nice work.' : 'A new week starts today.'}</p>
-      {settings.habit.shareCardsEnabled && (
-        <div class="studio-actions">
-          <CardShare kind="weekly" number={snap.previousWeekVideos} label="Last week's videos" />
-        </div>
-      )}
     </section>
   );
 }
 
-/** Stats, badges and the challenge entry, below the daily actions. */
+/** Progress is one line, at most one ghost Share and a quiet challenge link (M12 P3). */
 export function HabitProgress({ streak, snap, settings }: HabitData) {
   if (!snap || !settings) return null;
   const { statsEnabled, badgesEnabled, challengeEnabled, shareCardsEnabled, streaksEnabled } =
     settings.habit;
   if (!statsEnabled && !badgesEnabled && !challengeEnabled) return null;
+  const line =
+    snap.takes === 0
+      ? statsEnabled
+        ? 'Your first take starts your progress.'
+        : ''
+      : [
+          statsEnabled && snap.videos > 0 && plural(snap.videos, 'video'),
+          statsEnabled && plural(snap.takes, 'take'),
+          statsEnabled && snap.minutes > 0 && `${snap.minutes} min recorded`,
+          badgesEnabled && snap.badges.length > 0 && plural(snap.badges.length, 'badge'),
+        ]
+          .filter(Boolean)
+          .join(' · ');
+  // One share: the running streak if there is one, else this week's videos.
+  const share = !shareCardsEnabled
+    ? null
+    : streaksEnabled && streak && streak.current > 0
+      ? (['streak', streak.current, 'Day streak', 'Share streak'] as const)
+      : settings.habit.goalsEnabled && snap.weeklyVideos > 0
+        ? (['weekly', snap.weeklyVideos, 'Videos this week', 'Share week'] as const)
+        : null;
   return (
     <section class="studio-progress" aria-label="Your progress">
-      <h2>Your progress</h2>
-      {statsEnabled &&
-        (snap.takes === 0 ? (
-          <p class="studio-muted">Your first take starts your progress.</p>
-        ) : (
-          <p class="studio-progress__stats">
-            {[
-              snap.videos > 0 && plural(snap.videos, 'video'),
-              plural(snap.takes, 'take'),
-              snap.minutes > 0 && `${snap.minutes} min recorded`,
-              snap.words > 0 && plural(snap.words, 'word') + ' read',
-              snap.averageWpm > 0 && `${snap.averageWpm} WPM average`,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
-        ))}
-      {badgesEnabled && (
-        <>
-          {snap.badges.length ? (
-            <ul class="studio-badges" aria-label="Badges">
-              {snap.badges.map((id) => (
-                <li key={id}>{BADGES[id].label}</li>
-              ))}
-            </ul>
-          ) : null}
-        </>
+      {line && <p class="studio-progress__line">{line}</p>}
+      {(share || challengeEnabled) && (
+        <div class="studio-progress__actions">
+          {share && (
+            <CardShare kind={share[0]} number={share[1]} label={share[2]} text={share[3]} icon />
+          )}
+          {challengeEnabled && (
+            <a class="studio-text-link" href="#/challenge">
+              {snap.challengeJoined
+                ? `30-day challenge: ${snap.challengeDays} of 30`
+                : 'See the challenge'}
+            </a>
+          )}
+        </div>
       )}
-      {challengeEnabled && (
-        <p>
-          {snap.challengeJoined
-            ? `30-day challenge: ${snap.challengeDays} of 30 days.`
-            : '30 videos in 30 days, with no deadline.'}
-        </p>
-      )}
-      <div class="studio-actions">
-        {challengeEnabled && (
-          <a class="studio-button studio-button--quiet" href="#/challenge">
-            {snap.challengeJoined ? 'Open challenge' : 'See the challenge'}
-          </a>
-        )}
-        {shareCardsEnabled && streaksEnabled && streak && streak.current > 0 && (
-          <CardShare kind="streak" number={streak.current} label="Day streak" text="Share streak" />
-        )}
-        {shareCardsEnabled && settings.habit.goalsEnabled && snap.weeklyVideos > 0 && (
-          <CardShare
-            kind="weekly"
-            number={snap.weeklyVideos}
-            label="Videos this week"
-            text="Share week"
-          />
-        )}
-      </div>
     </section>
   );
 }

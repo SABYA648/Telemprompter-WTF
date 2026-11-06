@@ -126,6 +126,18 @@ export async function saveRating(score: 0 | 1 | 2 | 3 | 4 | 5): Promise<boolean>
   await db.put('kv', score, 'asks.rating');
   return true;
 }
+const RATING_SHOWN_ON = 'asks.ratingShownOn';
+/**
+ * The recording-feel rating, asked in the take review right after a kept take: from the third
+ * kept take, until it is answered, and at most once per local day. Claiming marks today as used.
+ */
+export async function claimTakeRating(keptTakes: number, today: string): Promise<boolean> {
+  if (keptTakes < 3 || (await ratingDone())) return false;
+  const db = await getDb();
+  if ((await db.get('kv', RATING_SHOWN_ON)) === today) return false;
+  await db.put('kv', today, RATING_SHOWN_ON);
+  return true;
+}
 export async function offeredMilestones(): Promise<string[]> {
   const value = (await (await getDb()).get('kv', 'asks.shareOffered')) as unknown;
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];

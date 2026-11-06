@@ -79,7 +79,7 @@ async function seedTake(page: Page, overrides: Record<string, unknown> = {}) {
 const accentActions = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll('a, button, summary, [role="button"]')]
-      .filter((el) => !el.closest('.studio-tabs') && !el.matches('.studio-round-action'))
+      .filter((el) => !el.closest('.studio-tabs'))
       .filter((el) => el.checkVisibility({ visibilityProperty: true }))
       .filter((el) => getComputedStyle(el).backgroundColor === 'rgb(240, 71, 42)')
       .map((el) => (el.getAttribute('aria-label') || el.textContent || '').trim()),

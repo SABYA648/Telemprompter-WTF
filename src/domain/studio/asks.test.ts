@@ -3,6 +3,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   claimSessionAsk,
+  claimTakeRating,
   emptyAskState,
   inlineAsk,
   markMilestoneOffered,
@@ -82,6 +83,15 @@ describe('ask ladder', () => {
     expect(await saveRating(4)).toBe(true);
     expect(await saveRating(2)).toBe(false);
     expect(await ratingDone()).toBe(true);
+  });
+  it('asks the rating after a kept take from the third, at most once a day, until answered', async () => {
+    expect(await claimTakeRating(2, '2026-11-06')).toBe(false);
+    expect(await claimTakeRating(3, '2026-11-06')).toBe(true);
+    // Dismissed or not, today is used.
+    expect(await claimTakeRating(4, '2026-11-06')).toBe(false);
+    expect(await claimTakeRating(5, '2026-11-07')).toBe(true);
+    await saveRating(3);
+    expect(await claimTakeRating(6, '2026-11-08')).toBe(false);
   });
   it('treats a skipped rating as done', async () => {
     expect(await saveRating(0)).toBe(true);

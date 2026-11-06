@@ -52,13 +52,18 @@ test('bottom navigation marks exactly one current item that matches the route', 
     await expect(currentItems(page)).toHaveText(label);
   }
 
-  for (const hash of ['#/record', '#/record/quick', '#/practice/quick']) {
+  // Before camera access Record is a permission screen with the tab bar.
+  for (const hash of ['#/record', '#/record/quick']) {
     await page.goto(`/studio${hash}`);
-    await expect(page.locator('.studio-screen, .record-screen').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Allow camera' })).toBeVisible();
     await expect(currentItems(page)).toHaveCount(1);
     await expect(currentItems(page)).toHaveText('Record');
     await expect(page.locator('.studio-tabs .is-active')).toHaveCount(1);
   }
+  // Practice is full-bleed: no tab bar, the X is the way out.
+  await page.goto('/studio#/practice/quick');
+  await expect(page.getByRole('button', { name: 'Start practice' })).toBeVisible();
+  await expect(page.locator('.studio-tabs')).toHaveCount(0);
 });
 
 for (const viewport of [
@@ -66,7 +71,9 @@ for (const viewport of [
   { width: 360, height: 800 },
   { width: 390, height: 844 },
 ]) {
-  test(`practice actions clear bottom navigation at ${viewport.width}px`, async ({ page }) => {
+  test(`practice actions stay on screen with no tab bar at ${viewport.width}px`, async ({
+    page,
+  }) => {
     await page.setViewportSize(viewport);
     await page.goto('/studio#/practice/quick');
     await page.getByRole('button', { name: 'Start practice' }).click();
@@ -76,8 +83,8 @@ for (const viewport of [
         element.scrollTop = element.scrollHeight;
       });
       const target = (await button.boundingBox())!;
-      const nav = (await page.locator('.studio-tabs').boundingBox())!;
-      expect(target.y + target.height).toBeLessThanOrEqual(nav.y);
+      await expect(page.locator('.studio-tabs')).toHaveCount(0);
+      expect(target.y + target.height).toBeLessThanOrEqual(viewport.height);
       expect(
         await button.evaluate((element) => {
           const rect = element.getBoundingClientRect();

@@ -34,7 +34,7 @@ import { SendToPhone, ReceiveScreen } from './SendReceive';
 import { isStandaloneDisplay } from '../domain/studio/install';
 import { persistOnFirstStandaloneLaunch } from '../domain/studio/storage';
 import { routeFromHash, bootHash, type Route } from './router';
-import { tabItems, type TabId } from './tabs';
+import { showsTabs, tabItems, type TabId } from './tabs';
 import { Overflow } from './Overflow';
 import OperatorWindow from './OperatorWindow';
 import { PrintableScript, useEditorBroadcast, useScriptImport } from './ScriptTools';
@@ -49,7 +49,7 @@ import { readHabits } from '../domain/studio/habits';
 import { readStreak } from '../domain/studio/streak';
 import InstallSheet from './InstallSheet';
 import {
-  BadgeCelebration,
+  BadgeToast,
   ChallengeScreen,
   HabitProgress,
   HabitSummary,
@@ -80,6 +80,7 @@ const wordBucket = (words: number): (typeof SCRIPT_SIZE_BUCKETS)[number] =>
         : words <= 1500
           ? '751_1500'
           : '1501_plus';
+const TARGET_CHIPS = [15, 30, 60, 90, 180];
 const FORMAT = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
@@ -108,6 +109,8 @@ function StudioApp(): preact.JSX.Element {
   const [recovered, setRecovered] = useState(false);
   const [transferResult, setTransferResult] = useState('');
   const [presetChoice, setPresetChoice] = useState<StudioPreset | null>(null);
+  // Record starts on its live camera, which has no tab bar; its permission and error screens do.
+  const [cameraLive, setCameraLive] = useState(true);
   const presetDialog = useRef<HTMLElement>(null);
   const refreshRequest = useRef(0);
   const refresh = async () => {
@@ -236,7 +239,8 @@ function StudioApp(): preact.JSX.Element {
         go(`/scripts/${script.id}`);
       } else {
         setRoute(next);
-        if (next.screen === 'home' || next.screen === 'scripts') await refresh();
+        // The nav Record follows the latest edit, so any screen with the tab bar wants fresh scripts.
+        if (next.screen !== 'record' && next.screen !== 'practice') await refresh();
       }
     };
     addEventListener('hashchange', onHash);
@@ -297,8 +301,9 @@ function StudioApp(): preact.JSX.Element {
   const inApp = isInAppBrowser(navigator.userAgent);
   const handoffScript = active.find((script) => script.id === route.id) ?? active[0] ?? null;
   return (
-    <div class="studio-shell">
+    <div class={showsTabs(route, cameraLive) ? 'studio-shell' : 'studio-shell is-full-bleed'}>
       <ServiceWorkerUpdate hidden={route.screen === 'record'} />
+      <BadgeToast />
       <InstallSheet recording={route.screen === 'record' || !!presetChoice} />
       {presetChoice && (
         <div class="studio-preset-backdrop" role="presentation">
@@ -404,7 +409,9 @@ function StudioApp(): preact.JSX.Element {
         <Scripts scripts={active} deleted={deleted} refresh={refresh} />
       )}
       {route.screen === 'editor' && <Editor id={route.id ?? ''} refresh={refresh} />}
-      {route.screen === 'record' && <RecordScreen id={route.id ?? 'quick'} memory={memory} />}
+      {route.screen === 'record' && (
+        <RecordScreen id={route.id ?? 'quick'} memory={memory} onCameraLive={setCameraLive} />
+      )}
       {route.screen === 'practice' && <PracticeScreen id={route.id ?? ''} />}
       {route.screen === 'take' && <TakeScreen id={route.id ?? ''} />}
       {route.screen === 'takes' && <TakesScreen />}
@@ -414,7 +421,7 @@ function StudioApp(): preact.JSX.Element {
           <TransferControls />
         </div>
       )}
-      <Tabs route={route} />
+      {showsTabs(route, cameraLive) && <Tabs route={route} scripts={active} />}
     </div>
   );
 }
@@ -426,10 +433,10 @@ const TAB_ICONS: Record<TabId, IconName> = {
   takes: 'takes',
   settings: 'settings',
 };
-function Tabs({ route }: { route: Route }) {
+function Tabs({ route, scripts }: { route: Route; scripts: StudioScript[] }) {
   return (
     <nav class="studio-tabs" aria-label="Studio navigation">
-      {tabItems(route).map((tab) => (
+      {tabItems(route, scripts).map((tab) => (
         <a
           class={[tab.id === 'record' ? 'studio-record-link' : '', tab.current ? 'is-active' : '']
             .filter(Boolean)
@@ -460,24 +467,8 @@ function Home({ scripts }: { scripts: StudioScript[] }) {
         <h1>{firstRun ? 'Record your first video in 60 seconds' : 'Welcome back'}</h1>
         <HabitSummary {...habits} firstRun={firstRun} />
       </div>
+      {/* Above the fold: streak chip, Today's prompt, Up next. Everything else waits below. */}
       <TodayCard settings={habits.settings} />
-      <BadgeCelebration settings={habits.settings} snap={habits.snap} />
-      <HomeAsk {...habits} />
-      <nav class="studio-icon-row" aria-label="Create tools">
-        {(
-          [
-            ['#/scripts/new', 'plus', 'Script'],
-            ['#/inbox', 'idea', 'Idea'],
-            ['#/scripts?templates=1', 'grid', 'Templates'],
-            [`#/practice/${quick?.id ?? 'quick'}`, 'play', 'Practice'],
-          ] as [string, IconName, string][]
-        ).map(([href, icon, label]) => (
-          <a href={href} key={label}>
-            <Icon name={icon} />
-            <span>{label}</span>
-          </a>
-        ))}
-      </nav>
       {shownNext.length > 0 && (
         <section class="studio-up-next" aria-label="Up next">
           <div class="studio-section-head">
@@ -515,6 +506,22 @@ function Home({ scripts }: { scripts: StudioScript[] }) {
           </a>
         </section>
       )}
+      <nav class="studio-icon-row" aria-label="Create tools">
+        {(
+          [
+            ['#/scripts/new', 'plus', 'Script'],
+            ['#/inbox', 'idea', 'Idea'],
+            ['#/scripts?templates=1', 'grid', 'Templates'],
+            [`#/practice/${quick?.id ?? 'quick'}`, 'play', 'Practice'],
+          ] as [string, IconName, string][]
+        ).map(([href, icon, label]) => (
+          <a href={href} key={label}>
+            <Icon name={icon} />
+            <span>{label}</span>
+          </a>
+        ))}
+      </nav>
+      <HomeAsk {...habits} />
       <WeeklyRecap {...habits} />
       <HabitProgress {...habits} />
       <StandaloneTransferCard empty={firstRun} />
@@ -807,6 +814,7 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
   const [showSend, setShowSend] = useState(false);
   const [operatorOn, setOperatorOn] = useState(false);
   const [notice, setNotice] = useState('');
+  const [customTarget, setCustomTarget] = useState(false);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const currentRef = useRef<StudioScript | null>(null);
   const pendingRef = useRef(false);
@@ -926,12 +934,14 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
           onInput={(event) => edit({ ...script, title: (event.target as HTMLInputElement).value })}
         />
       </label>
-      <div class="studio-toolbar" aria-label="Markup tools">
-        <button onClick={() => insert('# ')}>Section</button>
-        <button onClick={() => insert('[pause]')}>Pause</button>
-        <button onClick={() => insert('**text**')}>Emphasis</button>
-        <button onClick={() => insert('==text==')}>Highlight</button>
-        <button onClick={() => insert('// ')}>Note</button>
+      <div class="studio-toolbar" role="group" aria-label="Markup tools">
+        <Overflow label="Format" icon="format">
+          <button onClick={() => insert('# ')}>Section</button>
+          <button onClick={() => insert('[pause]')}>Pause</button>
+          <button onClick={() => insert('**text**')}>Emphasis</button>
+          <button onClick={() => insert('==text==')}>Highlight</button>
+          <button onClick={() => insert('// ')}>Note</button>
+        </Overflow>
         <label class="studio-cue-label">
           Cue
           <select
@@ -968,16 +978,44 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
         <span>{FORMAT(durationAtWpm(parsed.spokenWordCount, 140))} at 140 WPM</span>
       </div>
       <div class="studio-target-row" role="group" aria-label="Target length">
-        {[15, 30, 60, 90, 180].map((target) => (
+        {TARGET_CHIPS.map((target) => (
           <button
             type="button"
             class={`studio-toggle fit-${fitForTarget(parsed.spokenWordCount, target, 140)}`}
             aria-pressed={script.targetSeconds === target}
-            onClick={() => setTarget(target)}
+            onClick={() => {
+              setCustomTarget(false);
+              setTarget(target);
+            }}
           >
             {target}s
           </button>
         ))}
+        {/* Any other length: one custom chip that turns into a seconds field. */}
+        {customTarget ||
+        (script.targetSeconds > 0 && !TARGET_CHIPS.includes(script.targetSeconds)) ? (
+          <label class="studio-target-custom">
+            <input
+              type="number"
+              min="0"
+              inputMode="numeric"
+              aria-label="Target seconds"
+              value={script.targetSeconds || ''}
+              autoFocus={customTarget}
+              onInput={(event) => setTarget(Number((event.target as HTMLInputElement).value) || 0)}
+            />
+            <span aria-hidden="true">s</span>
+          </label>
+        ) : (
+          <button
+            type="button"
+            class="studio-toggle"
+            aria-label="Custom target length"
+            onClick={() => setCustomTarget(true)}
+          >
+            <Icon name="timer" size={20} />
+          </button>
+        )}
       </div>
       {sections.length > 0 && (
         <div class="studio-section-durations">
@@ -1002,16 +1040,6 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
           <Icon name="chevron" size={18} />
         </summary>
         <div class="studio-grid-fields">
-          <label class="studio-label">
-            Target seconds
-            <input
-              type="number"
-              min="0"
-              inputMode="numeric"
-              value={script.targetSeconds}
-              onInput={(event) => setTarget(Number((event.target as HTMLInputElement).value) || 0)}
-            />
-          </label>
           <div class="studio-label studio-aspect-field">
             <span id="studio-aspect-label">Aspect</span>
             <span class="studio-toggle-group" role="group" aria-labelledby="studio-aspect-label">

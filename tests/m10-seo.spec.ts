@@ -250,7 +250,8 @@ test('an editor target edit ends the preset target in Record and Practice', asyn
   };
   await practiceFit('No target set');
   await page.goto('/studio#/scripts/quick');
-  await page.getByText('More', { exact: true }).click();
+  // Any length outside the chips goes through the custom chip's seconds field.
+  await page.getByRole('button', { name: 'Custom target length' }).click();
   await page.getByLabel('Target seconds').fill('60');
   await expect
     .poll(

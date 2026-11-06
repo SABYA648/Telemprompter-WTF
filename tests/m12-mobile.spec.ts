@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// M12: one current tab on every route, and at most one accent (primary) action per screen.
+// M12: one current tab on every route with a tab bar, and at most one accent (primary) action
+// per screen. Practice and the live camera are full-bleed with no tab bar (M12 P3).
 const ROUTES = [
   ['#/', 'Home'],
   ['#/inbox', 'Home'],
@@ -9,8 +10,8 @@ const ROUTES = [
   ['#/scripts/quick', 'Scripts'],
   ['#/batch', 'Scripts'],
   ['#/receive/S1.not-a-real-code', 'Scripts'],
+  // Before camera access, Record is a permission screen, which keeps the tab bar.
   ['#/record/quick', 'Record'],
-  ['#/practice/quick', 'Record'],
   ['#/takes', 'Takes'],
   ['#/takes/missing', 'Takes'],
   ['#/settings', 'Settings'],
@@ -18,11 +19,11 @@ const ROUTES = [
   ['#/settings/habit', 'Settings'],
 ] as const;
 
-/** Visible controls filled with the accent, outside the tab bar's record button and row record buttons. */
+/** Visible controls filled with the accent, outside the tab bar's record button. */
 const accentActions = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll('a, button, summary, [role="button"]')]
-      .filter((el) => !el.closest('.studio-tabs') && !el.matches('.studio-round-action'))
+      .filter((el) => !el.closest('.studio-tabs'))
       .filter((el) => el.checkVisibility({ visibilityProperty: true }))
       .filter((el) => getComputedStyle(el).backgroundColor === 'rgb(240, 71, 42)')
       .map((el) => (el.getAttribute('aria-label') || el.textContent || '').trim()),
@@ -44,9 +45,44 @@ test('every route marks exactly one tab and shows at most one accent action', as
     const accents = await accentActions(page);
     expect(accents.length, `${hash}: ${accents.join(', ')}`).toBeLessThanOrEqual(1);
   }
+  await page.goto('/studio#/practice/quick');
+  await expect(page.getByRole('button', { name: 'Start practice' })).toBeVisible();
+  await expect(page.locator('.studio-tabs')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Close practice' })).toHaveAttribute(
+    'href',
+    '#/scripts/quick',
+  );
+  expect((await accentActions(page)).length).toBeLessThanOrEqual(1);
 });
 
-test('a returning Home keeps one accent action with a badge and an ask on screen', async ({
+test('active tab labels meet 4.5:1 contrast on the tab bar', async ({ page }) => {
+  const luminance = (rgb: number[]) => {
+    const [r, g, b] = rgb.map((v) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+  };
+  for (const hash of ['#/', '#/scripts', '#/record/quick', '#/takes', '#/settings']) {
+    await page.goto(`/studio${hash}`);
+    const active = page.locator('.studio-tabs .is-active');
+    await expect(active).toHaveCount(1);
+    const [fg, bg] = await active.evaluate((el) => {
+      const color = (value: string) => value.match(/\d+/g)!.slice(0, 3).map(Number);
+      let node: Element | null = el;
+      let background = 'rgba(0, 0, 0, 0)';
+      while (node && background === 'rgba(0, 0, 0, 0)') {
+        background = getComputedStyle(node).backgroundColor;
+        node = node.parentElement;
+      }
+      return [color(getComputedStyle(el).color), color(background)];
+    });
+    const [hi, lo] = [luminance(fg), luminance(bg)].sort((a, b) => b - a);
+    expect((hi! + 0.05) / (lo! + 0.05), hash).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
+test('a returning Home is streak, Today and Up next: no badge card, no survey, one Share', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 360, height: 780 });
@@ -61,28 +97,67 @@ test('a returning Home keeps one accent action with a badge and an ask on screen
     const tx = db.transaction(['kv', 'takes'], 'readwrite');
     tx.objectStore('kv').put(['first_take'], 'badges');
     tx.objectStore('kv').put(['first_take'], 'badges.unseen');
-    tx.objectStore('takes').put({
-      id: 'seed-m12',
-      scriptId: 'quick',
-      kept: true,
-      durationMs: 30000,
-      wordsRead: 70,
-      createdAt: Date.now(),
-      exportedAt: null,
-    });
+    tx.objectStore('kv').put({ activeDates: [new Date().toLocaleDateString('sv')] }, 'streak');
+    for (const n of [1, 2, 3])
+      tx.objectStore('takes').put({
+        id: `seed-m12-${n}`,
+        scriptId: 'quick',
+        kept: true,
+        durationMs: 30000,
+        wordsRead: 70,
+        createdAt: Date.now(),
+        exportedAt: null,
+      });
     await new Promise<void>((resolve) => {
       tx.oncomplete = () => resolve();
     });
     db.close();
   });
   await page.goto('/studio#/');
-  await expect(page.getByRole('status', { name: 'Badge unlocked' })).toBeVisible();
-  await expect(page.getByRole('region', { name: "Today's prompt" })).toBeVisible();
+  const today = page.getByRole('region', { name: "Today's prompt" });
+  await expect(today).toBeVisible();
+  await page.waitForTimeout(300);
+  // The badge is a toast after Keep, and the survey follows a kept take: neither lives on Home.
+  await expect(page.getByRole('status', { name: 'Badge unlocked' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Rate recording' })).toHaveCount(0);
   expect(await accentActions(page)).toEqual(['Record this']);
-  // Progress is a sentence, not a grid of zeros.
+  // Above the fold, in order: streak chip, Today's prompt, Up next.
+  const top = async (selector: string) => (await page.locator(selector).boundingBox())!.y;
+  const streak = await top('.studio-streak');
+  const prompt = await top('.studio-today');
+  const next = await top('.studio-up-next');
+  expect(streak).toBeLessThan(prompt);
+  expect(prompt).toBeLessThan(next);
+  expect(next).toBeLessThan(780);
+  // Up next rows record with a ghost camera, not a second accent.
+  await expect(page.locator('.studio-up-next .studio-round-action').first()).toHaveCSS(
+    'background-color',
+    'rgb(32, 32, 36)',
+  );
+  // Progress is one line and at most one Share, not a grid of zeros or three share buttons.
   const progress = page.getByRole('region', { name: 'Your progress' });
-  await expect(progress).toContainText('1 take');
-  await expect(progress).not.toContainText('0 min');
+  const line = progress.locator('.studio-progress__line');
+  await expect(line).toContainText('3 takes');
+  await expect(line).toContainText('1 badge');
+  await expect(line).not.toContainText('0 min');
+  expect((await line.boundingBox())!.height).toBeLessThan(32);
+  await expect(progress.getByRole('button', { name: /Share/ })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: /Share/ })).toHaveCount(1);
+});
+
+test("Today's prompt reads naturally, never a fill-in token", async ({ page }) => {
+  for (const day of [1, 2, 3, 4, 5, 6, 7]) {
+    await page.clock.setFixedTime(new Date(2026, 10, day, 12));
+    await page.goto('/studio#/scripts/quick');
+    await page.getByLabel('Title', { exact: true }).fill(`Day ${day}`);
+    await expect(page.getByText('Saved')).toBeVisible();
+    await page.goto('/studio#/');
+    const today = page.getByRole('region', { name: "Today's prompt" });
+    await expect(today.locator('.studio-today__hook')).toBeVisible();
+    await expect(today).not.toContainText('{');
+    await today.getByRole('button', { name: 'Another hook' }).click();
+    await expect(today).not.toContainText('{');
+  }
 });
 
 test('first-run progress is one encouraging line, never a grid of zeros', async ({ page }) => {
@@ -97,6 +172,8 @@ test('the permission screen leads with the camera frame and one Allow action', a
   await page.goto('/studio#/record/quick');
   const allow = page.getByRole('button', { name: 'Allow camera' });
   await expect(allow).toBeVisible();
+  // The permission screen keeps the tab bar; only the live camera drops it.
+  await expect(page.locator('.studio-tabs')).toHaveCount(1);
   await expect(page.getByText('Saved on your device. Nothing uploaded.')).toBeVisible();
   // The action sits in the bottom third, above the tab bar, and Not now is a quiet link.
   const box = (await allow.boundingBox())!;
@@ -131,6 +208,21 @@ for (const viewport of [
     await expect(record).toHaveAttribute('href', `#/record/${scriptId}`);
     const actions = page.locator('.studio-editor__actions');
     await expect(actions.getByRole('link', { name: 'Record' })).toHaveCount(0);
+    // Markup sits behind one Aa button, and only the duration chips set the target.
+    const markup = page.getByRole('group', { name: 'Markup tools' });
+    const row = (await markup.boundingBox())!;
+    expect(row.x + row.width).toBeLessThanOrEqual(viewport.width);
+    await expect(markup.getByRole('button', { name: 'Pause' })).toBeHidden();
+    await markup.getByLabel('Format').click();
+    for (const name of ['Section', 'Pause', 'Emphasis', 'Highlight']) {
+      const option = (await markup.getByRole('button', { name }).boundingBox())!;
+      expect(option.x).toBeGreaterThanOrEqual(0);
+      expect(option.x + option.width).toBeLessThanOrEqual(viewport.width);
+    }
+    await markup.getByRole('button', { name: 'Pause' }).click();
+    await expect(page.getByLabel('Script', { exact: true })).toHaveValue(/\[pause\]/);
+    await page.getByText('More', { exact: true }).click();
+    await expect(page.getByLabel('Target seconds')).toHaveCount(0);
     const practice = (await actions.getByRole('link', { name: 'Practice' }).boundingBox())!;
     const more = (await actions.locator('summary').boundingBox())!;
     const fab = (await record.boundingBox())!;
