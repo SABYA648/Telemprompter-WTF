@@ -94,6 +94,7 @@ export default function StudioApp(): preact.JSX.Element {
   };
   useEffect(() => {
     let identifiedBuckets = '';
+    let identityReady = false;
     const bucketPair = () => {
       try {
         return `${localStorage.getItem('tw.takes_bucket')}/${localStorage.getItem('tw.streak_bucket')}`;
@@ -102,6 +103,7 @@ export default function StudioApp(): preact.JSX.Element {
       }
     };
     const refreshIdentity = () => {
+      if (!identityReady) return;
       const next = bucketPair();
       if (next !== identifiedBuckets) {
         identifiedBuckets = next;
@@ -110,17 +112,23 @@ export default function StudioApp(): preact.JSX.Element {
     };
     const onVisible = () => {
       if (document.visibilityState === 'visible')
-        void Promise.all([readHabits(), readStreak()]).then(refreshIdentity);
+        void Promise.all([readHabits(), readStreak()])
+          .then(refreshIdentity)
+          .catch((error) => analytics.error('studio', error));
     };
     const boot = async () => {
       try {
-        await migrateQuickScript();
-        await purgeDeletedScripts();
-        await ensureFirstScript();
-        await experimentArms();
-        await Promise.all([readHabits(), readStreak()]);
-        identifiedBuckets = bucketPair();
-        analytics.initialize();
+        try {
+          await migrateQuickScript();
+          await purgeDeletedScripts();
+          await ensureFirstScript();
+          await experimentArms();
+          await Promise.all([readHabits(), readStreak()]);
+        } finally {
+          identifiedBuckets = bucketPair();
+          analytics.initialize();
+          identityReady = true;
+        }
         try {
           if (!isMemoryStorage()) localStorage.setItem('studio.hasData', '1');
         } catch {

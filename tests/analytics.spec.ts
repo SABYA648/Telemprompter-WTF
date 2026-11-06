@@ -77,3 +77,33 @@ test('Umami loads on the first page view, identifies the device, and validates e
   expect(events[1]?.data).toEqual({ page_type: 'feature', cta_location: 'header' });
   expect(googleRequests).toEqual([]);
 });
+
+test('Studio initializes analytics when IndexedDB open fails', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(indexedDB, 'open', {
+      configurable: true,
+      value: () => {
+        throw new DOMException('IndexedDB unavailable', 'UnknownError');
+      },
+    });
+  });
+  await page.route('https://analytics.sabya.pm/script.js', (route) =>
+    route.fulfill({
+      contentType: 'application/javascript',
+      body: `window.__identifies = []; window.umami = { identify: (id, data) => window.__identifies.push(data), track: () => {} };`,
+    }),
+  );
+  await page.goto('/studio');
+  await expect(
+    page.getByRole('heading', { name: 'Record your first video in 60 seconds' }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as typeof window & { __identifies: Array<Record<string, string>> }).__identifies
+            ?.length ?? 0,
+      ),
+    )
+    .toBe(1);
+});
