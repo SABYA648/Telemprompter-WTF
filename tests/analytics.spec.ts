@@ -43,6 +43,7 @@ test('Umami loads on the first page view, identifies the device, and validates e
     device_class: 'desktop',
     takes_bucket: '0',
   });
+  // The features header CTA opens Studio, so it reports clicked_open_studio (D-046).
   const cta = page.locator('[data-analytics-cta="header"]');
   await cta.evaluate((element) => {
     element.addEventListener('click', (event) => event.preventDefault());
@@ -53,7 +54,7 @@ test('Umami loads on the first page view, identifies the device, and validates e
       page.evaluate(
         () =>
           (window as typeof window & { __umami: Array<{ event?: string }> }).__umami.filter(
-            (call) => call.event === 'clicked_open_teleprompter',
+            (call) => call.event === 'clicked_open_studio',
           ).length,
       ),
     )
@@ -67,7 +68,7 @@ test('Umami loads on the first page view, identifies the device, and validates e
       window as typeof window & {
         __umami: Array<{ event?: string; data?: Record<string, unknown> }>;
       }
-    ).__umami.filter((call) => call.event === 'clicked_open_teleprompter'),
+    ).__umami.filter((call) => call.event === 'clicked_open_studio'),
   );
   expect(events[0]?.data).toEqual({
     page_type: 'feature',

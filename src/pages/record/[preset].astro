@@ -7,6 +7,14 @@ export function getStaticPaths() {
   return recordPages.map((page) => ({ params: { preset: page.slug }, props: { page } }));
 }
 const { page } = Astro.props;
+// 12.4 content clusters for the five preset landings.
+const clusterByPreset = {
+  'instagram-reels': 'reels',
+  'youtube-shorts': 'shorts',
+  tiktok: 'tiktok',
+  youtube: 'youtube_landscape',
+  'linkedin-video': 'linkedin',
+} as const;
 const base = 'https://www.teleprompter.wtf';
 const canonical = `${base}/record/${page.slug}`;
 const schema = [
@@ -33,7 +41,7 @@ const schema = [
 ---
 
 <Layout title={page.seo.title} description={page.seo.description} schema={schema}>
-  <main class="guide-page section-wrap creator-content record-page">
+  <div class="guide-page section-wrap creator-content record-page">
     <nav class="breadcrumbs" aria-label="Breadcrumb">
       <a href="/">Home</a><span>/</span><a href="/record">Record</a><span>/</span><span
         aria-current="page">{page.seo.h1}</span
@@ -46,7 +54,8 @@ const schema = [
         class="button button--primary"
         href={page.ctaHref}
         data-analytics-cta="hero"
-        data-page-type="record">{page.ctaLabel}</a
+        data-page-type="record_preset"
+        data-content-cluster={clusterByPreset[page.presetId]}>{page.ctaLabel}</a
       ><ul class="record-trust">{page.trustChips.map((chip) => <li>{chip}</li>)}</ul>
     </header>
     <section>
@@ -151,5 +160,5 @@ const schema = [
         </p>
       )
     }
-  </main>
+  </div>
 </Layout>

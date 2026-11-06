@@ -6,6 +6,7 @@ export const creatorGuidesB: CreatorGuide[] = [
     cluster: 'short_form',
     updated: '2026-11-04',
     title: 'How to write a 30-second video script that holds attention',
+    seoTitle: 'How to write a 30-second video script that holds attention',
     description:
       'Write a 30-second video script in five steps: set a word budget, open with the payoff, teach one idea, cut for speech, then time it on the prompter.',
     eyebrow: 'Writing short scripts',
@@ -114,6 +115,7 @@ export const creatorGuidesB: CreatorGuide[] = [
     cluster: 'creator',
     updated: '2026-11-04',
     title: 'Teleprompter remote control: clickers, keyboards and foot pedals',
+    seoTitle: 'Teleprompter remote control: clickers, keyboards and foot pedals',
     description:
       'Control your teleprompter without touching the screen. Learn which keys clickers send, how to pair a Bluetooth keyboard or pedal, and how to remap keys.',
     eyebrow: 'Remote control',
@@ -228,6 +230,7 @@ export const creatorGuidesB: CreatorGuide[] = [
     cluster: 'short_form',
     updated: '2026-11-04',
     title: 'Best camera settings for Reels and Shorts in a browser',
+    seoTitle: 'Best camera settings for Reels and Shorts in a browser',
     description:
       'Choose aspect ratio, resolution, frame rate, safe zones and light for vertical video recorded in your browser, with settings you can change in a minute.',
     eyebrow: 'Camera settings',
@@ -339,6 +342,7 @@ export const creatorGuidesB: CreatorGuide[] = [
     cluster: 'creator',
     updated: '2026-11-04',
     title: 'Using an external microphone for phone video in the browser',
+    seoTitle: 'Using an external microphone for phone video in the browser',
     description:
       'Connect a wired or Bluetooth microphone to your phone, pick it in the browser, set the mic options, check levels and test before you record a take.',
     eyebrow: 'External microphones',

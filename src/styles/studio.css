@@ -923,7 +923,8 @@
     animation-duration: 0s !important;
   }
 }
-.studio-install-backdrop {
+.studio-install-backdrop,
+.studio-preset-backdrop {
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -932,7 +933,8 @@
   align-items: end;
   justify-content: center;
 }
-.studio-install-sheet {
+.studio-install-sheet,
+.studio-preset-sheet {
   background: var(--studio-card);
   color: var(--studio-text);
   border-radius: 20px 20px 0 0;
@@ -943,8 +945,22 @@
   box-shadow: 0 0 0 1px #ffffff33;
 }
 .studio-install-sheet h2,
-.studio-install-sheet p {
+.studio-install-sheet p,
+.studio-preset-sheet h2,
+.studio-preset-sheet h3,
+.studio-preset-sheet p {
   margin: 0;
+}
+.studio-preset-sheet {
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.studio-preset-sheet ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
 }
 .studio-update {
   position: fixed;

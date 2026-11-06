@@ -390,3 +390,23 @@ Owner manual checks:
 - In the native posting apps, recheck dated platform limits and the caption preview, and verify an exported file can be posted. Try the hook copy button and guide sample handoff on a physical phone.
 
 Next: M11.
+
+## M10 fix round 1 - 2026-11-06
+
+Fixed, from the M10 review (`git diff 1510af1..1468db5`):
+
+- P0-1: guides whose `"{title} | teleprompter.wtf"` exceeds 65 characters carry an authored `seoTitle` (19 guides). No title comes from `eyebrow` any more, and content-lint fails on a `"{eyebrow} guide |"` title. All 29 guide titles are unique and keep their primary query. The new guides use the 13.2 wording.
+- P0-2: the `/record/*` CTA sends `page_type: record_preset`, `cta_location: hero` and its 12.4 cluster. CTAs that open `/studio` now report `clicked_open_studio`, and template, hooks and homepage CTAs carry clusters (D-046).
+- P1-1: a settings save during a session preset keeps the stored aspect and safe zone unless the caller changed them (D-048, unit test).
+- P1-2: a preset starter on an empty library never reuses a trashed `quick` id (e2e).
+- P1-3: the preset picker is a modal sheet with an `<h2>`, focus, a focus trap, Escape and "Not now", and it closes on route change. "Use my script" leaves the script unchanged and holds the target for the session (e2e).
+- P1-4: the script length checker and hook generator load `domain/studio/handoff` only on click. Islands: script-length-checker 10.7 KB (was 14.8), hook-generator 7.5 KB, caption-counter 7.7 KB gzip. An e2e test checks that no Studio chunk is requested before "Record this script".
+- P1-5: template record anchors name the template and the destination platform, and all 20 are unique.
+- P1-6: the inner `<main>` on `/record`, `/record/*` and `/tools/[slug]` is now a `<div>`. An axe landmark scan over three routes passes.
+- P1-7: `opened_studio` keeps the referrer entry for same-origin handoffs, for example `guide` (e2e).
+- P1-8: word floors count editorial words with boilerplate removed. Hooks pages need 25 hooks plus 300 words outside them, and the floors apply to every guide and tool. A trimmed `/hooks/fitness` (292 words) now fails the lint. Twenty-one pre-M10 guides and two older tools are below their floors and are listed and reported, not padded. Upper bounds are warnings (D-047).
+- P2-1: the Instagram preview cuts by code points (e2e). P2-2: the cut point and the word count share `wordOffset` in `words.ts` (unit test). P2-5: the empty "Use my script" heading is hidden.
+
+Deferred: P2-3 (debounce the live counters; this needs a manual VoiceOver check), P2-4 (one starter copy per preset visit; scripts have no starter id to match on), P2-6 (inbound-link lint scope, M11 lint pass) and P2-7 (TikTok caption limit, owner verification).
+
+Gates (Node 26.7.0): `npm run check` pass (typecheck 0 errors, lint, content lint 79 indexable pages, format, unit 311/311 in 47 files, build, budget). `npx playwright test` 169/169 in one full run (148 Chromium, 21 media), no browser crash. `npm run budget`: Studio 67.8/130 KB gzip, largest content page 28.1/60 KB. SEO crawl against `serve dist` on port 4173: pass, 77 sitemap URLs, image sitemap 27 pages and 27 images. Mobile Lighthouse against the same server: all five `/record/*` pages scored 100 Performance, 100 Accessibility, 100 Best Practices and 100 SEO, with LCP 1.4 to 1.5 s, TBT 0 ms and CLS 0. `scripts/lighthouse.mjs` now accepts `LIGHTHOUSE_PATHS` for audits of selected routes.

@@ -1,20 +1,11 @@
 import { useState } from 'preact/hooks';
 import { parseMarkup } from '../../domain/studio/markup';
 import { durationAtWpm, fitForTarget } from '../../domain/studio/timing';
-import { countWords } from '../../domain/studio/words';
-import { recordNewScript } from '../../domain/studio/handoff';
+import { countWords, wordOffset } from '../../domain/studio/words';
 
 const targets = [15, 30, 60, 90];
 function partsAt(text: string, limit: number): [string, string] {
-  let offset: number;
-  try {
-    const words = [...new Intl.Segmenter(undefined, { granularity: 'word' }).segment(text)].filter(
-      (segment) => segment.isWordLike,
-    );
-    offset = words[limit]?.index ?? text.length;
-  } catch {
-    offset = [...text.matchAll(/\S+/g)][limit]?.index ?? text.length;
-  }
+  const offset = wordOffset(text, limit);
   return [text.slice(0, offset), text.slice(offset)];
 }
 export default function ScriptLengthChecker(): preact.JSX.Element {
@@ -76,7 +67,15 @@ export default function ScriptLengthChecker(): preact.JSX.Element {
         })}
       </div>
       {script.trim() && (
-        <button type="button" onClick={() => void recordNewScript('My checked script', script)}>
+        <button
+          type="button"
+          onClick={() =>
+            // 13.5: the Studio data layer loads only when the visitor asks to record.
+            void import('../../domain/studio/handoff').then(({ recordNewScript }) =>
+              recordNewScript('My checked script', script),
+            )
+          }
+        >
           Record this script
         </button>
       )}

@@ -62,6 +62,37 @@ const newGuides = new Set([
   'best-camera-settings-for-reels',
   'external-microphone-for-phone-video',
 ]);
+// D-047: these pre-M10 pages predate the 13.1 floors. They are reported, not padded; new pages
+// of the same type must meet the floor.
+const legacyBelowFloor = new Set([
+  ...[
+    'how-to-use-a-teleprompter',
+    'teleprompter-for-youtube',
+    'teleprompter-for-video-recording',
+    'teleprompter-camera-distance-and-font-size',
+    'teleprompter-for-presentations',
+    'teleprompter-for-zoom',
+    'teleprompter-speed',
+    'what-is-a-teleprompter',
+    'how-to-read-a-teleprompter-naturally',
+    'how-to-maintain-eye-contact',
+    'how-to-format-a-teleprompter-script',
+    'voice-activated-teleprompters',
+    'manual-vs-voice-activated-teleprompter',
+    'teleprompter-for-phone-and-tablet',
+    'teleprompter-for-online-courses',
+    'teleprompter-for-podcasts',
+    'teleprompter-for-short-form-video',
+    'teleprompter-for-webinars',
+    'teleprompter-for-interviews',
+    'teleprompter-mirror-mode-glass',
+    'teleprompter-keyboard-shortcuts',
+  ].map((slug) => `/guides/${slug}`),
+  '/tools/teleprompter-speed-calculator',
+  '/tools/words-to-minutes',
+]);
+const legacyReport = [];
+const lengthWarnings = [];
 const clean = (value) =>
   value
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
@@ -114,31 +145,52 @@ for (const file of htmlFiles) {
       ![...newGuides].some((slug) => slug !== guideSlug && main.includes(`href="/guides/${slug}"`))
     )
       failures.push(`${page}: missing related creator guide`);
-    const minimum =
+    if (title && /^\S+( \S+)? guide \|/.test(title))
+      failures.push(`${page}: generic "{eyebrow} guide" title; author a seoTitle`);
+    // 13.1 word ranges count page-owned editorial text: navigation, breadcrumbs, related lists,
+    // the guide embed and island markup are shared boilerplate and are removed first (D-047).
+    const editorial = main
+      .replace(/<nav\b[^>]*>[\s\S]*?<\/nav>/g, '')
+      .replace(/<aside\b[^>]*>[\s\S]*?<\/aside>/g, '')
+      .replace(/<astro-island\b[^>]*>[\s\S]*?<\/astro-island>/g, '')
+      .replace(
+        /<section class="(?:teleprompter-embed|creator-related|related-guides)"[^>]*>[\s\S]*?<\/section>/g,
+        '',
+      )
+      .replace(/<article class="creator-card"[^>]*>[\s\S]*?<\/article>/g, '');
+    const [minimum, maximum] =
       route === '/record' || route === '/templates' || route === '/hooks'
-        ? 300
+        ? [300, 600]
         : route.startsWith('/record/')
-          ? 600
+          ? [600, 1000]
           : route.startsWith('/templates/')
-            ? 400
+            ? [400, 800]
             : route.startsWith('/hooks/')
-              ? 300
-              : /^\/tools\/(script-length-checker|caption-counter|hook-generator)$/.test(route)
-                ? 400
-                : guideSlug && newGuides.has(guideSlug)
-                  ? 1000
-                  : 0;
-    const count = words(main).length;
-    if (minimum && count < minimum)
-      failures.push(`${page}: ${count} content words below ${minimum}`);
+              ? [300, 0]
+              : route.startsWith('/tools/')
+                ? [400, 700]
+                : guideSlug
+                  ? [1000, 1800]
+                  : [0, 0];
+    let counted = editorial;
+    if (route.startsWith('/hooks/')) {
+      const hooks = (editorial.match(/<li class="creator-hook"/g) ?? []).length;
+      if (hooks < 25) failures.push(`${page}: ${hooks} hooks, need 25`);
+      counted = editorial.replace(/<li class="creator-hook"[^>]*>[\s\S]*?<\/li>/g, '');
+    }
+    const count = words(counted).length;
+    if (minimum && count < minimum) {
+      if (legacyBelowFloor.has(route)) legacyReport.push(`${route} (${count})`);
+      else failures.push(`${page}: ${count} editorial words below ${minimum}`);
+    } else if (legacyBelowFloor.has(route))
+      failures.push(
+        `${page}: now meets the ${minimum} word floor; remove it from legacyBelowFloor`,
+      );
+    if (maximum && count > maximum) lengthWarnings.push(`${route} (${count} > ${maximum})`);
     if (/^\/(record\/|templates\/|hooks\/)/.test(route)) {
       const ctas = (main.match(/data-analytics-cta=/g) ?? []).length;
       if (ctas !== 1) failures.push(`${page}: expected one primary Studio CTA, found ${ctas}`);
     }
-    const editorial = main
-      .replace(/<aside\b[^>]*>[\s\S]*?<\/aside>/g, '')
-      .replace(/<section class="teleprompter-embed"[^>]*>[\s\S]*?<\/section>/g, '')
-      .replace(/<article class="creator-card"[^>]*>[\s\S]*?<\/article>/g, '');
     for (const match of editorial.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/g)) {
       const value = clean(match[1]).toLowerCase();
       const set = shingles(value);
@@ -215,6 +267,13 @@ for (const [page, href] of hrefs) {
   }
 }
 
+for (const route of legacyBelowFloor)
+  if (!htmlFiles.some((file) => file.endsWith(`dist${route}/index.html`)))
+    failures.push(`${route}: listed in legacyBelowFloor but not built`);
+if (legacyReport.length)
+  console.log(`Below the 13.1 floor, pre-M10 (D-047): ${legacyReport.join(', ')}`);
+if (lengthWarnings.length)
+  console.log(`Over the 13.1 upper bound (warning, D-047): ${lengthWarnings.join(', ')}`);
 if (failures.length) {
   console.error(`Content lint failed:\n${failures.map((failure) => `- ${failure}`).join('\n')}`);
   process.exit(1);

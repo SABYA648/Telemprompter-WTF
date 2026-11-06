@@ -6,6 +6,7 @@ export const creatorGuidesA: CreatorGuide[] = [
     cluster: 'short_form',
     updated: '2026-11-04',
     title: 'How to use the Instagram teleprompter, and when you need more',
+    seoTitle: 'How to use the Instagram teleprompter, and when you need more',
     description:
       'What a built-in Instagram script helper does well, where it runs out, and how to record a Reel with a full teleprompter in your browser for more control.',
     eyebrow: 'Instagram teleprompter',
@@ -108,6 +109,7 @@ export const creatorGuidesA: CreatorGuide[] = [
     cluster: 'short_form',
     updated: '2026-11-04',
     title: 'How to use the CapCut teleprompter, plus a desktop option',
+    seoTitle: 'How to use the CapCut teleprompter, plus a desktop option',
     description:
       'What an editor with a built-in teleprompter does well, where it runs short for longer scripts, and how to record on a laptop with the script under the lens.',
     eyebrow: 'CapCut teleprompter',
@@ -313,6 +315,7 @@ export const creatorGuidesA: CreatorGuide[] = [
     cluster: 'creator',
     updated: '2026-11-04',
     title: 'How to batch record a week of Reels in one hour',
+    seoTitle: 'How to batch record a week of Reels in one hour',
     description:
       'Plan, script and record a week of short videos in one sitting. A simple routine: write first, set up once and retake only the section that went wrong.',
     eyebrow: 'Batch recording',

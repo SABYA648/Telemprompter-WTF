@@ -63,6 +63,7 @@ export const SETTING_NAMES = [
   'paceCues',
 ] as const;
 export const PAGE_TYPES = [
+  'home',
   'guide',
   'tool',
   'feature',
@@ -97,7 +98,7 @@ export const CONTENT_CLUSTERS = [
   'captions',
   'creator',
 ] as const;
-export const CTA_LOCATIONS = ['inline', 'end', 'header', 'callout'] as const;
+export const CTA_LOCATIONS = ['hero', 'inline', 'end', 'header', 'callout'] as const;
 export type ScriptSizeBucket = (typeof SCRIPT_SIZE_BUCKETS)[number];
 export type EntryContext = (typeof ENTRY_CONTEXTS)[number];
 export type ProgressBucket = (typeof PROGRESS_BUCKETS)[number];
@@ -769,11 +770,15 @@ export function bindOpenTeleprompterCtas(): void {
       const location = element.dataset.analyticsCta;
       const cluster = element.dataset.contentCluster;
       if (!isPageType(pageType) || !isCtaLocation(location)) return;
-      analytics.track('clicked_open_teleprompter', {
+      const properties = {
         page_type: pageType,
         cta_location: location,
         ...(isContentCluster(cluster) ? { content_cluster: cluster } : {}),
-      });
+      };
+      // Studio CTAs answer "which pages convert to Studio?"; the rest open the classic prompter.
+      const href = element.getAttribute('href') ?? '';
+      const toStudio = new URL(href, window.location.href).pathname.startsWith('/studio');
+      analytics.track(toStudio ? 'clicked_open_studio' : 'clicked_open_teleprompter', properties);
     });
   });
 }

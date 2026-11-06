@@ -8,9 +8,8 @@ export function getStaticPaths() {
 }
 
 const { guide } = Astro.props;
-const verboseTitle = `${guide.title} | teleprompter.wtf`;
-const title =
-  verboseTitle.length <= 65 ? verboseTitle : `${guide.eyebrow} guide | teleprompter.wtf`;
+// Long guide titles carry an authored seoTitle; content-lint enforces the 30 to 65 range.
+const title = guide.seoTitle ?? `${guide.title} | teleprompter.wtf`;
 const description =
   guide.description.length >= 120
     ? guide.description

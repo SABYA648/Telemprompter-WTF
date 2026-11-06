@@ -87,6 +87,37 @@ describe('Studio settings', () => {
       safeZone: saved.camera.safeZone,
     });
   });
+  it('saves an unrelated change without making the session preset global', async () => {
+    const values = new Map<string, string>();
+    vi.stubGlobal('sessionStorage', {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        values.set(key, value);
+      },
+      removeItem: (key: string) => {
+        values.delete(key);
+      },
+    });
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
+    vi.stubGlobal('dispatchEvent', () => true);
+    const base = await loadSettings();
+    await saveSettings({ ...base, camera: { ...base.camera, aspect: '16:9', safeZone: 'off' } });
+    applySessionPreset({ aspect: '9:16', safeZone: 'instagram' });
+    const merged = await loadSettings();
+    expect(merged.camera).toMatchObject({ aspect: '9:16', safeZone: 'instagram' });
+    await saveSettings({ ...merged, prompter: { ...merged.prompter, fontSizePx: 52 } });
+    const raw = (await (await getDb()).get('kv', 'settings')) as typeof merged;
+    expect(raw.camera).toMatchObject({ aspect: '16:9', safeZone: 'off' });
+    expect(raw.prompter.fontSizePx).toBe(52);
+    expect(values.has('studio.sessionPreset')).toBe(true);
+    expect((await loadSettings()).camera).toMatchObject({ aspect: '9:16', safeZone: 'instagram' });
+    // An explicit camera change ends the override and is saved as asked.
+    const current = await loadSettings();
+    await saveSettings({ ...current, camera: { ...current.camera, safeZone: 'tiktok' } });
+    expect(values.has('studio.sessionPreset')).toBe(false);
+    const after = (await (await getDb()).get('kv', 'settings')) as typeof merged;
+    expect(after.camera).toMatchObject({ aspect: '9:16', safeZone: 'tiktok' });
+  });
   it('imports M4 quick camera preferences once', async () => {
     vi.stubGlobal('matchMedia', () => ({ matches: true }));
     vi.stubGlobal('innerWidth', 390);

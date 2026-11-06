@@ -34,6 +34,8 @@ export interface Guide {
   slug: string;
   cluster: GuideCluster;
   title: string;
+  /** Full document title, 30 to 65 characters, keyword first; set when "{title} | teleprompter.wtf" is too long. */
+  seoTitle?: string;
   description: string;
   eyebrow: string;
   intro: string;
@@ -51,6 +53,7 @@ const originalGuides: Guide[] = [
     cluster: 'getting_started',
     updated: '2026-08-23',
     title: 'How to use a teleprompter without sounding scripted',
+    seoTitle: 'How to use a teleprompter without sounding scripted',
     description:
       'A practical teleprompter workflow: prepare readable copy, set the right pace, position your screen, rehearse, and deliver naturally.',
     eyebrow: 'Getting started',
@@ -184,6 +187,7 @@ const originalGuides: Guide[] = [
     cluster: 'recording',
     updated: '2026-08-23',
     title: 'A practical teleprompter setup for video recording',
+    seoTitle: 'Teleprompter setup for video recording | teleprompter.wtf',
     description:
       'Choose a screen position, lens distance, text size, pace, and recording workflow that keeps eye contact natural on camera.',
     eyebrow: 'Camera setup',
@@ -250,6 +254,7 @@ const originalGuides: Guide[] = [
     cluster: 'recording',
     updated: '2026-08-23',
     title: 'Teleprompter camera distance, font size, and line width guide',
+    seoTitle: 'Teleprompter camera distance, font size and line width',
     description:
       'Calculate ideal teleprompter font size, viewing distance, line length, and camera placement to minimize visible eye movement on video.',
     eyebrow: 'Optical geometry',
@@ -322,6 +327,7 @@ const originalGuides: Guide[] = [
     cluster: 'presentation',
     updated: '2026-08-23',
     title: 'Using a teleprompter for talks and presentations',
+    seoTitle: 'Teleprompter for talks and presentations | teleprompter.wtf',
     description:
       'Use a teleprompter as a safety net for speeches and presentations without losing audience connection or slide awareness.',
     eyebrow: 'Live presentations',
@@ -387,6 +393,7 @@ const originalGuides: Guide[] = [
     cluster: 'zoom',
     updated: '2026-08-23',
     title: 'How to use a teleprompter on Zoom and video calls',
+    seoTitle: 'How to use a teleprompter on Zoom and video calls',
     description:
       'Place notes close to the webcam, stay present in the conversation, and use a teleprompter effectively for Zoom meetings and webinars.',
     eyebrow: 'Video calls',
@@ -635,6 +642,7 @@ const originalGuides: Guide[] = [
     cluster: 'presentation',
     updated: '2026-08-23',
     title: 'How to maintain eye contact with a teleprompter',
+    seoTitle: 'How to maintain eye contact with a teleprompter',
     description:
       'Reduce visible reading with better camera placement, narrower lines, a stable focus region, and deliberate moments away from the script.',
     eyebrow: 'Eye contact',
@@ -693,6 +701,7 @@ const originalGuides: Guide[] = [
     cluster: 'getting_started',
     updated: '2026-08-23',
     title: 'How to format a teleprompter script for easy reading',
+    seoTitle: 'How to format a teleprompter script for easy reading',
     description:
       'Format spoken copy with short paragraphs, useful line breaks, visible emphasis, pronunciation help, and clean transitions.',
     eyebrow: 'Script formatting',
@@ -751,6 +760,7 @@ const originalGuides: Guide[] = [
     cluster: 'voice_tracking',
     updated: '2026-08-23',
     title: 'How voice-activated teleprompters follow your speech',
+    seoTitle: 'How voice-activated teleprompters follow your speech',
     description:
       'Compare volume detection, browser speech recognition, and local speech models for teleprompter voice tracking, privacy, and reliability.',
     eyebrow: 'Voice tracking',
@@ -812,6 +822,7 @@ const originalGuides: Guide[] = [
     cluster: 'voice_tracking',
     updated: '2026-08-23',
     title: 'Manual vs. voice-activated teleprompter: which should you choose?',
+    seoTitle: 'Manual vs. voice-activated teleprompter: which to choose?',
     description:
       'Compare manually controlled scrolling with voice-activated teleprompters and choose a setup that suits your delivery and recording environment.',
     eyebrow: 'Choosing a prompter',
@@ -918,6 +929,7 @@ const originalGuides: Guide[] = [
     cluster: 'youtube',
     updated: '2026-08-23',
     title: 'Teleprompter workflow for recording online courses',
+    seoTitle: 'Teleprompter workflow for recording online courses',
     description:
       'Script lessons that sound like teaching, keep module structure consistent, and record course videos in clean segments with a teleprompter.',
     eyebrow: 'Online courses',
@@ -983,6 +995,7 @@ const originalGuides: Guide[] = [
     cluster: 'recording',
     updated: '2026-08-23',
     title: 'Using a teleprompter for podcast intros, outros, and ad reads',
+    seoTitle: 'Teleprompter for podcast intros, outros and ad reads',
     description:
       'Script podcast intros and sponsor reads word for word while keeping the conversation itself unscripted and natural.',
     eyebrow: 'Podcasting',
@@ -1288,6 +1301,7 @@ const originalGuides: Guide[] = [
     cluster: 'getting_started',
     updated: '2026-08-23',
     title: 'Teleprompter keyboard shortcuts: the complete reference',
+    seoTitle: 'Teleprompter keyboard shortcuts: the complete reference',
     description:
       'Every keyboard control in the teleprompter: play and pause, scroll speed, font size, mirror, fullscreen, restart, and exit.',
     eyebrow: 'Keyboard control',

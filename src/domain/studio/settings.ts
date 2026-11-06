@@ -278,6 +278,31 @@ function currentSessionPreset(): typeof sessionPreset {
   }
   return null;
 }
+/**
+ * A preset's duration target for one existing script, held for this tab only (14.6). Record reads
+ * it in place of the script's own target, so the saved script is never rewritten by a preset.
+ */
+export function applySessionTarget(target: { id: string; seconds: number } | null): void {
+  try {
+    if (target) sessionStorage.setItem('studio.sessionTarget', JSON.stringify(target));
+    else sessionStorage.removeItem('studio.sessionTarget');
+  } catch {
+    /* Session storage is optional in private contexts. */
+  }
+}
+export function sessionTargetSeconds(id: string): number | null {
+  try {
+    const value = JSON.parse(sessionStorage.getItem('studio.sessionTarget') ?? 'null') as {
+      id?: unknown;
+      seconds?: unknown;
+    } | null;
+    return value?.id === id && typeof value.seconds === 'number' && value.seconds >= 0
+      ? value.seconds
+      : null;
+  } catch {
+    return null;
+  }
+}
 let saveQueue: Promise<void> = Promise.resolve();
 export async function loadSettings(): Promise<StudioSettings> {
   const db = await getDb();
@@ -309,12 +334,36 @@ export async function loadSettings(): Promise<StudioSettings> {
   const preset = currentSessionPreset();
   return preset ? { ...settings, camera: { ...settings.camera, ...preset } } : settings;
 }
+/**
+ * Callers pass back the merged settings from `loadSettings`. While a session preset is active and
+ * the caller left its aspect and safe zone alone, the stored originals are written for those two
+ * fields, so a speed or font nudge never makes the preset the global default (D-044). Changing
+ * either field is an explicit camera choice: the override ends and the passed values are saved.
+ */
 export function saveSettings(settings: StudioSettings): Promise<void> {
-  applySessionPreset(null);
+  const preset = currentSessionPreset();
+  const keepStoredCamera =
+    preset !== null &&
+    settings.camera.aspect === preset.aspect &&
+    settings.camera.safeZone === preset.safeZone;
+  if (preset && !keepStoredCamera) applySessionPreset(null);
   saveQueue = saveQueue
     .catch(() => undefined)
     .then(async () => {
-      await (await getDb()).put('kv', settings, 'settings');
+      const db = await getDb();
+      let stored = settings;
+      if (keepStoredCamera) {
+        const saved = sanitizeSettings(await db.get('kv', 'settings'), isPhone());
+        stored = {
+          ...settings,
+          camera: {
+            ...settings.camera,
+            aspect: saved.camera.aspect,
+            safeZone: saved.camera.safeZone,
+          },
+        };
+      }
+      await db.put('kv', stored, 'settings');
       dispatchEvent(new CustomEvent('studio-settings-change', { detail: settings }));
     });
   return saveQueue;

@@ -1,10 +1,14 @@
 import { useState } from 'preact/hooks';
-import { recordNewScript } from '../../domain/studio/handoff';
 interface NicheHooks {
   id: string;
   name: string;
   hooks: string[];
 }
+// 13.5: the Studio data layer loads only when the visitor asks to record.
+const recordHook = (line: string) =>
+  void import('../../domain/studio/handoff').then(({ recordNewScript }) =>
+    recordNewScript('Hook idea', line),
+  );
 export default function HookGenerator({ niches }: { niches: NicheHooks[] }): preact.JSX.Element {
   const [niche, setNiche] = useState<string>(niches[0]?.id ?? 'fitness');
   const [topic, setTopic] = useState('');
@@ -86,7 +90,7 @@ export default function HookGenerator({ niches }: { niches: NicheHooks[] }): pre
             <button type="button" onClick={() => void copy(fill(hook), index)}>
               {copyState?.index === index ? copyState.label : 'Copy'}
             </button>{' '}
-            <button type="button" onClick={() => void recordNewScript('Hook idea', fill(hook))}>
+            <button type="button" onClick={() => recordHook(fill(hook))}>
               Record this hook
             </button>
           </li>

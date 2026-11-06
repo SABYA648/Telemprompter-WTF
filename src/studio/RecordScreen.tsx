@@ -29,7 +29,12 @@ import { deleteTake, saveTake, takeBlob } from '../domain/studio/takesRepo';
 import type { StudioScript, StudioTake, TimelineMark } from '../domain/studio/types';
 import { TimeBasedScrollController } from '../domain/scrollController';
 import { getDb } from '../domain/studio/db';
-import { defaultSettings, loadSettings, saveSettings } from '../domain/studio/settings';
+import {
+  defaultSettings,
+  loadSettings,
+  saveSettings,
+  sessionTargetSeconds,
+} from '../domain/studio/settings';
 import { handleMappedKey } from '../domain/studio/keymap';
 import { AudioMeter } from '../domain/studio/audioMeter';
 import {
@@ -151,7 +156,9 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
       : settings.prompter.dock;
   const parsed = script ? parseMarkup(script.body) : null;
   const hasScript = Boolean(parsed?.spokenWordCount);
-  const targetMs = (script?.targetSeconds ?? 0) * 1000;
+  // A preset picked for an existing script sets this session's target without saving it (14.6).
+  const targetSeconds = script ? (sessionTargetSeconds(script.id) ?? script.targetSeconds) : 0;
+  const targetMs = targetSeconds * 1000;
   const capabilities = stream?.getVideoTracks()[0]?.getCapabilities?.();
   const updateSettings = (next: StudioSettings, key: string) => {
     setSettings(next);
@@ -217,9 +224,10 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
       if (!active) return;
       setScript(item ?? null);
       setSettings(saved);
+      const itemTarget = item ? (sessionTargetSeconds(item.id) ?? item.targetSeconds) : 0;
       setWpm(
-        item?.targetSeconds && saved.prompter.fitToTarget
-          ? fitWpm(parseMarkup(item.body).spokenWordCount, item.targetSeconds)
+        item && itemTarget && saved.prompter.fitToTarget
+          ? fitWpm(parseMarkup(item.body).spokenWordCount, itemTarget)
           : saved.prompter.wpm,
       );
       setFont(saved.prompter.fontSizePx);
@@ -403,14 +411,14 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
   }, [wpm, parsed?.spokenWordCount]);
   useEffect(() => {
     setWpm(
-      script?.targetSeconds && settings.prompter.fitToTarget
-        ? fitWpm(parsed?.spokenWordCount ?? 0, script.targetSeconds)
+      targetSeconds && settings.prompter.fitToTarget
+        ? fitWpm(parsed?.spokenWordCount ?? 0, targetSeconds)
         : settings.prompter.wpm,
     );
   }, [
     settings.prompter.wpm,
     settings.prompter.fitToTarget,
-    script?.targetSeconds,
+    targetSeconds,
     parsed?.spokenWordCount,
   ]);
   useEffect(() => setFont(settings.prompter.fontSizePx), [settings.prompter.fontSizePx]);
@@ -1308,7 +1316,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
           </button>
           <button
             onClick={() => {
-              const value = fitWpm(parsed?.spokenWordCount ?? 0, script?.targetSeconds ?? 0);
+              const value = fitWpm(parsed?.spokenWordCount ?? 0, targetSeconds);
               setWpm(value);
               updateSettings(
                 { ...settings, prompter: { ...settings.prompter, fitToTarget: true } },

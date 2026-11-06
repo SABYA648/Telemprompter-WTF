@@ -1,6 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { templates } from '../../content/studio';
+import { presets, templates } from '../../content/studio';
 export function getStaticPaths() {
   return templates.map((template) => ({ params: { slug: template.id }, props: { template } }));
 }
@@ -10,6 +10,11 @@ const url = `${base}/templates/${template.id}`;
 const position = templates.findIndex((item) => item.id === template.id);
 const previous = templates[(position + templates.length - 1) % templates.length]!;
 const next = templates[(position + 1) % templates.length]!;
+// 13.4: name the destination platform and the template so no two pages share one anchor.
+const recordPlatform = (
+  presets.find((preset) => preset.id === template.related.recordPreset)?.name ?? 'video'
+).replace(' (landscape)', ' landscape');
+const recordAnchor = `Record the ${template.name} template with the ${recordPlatform} teleprompter`;
 const lengthLabel =
   template.targetSeconds >= 120
     ? `${Math.round(template.targetSeconds / 60)} minute`
@@ -72,7 +77,8 @@ const schema = [
       class="button button--primary"
       href={`/studio#/scripts/new?template=${template.id}`}
       data-analytics-cta="inline"
-      data-page-type="template">Use this template</a
+      data-page-type="template"
+      data-content-cluster="templates">Use this template</a
     >
     <h2>Two filled examples</h2>{
       template.examples.map((example) => (
@@ -97,9 +103,7 @@ const schema = [
     }
     <h2>Related</h2><ul>
       <li>
-        <a href={`/record/${template.related.recordPreset}`}
-          >Record a {template.format} video with a teleprompter</a
-        >
+        <a href={`/record/${template.related.recordPreset}`}>{recordAnchor}</a>
       </li>
       {
         template.related.templates.map((id) => {

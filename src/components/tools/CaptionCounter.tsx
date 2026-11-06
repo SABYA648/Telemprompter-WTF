@@ -43,7 +43,8 @@ export default function CaptionCounter(): preact.JSX.Element {
             </p>
             {row.preview && (
               <p>
-                <strong>Approximate preview before “more”:</strong> {text.slice(0, row.preview)}
+                <strong>Approximate preview before “more”:</strong>{' '}
+                {[...text].slice(0, row.preview).join('')}
                 {count > row.preview ? '…' : ''}
               </p>
             )}

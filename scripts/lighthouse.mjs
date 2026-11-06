@@ -27,6 +27,16 @@ const routes = [
   // audit that URL; its SEO score stays low on purpose because the page is noindex.
   { name: 'not-found', path: '/404.html' },
 ];
+// Optional comma-separated override, e.g. LIGHTHOUSE_PATHS=/record/tiktok,/record/youtube.
+if (process.env.LIGHTHOUSE_PATHS)
+  routes.splice(
+    0,
+    routes.length,
+    ...process.env.LIGHTHOUSE_PATHS.split(',')
+      .map((path) => path.trim())
+      .filter(Boolean)
+      .map((path) => ({ name: path.replace(/^\/|\/$/g, '').replace(/\//g, '-') || 'home', path })),
+  );
 
 const chrome = await launch({
   chromeFlags: ['--headless=new', '--no-sandbox', '--disable-dev-shm-usage'],
