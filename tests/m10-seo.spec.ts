@@ -25,18 +25,33 @@ async function readRecord<T>(page: Page, store: string, key: string): Promise<T>
     [store, key],
   );
 }
-/** Stub Umami so every tracked call lands in `window.__ev`. */
-async function stubUmami(page: Page): Promise<void> {
+/**
+ * Stub Umami so every tracked call lands in `window.__ev`. With `persist`, the log also
+ * survives same-tab navigations through sessionStorage, so a CTA click and the event it
+ * leads to on the next page can be read in order.
+ */
+async function stubUmami(page: Page, { persist = false } = {}): Promise<void> {
   await page.route('https://analytics.sabya.pm/**', (route) =>
     route.fulfill({ contentType: 'application/javascript', body: '' }),
   );
-  await page.addInitScript(() => {
+  await page.addInitScript((persist) => {
     const log = window as unknown as EventLog;
+    if (persist) log.__ev = JSON.parse(sessionStorage.getItem('test.ev') ?? '[]') as unknown[][];
     (window as unknown as { umami: unknown }).umami = {
-      track: (...args: unknown[]) => (log.__ev ??= []).push(args),
+      track: (...args: unknown[]) => {
+        (log.__ev ??= []).push(args);
+        if (persist) sessionStorage.setItem('test.ev', JSON.stringify(log.__ev));
+      },
     };
-  });
+  }, persist);
 }
+/** Names of the tracked events in call order, skipping pageview callbacks. */
+const eventNames = (page: Page) =>
+  page.evaluate(() =>
+    ((window as unknown as EventLog).__ev ?? [])
+      .map((call) => call[0])
+      .filter((name): name is string => typeof name === 'string'),
+  );
 const events = (page: Page, name: string) =>
   page.evaluate(
     (name) =>
@@ -225,8 +240,10 @@ test('an editor target edit ends the preset target in Record and Practice', asyn
   const practiceFit = async (fit: string) => {
     await page.goto('/studio#/practice/quick');
     await page.getByRole('button', { name: 'Start practice' }).click();
-    await page.waitForTimeout(500);
-    await page.getByRole('button', { name: 'Finish practice' }).click();
+    // Finish enables once practice has counted active time.
+    const finish = page.getByRole('button', { name: 'Finish practice' });
+    await expect(finish).toBeEnabled();
+    await finish.click();
     await expect(page.getByRole('region', { name: 'Practice summary' })).toContainText(
       `Target fit: ${fit}`,
     );
@@ -323,6 +340,44 @@ test('Record with camera from a guide opens Studio with the guide entry', async 
   await expect
     .poll(() => events(page, 'opened_studio'))
     .toEqual([expect.objectContaining({ entry: 'guide' })]);
+});
+
+test('Record with camera on a guide reports one Studio click before Studio opens', async ({
+  page,
+}) => {
+  await stubUmami(page, { persist: true });
+  await page.goto('/guides/instagram-teleprompter');
+  await page.getByRole('link', { name: 'Record with camera' }).click();
+  await expect(page).toHaveURL(/\/studio#\/record\//);
+  await expect.poll(() => events(page, 'opened_studio')).toHaveLength(1);
+  expect(await events(page, 'clicked_open_studio')).toEqual([
+    { page_type: 'guide', cta_location: 'inline' },
+  ]);
+  const names = await eventNames(page);
+  expect(names.indexOf('clicked_open_studio')).toBeLessThan(names.indexOf('opened_studio'));
+  // A guide whose cluster is a known content cluster reports it with the click.
+  await page.evaluate(() => sessionStorage.removeItem('test.ev'));
+  await page.goto('/guides/teleprompter-for-youtube');
+  await page.getByRole('link', { name: 'Record with camera' }).click();
+  await expect(page).toHaveURL(/\/studio#\/record\//);
+  await expect.poll(() => events(page, 'opened_studio')).toHaveLength(1);
+  expect(await events(page, 'clicked_open_studio')).toEqual([
+    { page_type: 'guide', cta_location: 'inline', content_cluster: 'youtube' },
+  ]);
+});
+
+test('the record hub CTA reports one Studio click before Studio opens', async ({ page }) => {
+  await stubUmami(page, { persist: true });
+  await page.goto('/record');
+  await page.getByRole('link', { name: 'Record a video' }).click();
+  await expect(page).toHaveURL(/\/studio/);
+  await expect.poll(() => events(page, 'opened_studio')).toHaveLength(1);
+  expect(await events(page, 'clicked_open_studio')).toEqual([
+    { page_type: 'record_preset', cta_location: 'hero' },
+  ]);
+  expect(await events(page, 'clicked_open_teleprompter')).toEqual([]);
+  const names = await eventNames(page);
+  expect(names.indexOf('clicked_open_studio')).toBeLessThan(names.indexOf('opened_studio'));
 });
 
 test('tool islands load the Studio data layer only on Record', async ({ page }) => {

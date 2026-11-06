@@ -2,6 +2,7 @@
 import { guideBySlug, guides } from '../../content/guides';
 import TeleprompterEmbed from '../../components/TeleprompterEmbed.astro';
 import Layout from '../../layouts/Layout.astro';
+import { isContentCluster } from '../../domain/analytics';
 
 export function getStaticPaths() {
   return guides.map((guide) => ({ params: { slug: guide.slug }, props: { guide } }));
@@ -27,6 +28,7 @@ const recordHandoff = guide.embed
       }),
     )}`
   : '';
+const cluster = isContentCluster(guide.cluster) ? guide.cluster : undefined;
 const schema = [
   {
     '@context': 'https://schema.org',
@@ -156,7 +158,13 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
                 {...(guide.embed.preset ? { preset: guide.embed.preset } : {})}
               />
               <p class="guide-record-link">
-                <a class="button button--primary" href={recordHandoff}>
+                <a
+                  class="button button--primary"
+                  href={recordHandoff}
+                  data-analytics-cta="inline"
+                  data-page-type="guide"
+                  data-content-cluster={cluster}
+                >
                   {' '}
                   Record with camera{' '}
                 </a>

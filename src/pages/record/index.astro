@@ -39,7 +39,12 @@ const schema = [
     <header class="page-intro">
       <p class="eyebrow">Record with camera</p><h1>{seo.h1}</h1>{
         recordHub.intro.map((paragraph) => <p>{paragraph}</p>)
-      }<a class="button button--primary" href={recordHub.ctaHref}>{recordHub.ctaLabel}</a>
+      }<a
+        class="button button--primary"
+        href={recordHub.ctaHref}
+        data-analytics-cta="hero"
+        data-page-type="record_preset">{recordHub.ctaLabel}</a
+      >
     </header>
     <div class="creator-grid">
       {

@@ -426,3 +426,13 @@ Commit `ba13019`. Built by Claude opus-5-5 high (Codex gpt-6-sol is usage-limite
 Gates (independent rerun, Node 26.7.0): `npm run check` pass (0 errors, unit 312/312, content lint, build, budget). `npx playwright test` 174/174, including the new `tests/m12-mobile.spec.ts` (one current tab on every route, at most one accent action per screen) and 21 media tests. Studio bundle 70.1/130 KB gzip. `scripts/m12-screenshots.mjs` at 360 and 390 for Home, Home first run, Record permission, Scripts editor, Scripts library and Takes found no horizontal overflow, no target under 44px, no overlapping targets and no nav overlap. The classic home `editor.png` render is visually unchanged.
 
 Known P2: in the editor, the bottom Record button sits about 6px above the raised nav Record. These are two accent record entries close together. The Takes header copy is still fairly text-heavy.
+
+## M10 fix round 3 - 2026-11-06
+
+Built by Claude opus-5-5 medium. Closes P1-B: the guide "Record with camera" link and the `/record` hub CTA had no `data-analytics-cta`, so `bindOpenTeleprompterCtas` never sent `clicked_open_studio` for them.
+
+- Guide link: `data-analytics-cta="inline"`, `data-page-type="guide"`, and `data-content-cluster` only when `guide.cluster` passes `isContentCluster` (for example `youtube` is sent, `short_form` is left out).
+- Hub CTA: `data-analytics-cta="hero"`, `data-page-type="record_preset"` with no cluster, so no new page type or decision entry is needed.
+- `tests/m10-seo.spec.ts`: `stubUmami` takes `{ persist: true }` and keeps its log in sessionStorage across the navigation. Two new tests check that each CTA sends exactly one `clicked_open_studio` with the right `page_type`/`cta_location`, and that it comes before `opened_studio`. P2: `practiceFit` now waits for "Finish practice" to be enabled instead of `waitForTimeout(500)`.
+
+Gates (Node 26.7.0): `npm run check` pass (0 errors). `npx playwright test tests/m10-seo.spec.ts` 18/18. The new and changed tests also passed `--repeat-each 4` (12/12).
