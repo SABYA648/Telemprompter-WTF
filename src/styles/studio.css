@@ -2371,3 +2371,241 @@ ol.studio-row-list .studio-row__title::before {
 .studio-practice {
   padding-bottom: calc(var(--studio-nav) + 16px);
 }
+
+/* M11: bottom sheets for take and script tools. One accent action per sheet. */
+.studio-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+.studio-sheet {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 520px);
+  max-height: 85dvh;
+  overflow-y: auto;
+  padding: 16px calc(16px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom))
+    calc(16px + env(safe-area-inset-left));
+  border-radius: 22px 22px 0 0;
+  background: var(--studio-card);
+  color: var(--studio-text);
+  box-shadow: 0 0 0 1px var(--studio-border);
+  overflow-wrap: anywhere;
+}
+.studio-sheet p {
+  margin: 0;
+}
+.studio-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.studio-sheet__head h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.studio-sheet__close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  cursor: pointer;
+}
+.studio-sheet__output {
+  width: 100%;
+  max-height: 40dvh;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid var(--studio-border);
+  border-radius: 10px;
+  background: var(--studio-bg);
+  color: var(--studio-text);
+  font:
+    0.875rem/1.5 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  white-space: pre-wrap;
+  resize: none;
+}
+.studio-sheet .studio-button {
+  width: 100%;
+}
+.studio-sheet progress {
+  width: 100%;
+}
+.studio-trim-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.studio-trim-fields .studio-label {
+  margin-top: 0;
+}
+.studio-take-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px 44px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.studio-take-actions[hidden] {
+  display: none;
+}
+.studio-take-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.studio-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* M11: operator window, the prompter alone for a second screen or a glass rig. */
+.studio-operator-body {
+  overflow: hidden;
+}
+.studio-operator {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #fff;
+}
+.studio-operator__scroll {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding: 0 6vw;
+  line-height: 1.35;
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  font-weight: 700;
+}
+.studio-operator__scroll.mirror-horizontal {
+  transform: scaleX(-1);
+}
+.studio-operator__scroll.mirror-vertical {
+  transform: scaleY(-1);
+}
+.studio-operator__scroll.mirror-both {
+  transform: scale(-1, -1);
+}
+.studio-operator__text {
+  padding: 33vh 0 67vh;
+}
+.studio-operator__text h2 {
+  margin: 0.4em 0 0.2em;
+  color: var(--studio-muted);
+  font-size: 0.6em;
+}
+.studio-operator__waiting {
+  color: var(--studio-muted);
+  font-size: 0.5em;
+}
+.studio-operator__cue {
+  position: absolute;
+  top: 33vh;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 2px solid rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+.studio-operator__controls {
+  position: absolute;
+  right: calc(8px + env(safe-area-inset-right));
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+.studio-operator__controls:hover,
+.studio-operator__controls:focus-within {
+  opacity: 1;
+}
+.studio-operator__controls button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  font: 700 0.875rem/1 inherit;
+  cursor: pointer;
+}
+.studio-operator__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--studio-muted);
+  font-size: 0.875rem;
+}
+
+/* M11: print or save a script as PDF. Only the script article prints, black on white. */
+.studio-print {
+  display: none;
+}
+@media print {
+  @page {
+    margin: 18mm;
+  }
+  .studio-body {
+    background: #fff;
+    color: #000;
+  }
+  /* Everything that neither is nor holds the script is removed, so no blank pages follow it. */
+  .studio-body *:not(:has(.studio-print)):not(.studio-print, .studio-print *) {
+    display: none !important;
+  }
+  .studio-body *:has(.studio-print) {
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+  }
+  .studio-print {
+    display: block;
+    color: #000;
+    font:
+      16pt/1.6 'Atkinson Hyperlegible',
+      Georgia,
+      serif;
+  }
+  .studio-print h1 {
+    margin: 0 0 12pt;
+    font-size: 22pt;
+  }
+  .studio-print__section {
+    display: block;
+    margin: 14pt 0 4pt;
+    font-size: 17pt;
+    break-after: avoid;
+  }
+  .studio-print mark {
+    background: #e8e8e8;
+    color: #000;
+  }
+  .studio-print__cue {
+    color: #555;
+    font-size: 12pt;
+  }
+}

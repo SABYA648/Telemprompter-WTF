@@ -92,6 +92,20 @@ describe('precache collection', () => {
       expect(precache).toContain(url);
     expect(precache).not.toContain('/_astro/looks-like-a-module.js');
   });
+  it('leaves the on-demand MP4 conversion chunk to the runtime cache', async () => {
+    const withMedia: Record<string, string> = {
+      ...files,
+      '_astro/App.js': 'import("./mediabunny.Ab-1.js");import("./lazy.js")',
+      '_astro/mediabunny.Ab-1.js': 'export const big=1',
+    };
+    const precache = await collectPrecache(async (path: string) => {
+      const file = withMedia[path];
+      if (file === undefined) throw new Error(`missing ${path}`);
+      return file;
+    });
+    expect(precache).toContain('/_astro/lazy.js');
+    expect(precache).not.toContain('/_astro/mediabunny.Ab-1.js');
+  });
   it('fails the build when a page points at a missing asset', async () => {
     const broken = async (path: string) => {
       if (path === '_astro/App.js') throw new Error('missing');

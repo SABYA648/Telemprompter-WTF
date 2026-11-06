@@ -20,6 +20,7 @@ const TAB_FOR_SCREEN: Record<Route['screen'], TabId> = {
   receive: 'scripts',
   record: 'record',
   practice: 'record',
+  'prompter-window': 'record',
   takes: 'takes',
   take: 'takes',
   settings: 'settings',

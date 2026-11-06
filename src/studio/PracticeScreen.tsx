@@ -11,7 +11,9 @@ import { loadSettings, sessionTargetSeconds } from '../domain/studio/settings';
 import { markActiveDay } from '../domain/studio/streak';
 import { refreshBadges } from '../domain/studio/habits';
 import { analytics, progressBucket } from '../domain/analytics';
-import type { StudioScript } from '../domain/studio/types';
+import type { KeyAction, StudioScript } from '../domain/studio/types';
+import { watchGamepads } from '../domain/studio/gamepad';
+import { PrompterBroadcast, operatorRequested } from '../domain/studio/operator';
 
 const FIT_COPY: Record<PracticeFit, string> = {
   under: 'Under target',
@@ -101,6 +103,19 @@ export default function PracticeScreen({ id }: { id: string }) {
   const words = script ? parseMarkup(script.body) : null;
   const spokenWords = words?.spokenWordCount ?? 0;
   const percent = practicePercent(wordsPassed, spokenWords);
+  const progress = spokenWords ? Math.min(1, wordsPassed / spokenWords) : 0;
+  const broadcast = useRef<PrompterBroadcast | null>(null);
+  useEffect(() => {
+    if (!operatorRequested()) return;
+    broadcast.current = new PrompterBroadcast();
+    return () => {
+      broadcast.current?.close();
+      broadcast.current = null;
+    };
+  }, []);
+  useEffect(() => {
+    if (script) broadcast.current?.send({ body: script.body, progress, wpm, playing: running });
+  }, [script?.body, progress, wpm, running]);
   const summary = practiceSummary(
     Math.min(wordsPassed, spokenWords),
     spokenWords,
@@ -135,6 +150,29 @@ export default function PracticeScreen({ id }: { id: string }) {
     if (running) setPauses((count) => count + 1);
     setRunning(!running);
   };
+  const usedGamepad = useRef(false);
+  const gamepadAction = useRef<(action: KeyAction) => void>(() => undefined);
+  gamepadAction.current = (action) => {
+    // One line is the share of the script that fits in one line of the practice prompter.
+    const el = scroller.current;
+    const lineWords =
+      el && spokenWords
+        ? (spokenWords * parseFloat(getComputedStyle(el).lineHeight || '0')) /
+          Math.max(1, el.scrollHeight)
+        : 0;
+    if (action === 'toggleScroll') toggle();
+    else if (action === 'faster') setWpm(Math.min(240, wpm + 5));
+    else if (action === 'slower') setWpm(Math.max(80, wpm - 5));
+    else if (action === 'lineForward')
+      setWordsPassed((old) => Math.min(spokenWords, old + (lineWords || 6)));
+    else if (action === 'lineBack') setWordsPassed((old) => Math.max(0, old - (lineWords || 6)));
+    else return;
+    if (!usedGamepad.current) {
+      usedGamepad.current = true;
+      analytics.track('used_remote_key', { device: 'gamepad' });
+    }
+  };
+  useEffect(() => watchGamepads((action) => gamepadAction.current(action)), []);
   if (!script)
     return (
       <section class="studio-screen">

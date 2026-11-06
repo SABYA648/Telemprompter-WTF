@@ -28,6 +28,33 @@ export function sizeBucket(bytes: number) {
   if (bytes < 5e7) return '10_50mb' as const;
   return bytes < 2e8 ? ('50_200mb' as const) : ('200mb_plus' as const);
 }
+/** Hand one file to the share sheet when it accepts files, otherwise download it. */
+export async function shareOrDownload(file: File): Promise<'share' | 'download' | 'cancel'> {
+  if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+    try {
+      await navigator.share({ files: [file] });
+      return 'share';
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') return 'cancel';
+      throw error;
+    }
+  }
+  const url = URL.createObjectURL(file);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = file.name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  return 'download';
+}
+/** Record that a file made from this take left the app (the take itself or an MP4 of it). */
+export async function markTakeExported(take: StudioTake): Promise<void> {
+  const latest = await getTake(take.id);
+  if (latest) await saveTake({ ...latest, exportedAt: Date.now() });
+  await onExportedTake();
+}
 export async function exportTake(
   take: StudioTake,
   title: string | null,
@@ -36,25 +63,8 @@ export async function exportTake(
   const blob = emergencyBlob ?? (await takeBlob(take));
   if (!blob.size) throw new Error('No recorded video to export');
   const file = new File([blob], takeFilename(title, take), { type: take.mimeType });
-  let method: 'share' | 'download' = 'download';
-  if (navigator.canShare?.({ files: [file] }) && navigator.share) {
-    try {
-      await navigator.share({ files: [file] });
-      method = 'share';
-    } catch (error) {
-      if ((error as Error).name === 'AbortError') return 'cancel';
-      throw error;
-    }
-  } else {
-    const url = URL.createObjectURL(file);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = file.name;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  }
+  const method = await shareOrDownload(file);
+  if (method === 'cancel') return method;
   if (!emergencyBlob) {
     const latest = await getTake(take.id);
     if (latest) await saveTake({ ...latest, exportedAt: Date.now() });

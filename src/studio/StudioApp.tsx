@@ -36,6 +36,9 @@ import { persistOnFirstStandaloneLaunch } from '../domain/studio/storage';
 import { routeFromHash, bootHash, type Route } from './router';
 import { tabItems, type TabId } from './tabs';
 import { Overflow } from './Overflow';
+import OperatorWindow from './OperatorWindow';
+import { PrintableScript, useEditorBroadcast, useScriptImport } from './ScriptTools';
+import { openOperatorWindow } from '../domain/studio/operator';
 import { Icon, type IconName } from './Icons';
 import RecordScreen from './RecordScreen';
 import PracticeScreen from './PracticeScreen';
@@ -89,7 +92,15 @@ async function createRoutedScript(): Promise<StudioScript> {
   return createScript();
 }
 
-export default function StudioApp(): preact.JSX.Element {
+/** The operator window is a bare prompter for a second screen: no shell, no boot, no tabs. */
+export default function StudioRoot(): preact.JSX.Element {
+  return routeFromHash(location.hash).screen === 'prompter-window' ? (
+    <OperatorWindow />
+  ) : (
+    <StudioApp />
+  );
+}
+function StudioApp(): preact.JSX.Element {
   const [route, setRoute] = useState<Route>(routeFromHash(location.hash));
   const [scripts, setScripts] = useState<StudioScript[]>([]);
   const [ready, setReady] = useState(false);
@@ -536,6 +547,10 @@ function Scripts({
     await refresh();
     go(`/scripts/${script.id}`);
   };
+  const importer = useScriptImport(async (script) => {
+    await refresh();
+    go(`/scripts/${script.id}`);
+  });
   const queue = upNext(scripts);
   const queueIds = queue.map((item) => item.id);
   const changeQueue = async (ids: string[]) => {
@@ -548,14 +563,23 @@ function Scripts({
         <div>
           <h1>Scripts</h1>
         </div>
-        <button
-          class="studio-button studio-button--quiet studio-icon-button"
-          aria-label="New script"
-          onClick={() => void add()}
-        >
-          <Icon name="plus" />
-        </button>
+        <div class="studio-heading-actions">
+          <button
+            class="studio-button studio-button--quiet studio-icon-button"
+            aria-label="New script"
+            onClick={() => void add()}
+          >
+            <Icon name="plus" />
+          </button>
+          <Overflow label="More library actions">
+            <button onClick={importer.pick}>
+              <Icon name="import" size={18} /> Import file
+            </button>
+          </Overflow>
+        </div>
+        {importer.element}
       </div>
+      {importer.status && <p role="status">{importer.status}</p>}
       <TemplatePicker
         onCreated={() => void refresh()}
         open={new URLSearchParams(location.hash.split('?')[1] ?? '').has('templates')}
@@ -781,6 +805,8 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
   const [script, setScript] = useState<StudioScript | null>(null);
   const [saved, setSaved] = useState('Loading...');
   const [showSend, setShowSend] = useState(false);
+  const [operatorOn, setOperatorOn] = useState(false);
+  const [notice, setNotice] = useState('');
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const currentRef = useRef<StudioScript | null>(null);
   const pendingRef = useRef(false);
@@ -850,6 +876,12 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [script]);
+  useEditorBroadcast(script?.body, operatorOn);
+  const importer = useScriptImport(async (imported) => {
+    await flush();
+    await refresh();
+    go(`/scripts/${imported.id}`);
+  });
   const insert = (value: string) => {
     const el = bodyRef.current;
     if (!el || !script) return;
@@ -1056,6 +1088,9 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
         </section>
       </details>
       {showSend && <SendToPhone script={script} />}
+      {(notice || importer.status) && <p role="status">{notice || importer.status}</p>}
+      {importer.element}
+      <PrintableScript script={script} />
       <div class="studio-editor__actions">
         <a class="studio-button" href={`#/record/${script.id}`}>
           <Icon name="camera" size={20} /> Record
@@ -1075,6 +1110,23 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
             }}
           >
             <Icon name="present" size={18} /> Present
+          </button>
+          <button
+            onClick={async () => {
+              await flush();
+              if (openOperatorWindow()) {
+                setOperatorOn(true);
+                setNotice('Operator window open. Start Practice or Record here to drive it.');
+              } else setNotice('Allow pop-ups for this site to open the operator window.');
+            }}
+          >
+            <Icon name="monitor" size={18} /> Operator window
+          </button>
+          <button onClick={() => void flush().then(() => print())}>
+            <Icon name="print" size={18} /> Print or PDF
+          </button>
+          <button onClick={importer.pick}>
+            <Icon name="import" size={18} /> Import file
           </button>
           <button
             onClick={async () => {

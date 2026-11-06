@@ -5,10 +5,11 @@ import { parseMarkup } from '../domain/studio/markup';
 import { getScript } from '../domain/studio/scriptsRepo';
 import { deleteTake, getTake, listTakes, saveTake, takeBlob } from '../domain/studio/takesRepo';
 import { formatBytes, minutesLeft, storageEstimate } from '../domain/studio/storage';
-import type { StudioTake } from '../domain/studio/types';
+import type { StudioScript, StudioTake } from '../domain/studio/types';
 import { videoBitrate } from '../domain/studio/mime';
 import { Icon } from './Icons';
 import { Overflow } from './Overflow';
+import { TakeToolSheet, type TakeTool } from './TakeTools';
 
 function StorageMeter() {
   const [estimate, setEstimate] = useState({ usage: 0, quota: 0 });
@@ -282,11 +283,13 @@ export function TakesScreen() {
 }
 export function TakeScreen({ id }: { id: string }) {
   const [take, setTake] = useState<StudioTake | null>(null);
-  const [title, setTitle] = useState<string | null>(null);
+  const [script, setScript] = useState<StudioScript | null>(null);
+  const [tool, setTool] = useState<TakeTool | null>(null);
+  const [confirming, setConfirming] = useState(false);
   useEffect(() => {
     void getTake(id).then(async (row) => {
       setTake(row ?? null);
-      if (row?.scriptId) setTitle((await getScript(row.scriptId))?.title ?? null);
+      if (row?.scriptId) setScript((await getScript(row.scriptId)) ?? null);
     });
   }, [id]);
   if (!take)
@@ -295,6 +298,7 @@ export function TakeScreen({ id }: { id: string }) {
         <h1>Take not found</h1>
       </section>
     );
+  const title = script?.title ?? null;
   const save = async () => {
     const method = await exportTake(take, title);
     if (method === 'cancel') return;
@@ -306,47 +310,83 @@ export function TakeScreen({ id }: { id: string }) {
     dispatchEvent(new Event('studio-take-exported'));
     setTake({ ...take, exportedAt: Date.now() });
   };
+  const toggleStar = () =>
+    void saveTake({ ...take, starred: !take.starred }).then(() =>
+      setTake({ ...take, starred: !take.starred }),
+    );
   return (
-    <section class="studio-screen">
+    <section class="studio-screen studio-take-detail">
       <a class="studio-back" href="#/takes">
         Takes
       </a>
       <h1>Take {take.number}</h1>
       <TakePlayer take={take} />
       {!take.exportedAt && <p>Save it to Photos now. Browser storage can be cleared.</p>}
-      <p>
+      <p class="studio-muted">
         {take.status === 'recovered' ? 'Recovered · ' : ''}
         {Math.round(take.durationMs / 1000)}s · {take.container.toUpperCase()} · {take.width} ×{' '}
         {take.height} · {Math.round(take.frameRate)} fps · {formatBytes(take.sizeBytes)}
       </p>
-      <div class="studio-actions">
+      {/* Hidden while a sheet is open, so the sheet's action is the screen's one accent. */}
+      <div class="studio-take-actions" hidden={Boolean(tool)}>
         <button class="studio-button" onClick={() => void save()}>
           <Icon name="share" size={20} />
           {deviceClass() === 'desktop' ? `Download ${take.container.toUpperCase()}` : 'Save video'}
         </button>
         <button
-          class="studio-button studio-button--quiet"
-          onClick={() =>
-            void saveTake({ ...take, starred: !take.starred }).then(() =>
-              setTake({ ...take, starred: !take.starred }),
-            )
-          }
+          class="studio-button studio-button--quiet studio-icon-button"
+          aria-label={take.starred ? 'Unstar' : 'Star'}
+          onClick={toggleStar}
         >
           <Icon name="star" size={20} />
-          {take.starred ? 'Unstar' : 'Star'}
         </button>
-        <button
-          class="studio-button studio-button--danger"
-          onClick={() =>
-            void deleteTake(take.id).then(() => {
-              location.hash = '#/takes';
-            })
-          }
-        >
-          <Icon name="trash" size={20} />
-          Delete
-        </button>
+        <Overflow label="More take actions" up>
+          <button onClick={() => setTool('chapters')}>
+            <Icon name="chapters" size={18} /> Chapters
+          </button>
+          <button onClick={() => setTool('captions')}>
+            <Icon name="captions" size={18} /> Captions
+          </button>
+          {take.container === 'webm' && (
+            <button onClick={() => setTool('convert')}>
+              <Icon name="convert" size={18} /> Convert to MP4
+            </button>
+          )}
+          <button onClick={() => setTool('trim')}>
+            <Icon name="scissors" size={18} /> Trim
+          </button>
+          <button onClick={() => setConfirming(true)}>
+            <Icon name="trash" size={18} /> Delete
+          </button>
+        </Overflow>
       </div>
+      {confirming && (
+        <div class="studio-take-confirm" role="group" aria-label={`Delete take ${take.number}?`}>
+          <button class="studio-chip" onClick={() => setConfirming(false)}>
+            Cancel
+          </button>
+          <button
+            class="studio-chip studio-chip--danger-solid"
+            aria-label={`Confirm delete take ${take.number}`}
+            onClick={() =>
+              void deleteTake(take.id).then(() => {
+                location.hash = '#/takes';
+              })
+            }
+          >
+            Delete
+          </button>
+        </div>
+      )}
+      {tool && (
+        <TakeToolSheet
+          tool={tool}
+          take={take}
+          script={script}
+          onClose={() => setTool(null)}
+          onChange={setTake}
+        />
+      )}
     </section>
   );
 }

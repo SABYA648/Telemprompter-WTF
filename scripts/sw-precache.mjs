@@ -11,6 +11,11 @@ export const PRECACHE_BASE = [
   '/icons/maskable-512.png',
   '/icons/apple-touch-icon.png',
 ];
+/**
+ * On-demand chunks too large to download for every visitor. They load only when used (MP4
+ * conversion and trim) and the runtime cache-first `/_astro/*` rule keeps them after that.
+ */
+export const PRECACHE_SKIP = /^\/_astro\/mediabunny\.[\w-]+\.js$/;
 const ORIGIN = 'https://example.invalid';
 const FONT_URL = /url\(\s*["']?([^"')]+\.(?:woff2?|ttf))(?:[?#][^"')]*)?["']?\s*\)/gi;
 const attribute = (tag, name) =>
@@ -85,7 +90,7 @@ export async function collectPrecache(read) {
     const source = await read(url.slice(1));
     const children = url.endsWith('.css') ? cssRefs(source, url) : moduleRefs(source, url);
     for (const child of children) {
-      if (urls.has(child)) continue;
+      if (urls.has(child) || PRECACHE_SKIP.test(child)) continue;
       try {
         await read(child.slice(1));
       } catch (error) {

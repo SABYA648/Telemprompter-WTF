@@ -23,7 +23,16 @@ export type IconName =
   | 'present'
   | 'chevron'
   | 'portrait'
-  | 'landscape';
+  | 'landscape'
+  | 'monitor'
+  | 'chapters'
+  | 'captions'
+  | 'convert'
+  | 'scissors'
+  | 'import'
+  | 'print'
+  | 'fullscreen'
+  | 'mirror';
 
 const paths: Record<IconName, preact.JSX.Element> = {
   home: (
@@ -130,6 +139,59 @@ const paths: Record<IconName, preact.JSX.Element> = {
   chevron: <path d="m6 9 6 6 6-6" />,
   portrait: <rect x="7" y="3" width="10" height="18" rx="2" />,
   landscape: <rect x="3" y="7" width="18" height="10" rx="2" />,
+  monitor: (
+    <>
+      <rect x="2" y="4" width="20" height="13" rx="2" />
+      <path d="M7 9h10M7 12h6M9 21h6m-3-4v4" />
+    </>
+  ),
+  chapters: (
+    <>
+      <circle cx="5" cy="6" r="1.5" />
+      <circle cx="5" cy="12" r="1.5" />
+      <circle cx="5" cy="18" r="1.5" />
+      <path d="M10 6h10M10 12h10M10 18h10" />
+    </>
+  ),
+  captions: (
+    <>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M10 10.5a2.5 2.5 0 1 0 0 3M17 10.5a2.5 2.5 0 1 0 0 3" />
+    </>
+  ),
+  convert: (
+    <>
+      <path d="M4 12a8 8 0 0 1 13.7-5.6L20 9M20 4v5h-5" />
+      <path d="M20 12a8 8 0 0 1-13.7 5.6L4 15m0 5v-5h5" />
+    </>
+  ),
+  scissors: (
+    <>
+      <circle cx="6" cy="6" r="3" />
+      <circle cx="6" cy="18" r="3" />
+      <path d="M8.1 8.1 20 20M8.1 15.9 20 4" />
+    </>
+  ),
+  import: (
+    <>
+      <path d="M12 3v12m-5-5 5 5 5-5" />
+      <path d="M5 15v5h14v-5" />
+    </>
+  ),
+  print: (
+    <>
+      <path d="M7 9V3h10v6" />
+      <rect x="3" y="9" width="18" height="8" rx="2" />
+      <path d="M7 14h10v7H7z" />
+    </>
+  ),
+  fullscreen: <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />,
+  mirror: (
+    <>
+      <path d="M12 3v18" />
+      <path d="M9 7 4 17h5zM15 7l5 10h-5z" />
+    </>
+  ),
 };
 
 export function Icon({ name, size = 24 }: { name: IconName; size?: number }) {

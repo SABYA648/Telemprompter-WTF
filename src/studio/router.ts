@@ -11,7 +11,8 @@ export type Route = {
     | 'inbox'
     | 'receive'
     | 'batch'
-    | 'challenge';
+    | 'challenge'
+    | 'prompter-window';
   id?: string;
 };
 export function routeFromHash(hash: string): Route {
@@ -27,6 +28,7 @@ export function routeFromHash(hash: string): Route {
   if (first === 'receive' && second && parts.length === 2) return { screen: 'receive', id: second };
   if (first === 'batch' && parts.length === 1) return { screen: 'batch' };
   if (first === 'challenge' && parts.length === 1) return { screen: 'challenge' };
+  if (first === 'prompter-window' && parts.length === 1) return { screen: 'prompter-window' };
   if (first === 'record' && parts.length === 1) return { screen: 'record', id: 'quick' };
   if (first === 'record' && second && parts.length === 2) return { screen: 'record', id: second };
   if (first === 'practice' && second && parts.length === 2)

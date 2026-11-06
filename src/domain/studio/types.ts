@@ -45,6 +45,7 @@ export interface StudioTake {
   chunkCount: number;
   kept: boolean;
   wordsRead?: number; // snapshot at Keep so later script edits do not rewrite stats
+  wordsPerLine?: number; // prompter line height over pixels per word, for SRT cues (M11)
   starred: boolean;
   exportedAt: number | null;
   createdAt: number;

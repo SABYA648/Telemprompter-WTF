@@ -35,6 +35,12 @@ import {
   sessionTargetSeconds,
 } from '../domain/studio/settings';
 import { handleMappedKey } from '../domain/studio/keymap';
+import { watchGamepads } from '../domain/studio/gamepad';
+import {
+  PrompterBroadcast,
+  openOperatorWindow,
+  operatorRequested,
+} from '../domain/studio/operator';
 import { AudioMeter } from '../domain/studio/audioMeter';
 import {
   ReadinessTracker,
@@ -122,6 +128,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
   const [mutedReview, setMutedReview] = useState(true);
   const [angle, setAngle] = useState(screen.orientation?.angle ?? 0);
   const usedRemote = useRef(false);
+  const usedGamepad = useRef(false);
   const video = useRef<HTMLVideoElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const controller = useRef<TimeBasedScrollController | null>(null);
@@ -141,6 +148,10 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
   const consumed = useRef(new Set<number>());
   const cueOffset = useRef(0);
   const linePx = useRef(40);
+  /** Spoken words per prompter line, snapshotted on the kept take for SRT cues (M11). */
+  const wordsPerLine = useRef(0);
+  const broadcast = useRef<PrompterBroadcast | null>(null);
+  const [operatorOn, setOperatorOn] = useState(operatorRequested);
   const wakeLock = useRef<WakeLockSentinel | undefined>(undefined);
   const keepAwakeRef = useRef(settings.recording.keepScreenAwake);
   keepAwakeRef.current = settings.recording.keepScreenAwake;
@@ -326,6 +337,11 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
       cueOffset.current = el.clientHeight * settings.prompter.cuePosition;
       linePx.current = fontRef.current * settings.prompter.lineHeight;
       const height = content.scrollHeight;
+      const padding =
+        parseFloat(getComputedStyle(content).paddingTop) +
+        parseFloat(getComputedStyle(content).paddingBottom);
+      wordsPerLine.current =
+        (linePx.current * (parsed?.spokenWordCount ?? 0)) / Math.max(1, height - padding);
       controller.current?.setSpeed(
         pixelsPerSecond(wpmRef.current, pixelsPerWord(height, parsed?.spokenWordCount ?? 1)),
       );
@@ -342,6 +358,12 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
       pixelsPerSecond: 0,
       onUpdate: (snapshot) => {
         setScrolling(snapshot.isPlaying);
+        broadcast.current?.send({
+          body: script?.body ?? '',
+          progress: snapshot.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight),
+          wpm: wpmRef.current,
+          playing: snapshot.isPlaying,
+        });
         const marker = crossedMarker(
           snapshot.scrollTop,
           cueOffset.current,
@@ -819,7 +841,12 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
   };
   const keep = async () => {
     if (!review) return;
-    const next = { ...review, kept: true, wordsRead: wordsReadFor(review) };
+    const next = {
+      ...review,
+      kept: true,
+      wordsRead: wordsReadFor(review),
+      ...(wordsPerLine.current > 0 ? { wordsPerLine: wordsPerLine.current } : {}),
+    };
     try {
       await saveTake(next);
     } catch (error) {
@@ -935,8 +962,37 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
       }
     };
     addEventListener('keydown', onKey);
-    return () => removeEventListener('keydown', onKey);
+    const stopGamepads = watchGamepads((action) => {
+      if (settingsOpen || review) return;
+      run(action);
+      if (!usedGamepad.current) {
+        usedGamepad.current = true;
+        analytics.track('used_remote_key', { device: 'gamepad' });
+      }
+    });
+    return () => {
+      removeEventListener('keydown', onKey);
+      stopGamepads();
+    };
   }, [settings, scrolling, recording, settingsOpen, review, stream]);
+  useEffect(() => {
+    if (!operatorOn || !hasScript) return;
+    const channel = new PrompterBroadcast();
+    broadcast.current = channel;
+    return () => {
+      broadcast.current = null;
+      channel.close();
+    };
+  }, [operatorOn, hasScript]);
+  useEffect(() => {
+    const el = scroller.current;
+    broadcast.current?.send({
+      body: script?.body ?? '',
+      progress: el ? el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight) : 0,
+      wpm,
+      playing: scrolling,
+    });
+  }, [operatorOn, hasScript, script?.body, wpm, scrolling, permission]);
   useEffect(() => {
     if (!settingsOpen && !review) return;
     const dialog = document.querySelector<HTMLElement>('.record-sheet');
@@ -1451,6 +1507,14 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
               onChange={updateSettings}
               onNotice={setNotice}
             />
+            <button
+              onClick={() => {
+                if (openOperatorWindow()) setOperatorOn(true);
+                else setNotice('Allow pop-ups for this site to open the operator window.');
+              }}
+            >
+              <Icon name="monitor" size={18} /> Operator window
+            </button>
             <a href="#/settings">All settings</a>
           </section>
         </div>
