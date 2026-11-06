@@ -125,7 +125,14 @@ test('a gamepad A press toggles practice and the D-pad changes speed', async ({ 
   await page.addInitScript(() => {
     const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
     const pad = { index: 0, connected: true, mapping: 'standard', buttons, axes: [] };
-    Object.defineProperty(navigator, 'getGamepads', { value: () => [pad] });
+    const w = window as typeof window & { __polls: number };
+    w.__polls = 0;
+    Object.defineProperty(navigator, 'getGamepads', {
+      value: () => {
+        w.__polls += 1;
+        return [pad];
+      },
+    });
     (window as typeof window & { __press: (i: number, down: boolean) => void }).__press = (
       i,
       down,
@@ -138,17 +145,22 @@ test('a gamepad A press toggles practice and the D-pad changes speed', async ({ 
   await expect(page.getByText('Saved')).toBeVisible();
   await page.goto('/studio#/practice/quick');
   await expect(page.getByText('140 WPM')).toBeVisible();
+  // Press only once the Practice screen's poll loop is running, or the first press is missed.
+  const polls = () => page.evaluate(() => (window as never as { __polls: number }).__polls);
+  const seen = await polls();
+  await expect.poll(polls).toBeGreaterThan(seen + 1);
+  // The app polls the pad once per animation frame, so hold each state for two full frames
+  // instead of a fixed timeout; a loaded machine can stretch 80ms past a single frame.
   const press = async (button: number) => {
-    await page.evaluate(
-      (i) => (window as never as { __press: (i: number, d: boolean) => void }).__press(i, true),
-      button,
-    );
-    await page.waitForTimeout(80);
-    await page.evaluate(
-      (i) => (window as never as { __press: (i: number, d: boolean) => void }).__press(i, false),
-      button,
-    );
-    await page.waitForTimeout(80);
+    for (const down of [true, false])
+      await page.evaluate(
+        ([i, d]) =>
+          new Promise<void>((resolve) => {
+            (window as never as { __press: (i: number, d: boolean) => void }).__press(i, d);
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+          }),
+        [button, down] as const,
+      );
   };
   await press(12);
   await expect(page.getByText('145 WPM')).toBeVisible();
@@ -157,6 +169,8 @@ test('a gamepad A press toggles practice and the D-pad changes speed', async ({ 
   await expect(page.getByText('135 WPM')).toBeVisible();
   await press(0);
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+  // Wait for practice time to tick (Finish enables) so the pause reads as Resume, not a fresh start.
+  await expect(page.getByRole('button', { name: 'Finish practice' })).toBeEnabled();
   await press(0);
   await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible();
 });
