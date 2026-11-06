@@ -10,13 +10,13 @@ export const starterScripts: StarterScript[] = [
     aspect: '9:16',
     targetSeconds: 30,
     body: `# Hello
-Hi, I'm {name}. [smile]
+Hi, welcome in. I'm glad you found this channel. [smile]
 # What I do
-I {what you do}, and I do it for {who you help}.
+I make short videos that turn one hard thing into one easy step.
 # Why it matters
-Most of them come to me stuck, short on time, and tired of guessing. [pause]
+Most people come here stuck, short on time, and tired of guessing. [pause]
 # What to expect
-Here you can expect {what to expect}. Short videos, plain words, and one useful idea every time.
+Here you can expect short videos, plain words, and one useful idea every time.
 # Close
 If that sounds like you, follow along, and tell me in the comments what you want to see first.`,
   },
@@ -28,11 +28,11 @@ If that sounds like you, follow along, and tell me in the comments what you want
     aspect: '9:16',
     targetSeconds: 30,
     body: `# Hook
-If you keep struggling with {your topic}, try this one small change.
+If you keep starting things and never finishing them, try this one small change.
 # Context
 Most people try to do too much at once, and then they quit before it works. [pause]
 # Value
-Here is the fix. **Pick one thing**, and do it for {time}. Then check what changed, so you know it is working.
+Here is the fix. **Pick one thing**, and do it for seven days. Then check what changed, so you know it is working.
 # Close
 Try it this week and tell me how it goes. Follow for the next tip. [smile]`,
   },
@@ -44,19 +44,19 @@ Try it this week and tell me how it goes. Follow for the next tip. [smile]`,
     aspect: '9:16',
     targetSeconds: 60,
     body: `# Hook
-Here is the simplest way to understand {your topic}.
+Here is the simplest way to learn any new skill faster.
 # Problem
 Most explanations start with the hard part, so people give up in the first minute. [pause]
 # Idea
-Think of {your topic} as {a simple comparison}. That one picture is enough to start with, and you can add the detail later, once the basics feel easy.
+Think of a new skill like a staircase. You only need to see the next step, not the whole climb. That one picture is enough to start with.
 # Steps
-First, **{step one}**. It takes about {time}.
-Second, {step two}, so you can see {benefit}.
-Third, {step three}, and now you have a result you can repeat. [breathe]
+First, **pick the smallest version of the skill**. It takes about ten minutes.
+Second, practice it every day for a week, so you can see real progress.
+Third, add one new piece, and now you have a result you can repeat. [breathe]
 # Mistake
 The most common mistake is skipping the second step because it feels slow. I did it for months, and I kept getting the same weak result. Slow is how it sticks.
 # Close
-That is the whole idea. If it helped, save this Short and send it to a friend who is stuck on {your topic}. [smile]`,
+That is the whole idea. If it helped, save this Short and send it to a friend who is learning something new. [smile]`,
   },
   {
     id: 'starter-tiktok',
@@ -66,11 +66,11 @@ That is the whole idea. If it helped, save this Short and send it to a friend wh
     aspect: '9:16',
     targetSeconds: 30,
     body: `# Hook
-I tried {the thing} for {time}, and I was not ready for this.
+I tried waking up an hour earlier for thirty days, and I was not ready for this.
 # Story
-I started because {the reason}. On day one, I honestly thought it was pointless, and I almost stopped. [pause]
+I started because my evenings kept disappearing. On day one, I honestly thought it was pointless, and I almost stopped. [pause]
 # Turn
-Then on day {number}, I noticed {the surprise}. That small moment changed how I do {your topic}, and I have not gone back.
+Then on day nine, I noticed I had finished a project I had put off for a year. That small moment changed how I plan my days, and I have not gone back.
 # Close
 Would you try it? Tell me in the comments, and I will post what happens next. [smile]`,
   },
@@ -82,13 +82,13 @@ Would you try it? Tell me in the comments, and I will post what happens next. [s
     aspect: '16:9',
     targetSeconds: 30,
     body: `# Hook
-By the end of this video, you will know how to {the result}.
+By the end of this video, you will know how to plan a whole week of videos in one hour.
 # Proof
-I figured this out the hard way, after {what you tried} for {time}, so you can skip that part. [pause]
+I figured this out the hard way, after two years of planning one video at a time, so you can skip that part. [pause]
 # Promise
-We will go through {number} steps. First {step one}, then {step two}, and finally {step three}.
+We will go through three steps. First the idea list, then the outline, and finally the filming plan.
 # Channel
-I'm {name}, and on this channel I help {who you help} with {your topic}. Let's get started. [smile]`,
+On this channel I share simple systems that help you make more with less stress. Let's get started. [smile]`,
   },
   {
     id: 'starter-linkedin',
@@ -98,17 +98,17 @@ I'm {name}, and on this channel I help {who you help} with {your topic}. Let's g
     aspect: '9:16',
     targetSeconds: 60,
     body: `# Hook
-Here is a lesson from {number} years of {your work} that I wish I had learned sooner.
+Here is a lesson from ten years of work that I wish I had learned sooner.
 # Situation
-Early in my career, I believed that {the common belief}. I worked that way for a long time. [pause]
+Early in my career, I believed that working longer hours meant doing better work. I worked that way for a long time. [pause]
 # Turning point
-Then {what happened}, and I had to admit it was not working.
+Then I burned out on a project I cared about, and I had to admit it was not working.
 # Lesson
-What I do now is simple. **{The new habit}**. Every {time period}, I {the action}, and I write down what I learn.
+What I do now is simple. **I protect two focused hours every morning**. Every Friday, I look back at the week, and I write down what I learn.
 # Result
-It is not dramatic. It is steady. {The change you noticed} showed up within {time}, and it has held. [breathe]
+It is not dramatic. It is steady. Better work showed up within a month, and it has held. [breathe]
 # Takeaway
-If you lead a team, or you are building a career in {your field}, ask yourself one question. What do you believe that you have never tested?
+If you lead a team, or you are building a career, ask yourself one question. What do you believe that you have never tested?
 # Close
 I would like to hear what you changed your mind about. Share it in the comments.`,
   },
@@ -116,10 +116,10 @@ I would like to hear what you changed your mind about. Share it in the comments.
 
 export const starterById = new Map(starterScripts.map((s) => [s.id, s]));
 
-// Keep the M3 first-run quick script stable while the content picker is integrated.
+// The first-run quick script: real, speakable words, so the camera never opens on blanks.
 export const FIRST_RUN_TITLE = 'Introduce yourself in 30 seconds';
-export const FIRST_RUN_BODY = `Hi, I'm {name}.
+export const FIRST_RUN_BODY = `Hi, welcome in. I'm glad you found me.
 
-I help {who you help} with {what you do}.
+I make short videos with one useful idea at a time.
 
-Here, you can expect {what to expect}.`;
+Stick around, and tell me what you want to see next.`;

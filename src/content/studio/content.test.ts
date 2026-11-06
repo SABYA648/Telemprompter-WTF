@@ -15,7 +15,7 @@ import { platformFacts, verifiedOn, safeZones } from './platformFacts';
 import { presets } from './presets';
 import { recordHub, templatesHub, hooksHub } from './hubs';
 import { recordPages } from './recordPages';
-import { starterScripts } from './starterScripts';
+import { FIRST_RUN_BODY, starterScripts } from './starterScripts';
 import { templates, templateById } from './templates';
 import { toolPages } from './toolPages';
 
@@ -86,7 +86,14 @@ describe('Studio content packs', () => {
       expect(starter?.presetId).toBe(preset.id);
       expect(starter?.aspect).toBe(preset.aspect);
     }
-    expect(starterScripts[0]?.body).toContain('{what to expect}');
+    // Starters open straight into the camera, so they are speakable as written: no blanks.
+    for (const starter of starterScripts) expect(starter.body, starter.id).not.toMatch(/[{}]/);
+    expect(FIRST_RUN_BODY).not.toMatch(/[{}]/);
+  });
+
+  it('never shows a fill-in token on a daily prompt', () => {
+    for (const p of dailyPrompts)
+      for (const text of [p.title, p.hook, p.angle]) expect(text, p.id).not.toMatch(/[{}]/);
   });
 
   it('keeps dated platform facts and approximate safe zones', () => {
