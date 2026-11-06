@@ -218,7 +218,7 @@ test('an editor target edit ends the preset target in Record and Practice', asyn
   const dialog = page.getByRole('dialog', { name: 'Choose a script to record' });
   await dialog.getByRole('button', { name: 'Introduce yourself in 30 seconds' }).click();
   await expect(page).toHaveURL(/\/studio#\/record\/quick/);
-  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByRole('button', { name: 'Allow camera' }).click();
   // The YouTube preset has an open duration, so Record uses the saved speed, not a fit.
   await expect(page.getByText('140 WPM')).toBeVisible();
   // Practice reads the same target as Record. At 140 WPM, 150 words project to 64 seconds.
@@ -233,6 +233,7 @@ test('an editor target edit ends the preset target in Record and Practice', asyn
   };
   await practiceFit('No target set');
   await page.goto('/studio#/scripts/quick');
+  await page.getByText('More', { exact: true }).click();
   await page.getByLabel('Target seconds').fill('60');
   await expect
     .poll(

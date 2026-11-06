@@ -39,7 +39,7 @@ export function ServiceWorkerUpdate({ hidden }: { hidden: boolean }) {
     <div class="studio-update" role="status">
       Update ready{' '}
       <button
-        class="studio-button"
+        class="studio-button studio-button--quiet"
         onClick={() => {
           sessionStorage.setItem('studio.sw.reload', '1');
           registration.waiting?.postMessage('SKIP_WAITING');
@@ -77,7 +77,7 @@ function PasteScripts() {
   };
   return (
     <>
-      <button class="studio-button" onClick={() => void paste()}>
+      <button class="studio-button studio-button--quiet" onClick={() => void paste()}>
         Paste scripts
       </button>
       {manual && (

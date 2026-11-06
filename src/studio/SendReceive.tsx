@@ -67,7 +67,11 @@ export function SendToPhone({ script }: { script: StudioScript }) {
       )}
       {url.length > QR_MAX_URL && <p>Too long for a QR code. Share or copy the link instead.</p>}
       <div class="studio-actions">
-        <button class="studio-button" disabled={!url} onClick={() => void copy()}>
+        <button
+          class="studio-button studio-button--quiet"
+          disabled={!url}
+          onClick={() => void copy()}
+        >
           Copy link
         </button>
         {'share' in navigator && (

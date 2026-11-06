@@ -6,7 +6,7 @@ async function openRecordFromEditor(page: import('@playwright/test').Page) {
 
 async function recordAndKeep(page: import('@playwright/test').Page) {
   // The priming sheet appears once; later scripts in a session open straight on the camera.
-  const allow = page.getByRole('button', { name: 'Allow camera and mic' });
+  const allow = page.getByRole('button', { name: 'Allow camera' });
   const start = page.getByRole('button', { name: 'Start recording' });
   await expect(allow.or(start)).toBeVisible();
   if (await allow.isVisible()) await allow.click();
@@ -94,7 +94,7 @@ test('Record tab stays active and camera controls clear the navigation at phone 
   for (const width of [360, 390]) {
     await page.setViewportSize({ width, height: 800 });
     await page.goto('/studio#/record/quick');
-    const allow = page.getByRole('button', { name: 'Allow camera and mic' });
+    const allow = page.getByRole('button', { name: 'Allow camera' });
     const start = page.getByRole('button', { name: 'Start recording' });
     await expect(allow.or(start)).toBeVisible();
     if (await allow.isVisible()) await allow.click();
@@ -126,7 +126,7 @@ for (const viewport of [
     await expect(page.getByText('Saved')).toBeVisible();
     const scriptId = page.url().split('#/scripts/')[1];
     await openRecordFromEditor(page);
-    const allow = page.getByRole('button', { name: 'Allow camera and mic' });
+    const allow = page.getByRole('button', { name: 'Allow camera' });
     const start = page.getByRole('button', { name: 'Start recording' });
     await expect(allow.or(start)).toBeVisible();
     if (await allow.isVisible()) await allow.click();
@@ -213,7 +213,7 @@ test('section recording stops at the section end, groups takes and saves in orde
     .fill(`# First\nHello there my friend today.\n# Second\n${longSection}`);
   await expect(page.getByText('Saved')).toBeVisible();
   await openRecordFromEditor(page);
-  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByRole('button', { name: 'Allow camera' }).click();
   await page.getByLabel('Record one section').check();
   await page.getByRole('button', { name: 'Quick settings' }).click();
   await page.getByLabel('Countdown').selectOption('0');
@@ -244,7 +244,7 @@ test('section recording saves its section index', async ({ page }) => {
     .fill(`# First\nHello there.\n# Second\n${longSection}`);
   await expect(page.getByText('Saved')).toBeVisible();
   await openRecordFromEditor(page);
-  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByRole('button', { name: 'Allow camera' }).click();
   await page.getByLabel('Record one section').check();
   await page.getByLabel('Section', { exact: true }).selectOption('1');
   await page.getByRole('button', { name: 'Quick settings' }).click();
@@ -284,16 +284,10 @@ test('two-script batch produces two kept takes and summary', async ({ page }) =>
     await expect(page.getByText('Saved')).toBeVisible();
   }
   await page.goto('/studio#/scripts');
-  await page
-    .locator('article.studio-script-card')
-    .filter({ hasText: 'Batch first' })
-    .getByRole('button', { name: 'Add to Up next' })
-    .click();
-  await page
-    .locator('article.studio-script-card')
-    .filter({ hasText: 'Batch second' })
-    .getByRole('button', { name: 'Add to Up next' })
-    .click();
+  await page.getByLabel('More actions for Batch first').click();
+  await page.getByRole('button', { name: 'Add to Up next: Batch first' }).click();
+  await page.getByLabel('More actions for Batch second').click();
+  await page.getByRole('button', { name: 'Add to Up next: Batch second' }).click();
   await page.goto('/studio#/batch');
   await page.getByRole('button', { name: 'Start batch' }).click();
   await recordAndKeep(page);
@@ -364,7 +358,7 @@ async function storedChunkCount(page: import('@playwright/test').Page) {
 
 test('records, reviews, keeps, lists, and downloads a real media file', async ({ page }) => {
   await page.goto('/studio#/record/quick');
-  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByRole('button', { name: 'Allow camera' }).click();
   await expect(page.getByRole('button', { name: 'Start recording' })).toBeVisible();
   await page.getByRole('button', { name: 'Quick settings' }).click();
   await page.getByLabel('Countdown').selectOption('3');
@@ -411,7 +405,7 @@ test('records, reviews, keeps, lists, and downloads a real media file', async ({
 
 test('keeping a take earns the Home streak badge', async ({ page }) => {
   await page.goto('/studio#/record/quick');
-  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByRole('button', { name: 'Allow camera' }).click();
   await page.getByRole('button', { name: 'Quick settings' }).click();
   await page.getByLabel('Countdown').selectOption('0');
   await page.getByRole('button', { name: 'Close' }).click();
@@ -430,7 +424,7 @@ test('keeping a take earns the Home streak badge', async ({ page }) => {
 
 test('recovers persisted chunks after a reload during recording', async ({ page }) => {
   await page.goto('/studio#/record/quick');
-  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByRole('button', { name: 'Allow camera' }).click();
   await page.getByRole('button', { name: 'Quick settings' }).click();
   await page.getByLabel('Countdown').selectOption('0');
   await page
@@ -475,7 +469,7 @@ test('denial maps to the permission screen and camera_failed event', async ({ pa
     };
   });
   await page.goto('/studio#/record/quick');
-  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByRole('button', { name: 'Allow camera' }).click();
   await expect(page.getByRole('heading', { name: 'Camera access is off' })).toBeVisible();
   expect(
     await page.evaluate(() => (window as typeof window & { cameraEvent?: unknown }).cameraEvent),
@@ -549,7 +543,7 @@ test('quick camera and mic controls reacquire with selected constraints', async 
     });
   });
   await page.goto('/studio#/record/quick');
-  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByRole('button', { name: 'Allow camera' }).click();
   await expect(page.getByRole('button', { name: 'Start recording' })).toBeVisible();
   const calls = () =>
     page.evaluate(
@@ -583,7 +577,7 @@ test('quick camera and mic controls reacquire with selected constraints', async 
 
 test('remote keys scroll, toggle, and prevent F5 reload', async ({ page }) => {
   await page.goto('/studio#/record/quick');
-  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByRole('button', { name: 'Allow camera' }).click();
   await expect(page.getByRole('button', { name: 'Start recording' })).toBeVisible();
   const before = await page.locator('.prompter-scroll').evaluate((el) => el.scrollTop);
   await page.keyboard.press('PageDown');
@@ -623,7 +617,7 @@ test('the install sheet waits for the export and never interrupts a recording', 
     await download;
   };
   await page.goto('/studio#/record/quick');
-  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  await page.getByRole('button', { name: 'Allow camera' }).click();
   await expect(page.getByRole('button', { name: 'Start recording' })).toBeVisible();
   await page.getByRole('button', { name: 'Quick settings' }).click();
   await page.getByLabel('Countdown').selectOption('0');
@@ -639,7 +633,7 @@ test('the install sheet waits for the export and never interrupts a recording', 
   await page.evaluate(() => {
     location.hash = '/record/quick';
   });
-  const allow = page.getByRole('button', { name: 'Allow camera and mic' });
+  const allow = page.getByRole('button', { name: 'Allow camera' });
   const start = page.getByRole('button', { name: 'Start recording' });
   await expect(allow.or(start)).toBeVisible();
   if (await allow.isVisible()) {
@@ -723,6 +717,8 @@ test('a freeze earned on day 7 covers a skipped day and the streak continues', a
   await recordAndKeep(page);
   await page.goto('/studio#/');
   await expect(page.getByText('7-day streak', { exact: true })).toBeVisible();
+  // The chip expands for details; a day saved by a freeze opens it on its own.
+  await page.locator('.studio-streak summary').click();
   await expect(page.getByText('Best 7 days · 1 freeze ready')).toBeVisible();
   // Day 8 is skipped. On day 9 the freeze has covered it before anything is recorded.
   await page.clock.setFixedTime(new Date(2026, 10, 4, 12));

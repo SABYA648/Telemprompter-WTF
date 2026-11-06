@@ -40,6 +40,7 @@ import {
   type SessionAsk,
 } from '../domain/studio/asks';
 import { ReminderCard } from './ReminderCard';
+import { Icon } from './Icons';
 
 export interface HabitData {
   streak: Streak | null;
@@ -75,11 +76,7 @@ export function useHabits(): HabitData {
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-const yesterday = () => {
-  const date = new Date();
-  date.setDate(date.getDate() - 1);
-  return localDay(date);
-};
+
 async function scriptFromPrompt(
   prompt: { title: string; templateId: string; hook: string; note: string },
   source: 'daily_prompt' | 'challenge',
@@ -130,7 +127,13 @@ export function CardShare({
   );
 }
 
-/** The 9.2 top row: streak badge and weekly ring in one compact card. */
+const yesterday = () => {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return localDay(date);
+};
+
+/** The 9.2 top row as one glanceable chip; tap it for the streak and weekly goal details. */
 export function HabitSummary({
   streak,
   snap,
@@ -142,50 +145,57 @@ export function HabitSummary({
   const showGoal = settings.habit.goalsEnabled && snap && !firstRun;
   if (!showStreak && !showGoal) return null;
   const pct = snap ? Math.min(100, (snap.weeklyVideos / snap.weeklyGoal) * 100) : 0;
+  // A freeze that saved the streak is news, so the details start open that day.
+  const froze = Boolean(
+    showStreak && streak.current > 0 && streak.freezeUsedDates.at(-1) === yesterday(),
+  );
   return (
-    <section class="studio-card studio-habit-summary">
-      {showGoal && (
-        <div
-          class="studio-goal-ring"
-          role="progressbar"
-          aria-label="Weekly goal progress"
-          aria-valuemin={0}
-          aria-valuemax={snap.weeklyGoal}
-          aria-valuenow={Math.min(snap.weeklyVideos, snap.weeklyGoal)}
-          style={{ '--goal': `${pct}%` }}
-        >
-          <span aria-hidden="true">
-            {snap.weeklyVideos}/{snap.weeklyGoal}
-          </span>
-        </div>
-      )}
-      <div class="studio-habit-summary__text">
+    <details class="studio-streak" open={froze}>
+      <summary>
+        {showGoal && (
+          <span
+            class="studio-goal-ring"
+            role="progressbar"
+            aria-label="Weekly goal progress"
+            aria-valuemin={0}
+            aria-valuemax={snap.weeklyGoal}
+            aria-valuenow={Math.min(snap.weeklyVideos, snap.weeklyGoal)}
+            style={{ '--goal': `${pct}%` }}
+          />
+        )}
+        <strong>
+          {showStreak
+            ? streak.current > 0
+              ? `${streak.current}-day streak`
+              : 'Fresh start today'
+            : `${snap?.weeklyVideos ?? 0}/${snap?.weeklyGoal ?? 0} this week`}
+        </strong>
+        <Icon name="chevron" size={16} />
+      </summary>
+      <div class="studio-streak__details" role="group" aria-label="Recording streak">
         {showStreak && (
-          <div aria-label="Recording streak" role="group">
-            <strong class="studio-habit-summary__streak">
-              {streak.current > 0 ? `${streak.current}-day streak` : 'Fresh start today'}
-            </strong>
-            <p>
-              {streak.lastActiveDate === localDay(new Date())
-                ? 'Recorded today. See you tomorrow.'
-                : streak.freezeUsedDates.at(-1) === yesterday() && streak.current > 0
-                  ? `A streak freeze kept your ${streak.current}-day streak alive.`
-                  : streak.current > 0
-                    ? 'Record today to keep your streak.'
-                    : `Fresh start today. Your best streak is ${streak.best} days.`}
-            </p>
-            <p class="studio-muted">
-              Best {plural(streak.best, 'day')} · {plural(streak.freezes, 'freeze')} ready
-            </p>
-          </div>
+          <p>
+            {streak.lastActiveDate === localDay(new Date())
+              ? 'Recorded today. See you tomorrow.'
+              : froze
+                ? `A streak freeze kept your ${streak.current}-day streak alive.`
+                : streak.current > 0
+                  ? 'Record today to keep your streak.'
+                  : `Your best streak is ${plural(streak.best, 'day')}.`}
+          </p>
+        )}
+        {showStreak && (
+          <p class="studio-muted">
+            Best {plural(streak.best, 'day')} · {plural(streak.freezes, 'freeze')} ready
+          </p>
         )}
         {showGoal && (
-          <p class="studio-habit-summary__goal">
+          <p class="studio-muted">
             {snap.weeklyVideos} of {snap.weeklyGoal} videos this week
           </p>
         )}
       </div>
-    </section>
+    </details>
   );
 }
 
@@ -202,10 +212,13 @@ export function BadgeCelebration({ settings, snap }: Pick<HabitData, 'settings' 
   if (!id || !settings?.habit.badgesEnabled) return null;
   return (
     <section class="studio-card studio-celebration" role="status" aria-label="Badge unlocked">
-      <span class="studio-celebration__burst" aria-hidden="true" />
-      <p class="studio-kicker">Badge unlocked</p>
-      <h2>{BADGES[id].label}</h2>
-      <p>{BADGES[id].detail}</p>
+      <span class="studio-celebration__burst" aria-hidden="true">
+        <Icon name="star" />
+      </span>
+      <div class="studio-celebration__text">
+        <h2>{BADGES[id].label}</h2>
+        <p>{BADGES[id].detail}</p>
+      </div>
       <div class="studio-actions">
         {settings.habit.shareCardsEnabled && (
           <CardShare
@@ -216,7 +229,7 @@ export function BadgeCelebration({ settings, snap }: Pick<HabitData, 'settings' 
           />
         )}
         <button
-          class="studio-button"
+          class="studio-button studio-button--quiet"
           onClick={() => {
             setQueue((q) => q.slice(1));
             void markBadgeSeen(id);
@@ -343,7 +356,7 @@ export function HomeAsk({ streak, snap, settings }: HabitData) {
             you want, then delete the rest.
           </p>
           <div class="studio-actions">
-            <a class="studio-button" href="#/takes">
+            <a class="studio-button studio-button--quiet" href="#/takes">
               Review takes
             </a>
           </div>
@@ -448,23 +461,28 @@ export function TodayCard({ settings }: Pick<HabitData, 'settings'>) {
   };
   return (
     <section class="studio-card studio-today" aria-label="Today's prompt">
-      <h2>Today's prompt</h2>
+      <div class="studio-section-head">
+        <h2>Today's prompt</h2>
+        <button class="studio-pill" onClick={shuffle}>
+          <Icon name="flip" size={18} />
+          Another hook
+        </button>
+      </div>
       <p class="studio-today__title">{today.title}</p>
       <p class="studio-today__hook">{hook}</p>
       <p class="studio-muted">{today.angle}</p>
-      <div class="studio-actions studio-actions--grid">
-        <button class="studio-button" disabled={busy} onClick={() => void create(false)}>
-          Write it
-        </button>
-        <button class="studio-button studio-button--quiet" onClick={shuffle}>
-          Another hook
+      <div class="studio-today__actions">
+        <button class="studio-button" disabled={busy} onClick={() => void create(true)}>
+          <Icon name="camera" size={20} />
+          Record this
         </button>
         <button
           class="studio-button studio-button--quiet"
           disabled={busy}
-          onClick={() => void create(true)}
+          onClick={() => void create(false)}
         >
-          Record
+          <Icon name="script" size={20} />
+          Write
         </button>
       </div>
     </section>
@@ -513,44 +531,33 @@ export function HabitProgress({ streak, snap, settings }: HabitData) {
     settings.habit;
   if (!statsEnabled && !badgesEnabled && !challengeEnabled) return null;
   return (
-    <section class="studio-card" aria-label="Your progress">
+    <section class="studio-progress" aria-label="Your progress">
       <h2>Your progress</h2>
-      {statsEnabled && (
-        <dl class="studio-stat-grid">
-          <div>
-            <dt>Videos</dt>
-            <dd>{snap.videos}</dd>
-          </div>
-          <div>
-            <dt>Takes</dt>
-            <dd>{snap.takes}</dd>
-          </div>
-          <div>
-            <dt>Minutes recorded</dt>
-            <dd>{snap.minutes}</dd>
-          </div>
-          <div>
-            <dt>Words read</dt>
-            <dd>{snap.words}</dd>
-          </div>
-          <div>
-            <dt>Average WPM</dt>
-            <dd>{snap.averageWpm || '-'}</dd>
-          </div>
-        </dl>
-      )}
+      {statsEnabled &&
+        (snap.takes === 0 ? (
+          <p class="studio-muted">Your first take starts your progress.</p>
+        ) : (
+          <p class="studio-progress__stats">
+            {[
+              snap.videos > 0 && plural(snap.videos, 'video'),
+              plural(snap.takes, 'take'),
+              snap.minutes > 0 && `${snap.minutes} min recorded`,
+              snap.words > 0 && plural(snap.words, 'word') + ' read',
+              snap.averageWpm > 0 && `${snap.averageWpm} WPM average`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        ))}
       {badgesEnabled && (
         <>
-          <h3>Badges</h3>
           {snap.badges.length ? (
-            <ul class="studio-badges">
+            <ul class="studio-badges" aria-label="Badges">
               {snap.badges.map((id) => (
                 <li key={id}>{BADGES[id].label}</li>
               ))}
             </ul>
-          ) : (
-            <p class="studio-muted">Keep your first take to earn your first badge.</p>
-          )}
+          ) : null}
         </>
       )}
       {challengeEnabled && (
@@ -569,7 +576,7 @@ export function HabitProgress({ streak, snap, settings }: HabitData) {
         {shareCardsEnabled && streaksEnabled && streak && streak.current > 0 && (
           <CardShare kind="streak" number={streak.current} label="Day streak" text="Share streak" />
         )}
-        {shareCardsEnabled && settings.habit.goalsEnabled && (
+        {shareCardsEnabled && settings.habit.goalsEnabled && snap.weeklyVideos > 0 && (
           <CardShare
             kind="weekly"
             number={snap.weeklyVideos}
@@ -661,14 +668,14 @@ export function ChallengeScreen() {
                 </h2>
                 <p>{task.prompt}</p>
                 <div class="studio-actions studio-actions--grid">
-                  <button class="studio-button" disabled={busy} onClick={() => void start(false)}>
-                    Write it
-                  </button>
                   <button
                     class="studio-button studio-button--quiet"
                     disabled={busy}
-                    onClick={() => void start(true)}
+                    onClick={() => void start(false)}
                   >
+                    Write it
+                  </button>
+                  <button class="studio-button" disabled={busy} onClick={() => void start(true)}>
                     Record
                   </button>
                 </div>

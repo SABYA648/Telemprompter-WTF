@@ -34,7 +34,9 @@ import { SendToPhone, ReceiveScreen } from './SendReceive';
 import { isStandaloneDisplay } from '../domain/studio/install';
 import { persistOnFirstStandaloneLaunch } from '../domain/studio/storage';
 import { routeFromHash, bootHash, type Route } from './router';
-import { tabItems } from './tabs';
+import { tabItems, type TabId } from './tabs';
+import { Overflow } from './Overflow';
+import { Icon, type IconName } from './Icons';
 import RecordScreen from './RecordScreen';
 import PracticeScreen from './PracticeScreen';
 import SettingsScreen from './SettingsScreen';
@@ -406,6 +408,13 @@ export default function StudioApp(): preact.JSX.Element {
   );
 }
 
+const TAB_ICONS: Record<TabId, IconName> = {
+  home: 'home',
+  scripts: 'script',
+  record: 'camera',
+  takes: 'takes',
+  settings: 'settings',
+};
 function Tabs({ route }: { route: Route }) {
   return (
     <nav class="studio-tabs" aria-label="Studio navigation">
@@ -417,7 +426,8 @@ function Tabs({ route }: { route: Route }) {
           href={tab.href}
           aria-current={tab.current ? 'page' : undefined}
         >
-          {tab.label}
+          <Icon name={TAB_ICONS[tab.id]} />
+          <span class={tab.id === 'record' ? 'studio-visually-hidden' : ''}>{tab.label}</span>
         </a>
       ))}
     </nav>
@@ -435,82 +445,68 @@ function Home({ scripts }: { scripts: StudioScript[] }) {
   const shownNext = (queue.length ? queue : scripts).slice(0, 3);
   return (
     <section class="studio-screen studio-home">
-      <p class="studio-kicker">teleprompter.wtf Studio</p>
-      <h1>{firstRun ? 'Record your first video in 60 seconds' : 'Welcome back'}</h1>
-      <HabitSummary {...habits} firstRun={firstRun} />
+      <div class="studio-home__top">
+        <h1>{firstRun ? 'Record your first video in 60 seconds' : 'Welcome back'}</h1>
+        <HabitSummary {...habits} firstRun={firstRun} />
+      </div>
+      <TodayCard settings={habits.settings} />
       <BadgeCelebration settings={habits.settings} snap={habits.snap} />
       <HomeAsk {...habits} />
-      {!firstRun && <TodayCard settings={habits.settings} />}
-      {!firstRun && <WeeklyRecap {...habits} />}
-      <StandaloneTransferCard empty={firstRun} />
-      {firstRun && <p>We loaded a 30-second starter script. Edit it or paste your own.</p>}
-      <div class="studio-card">
-        <h2>{quick?.title ?? 'Your first script'}</h2>
-        <p>
-          {quick
-            ? `${parseMarkup(quick.body).spokenWordCount} spoken words`
-            : 'Create a script to begin.'}
-        </p>
-        <div class="studio-actions">
-          <a class="studio-button" href={`#/record/${quick?.id ?? 'quick'}`}>
-            Record now
+      <nav class="studio-icon-row" aria-label="Create tools">
+        {(
+          [
+            ['#/scripts/new', 'plus', 'Script'],
+            ['#/inbox', 'idea', 'Idea'],
+            ['#/scripts?templates=1', 'grid', 'Templates'],
+            [`#/practice/${quick?.id ?? 'quick'}`, 'play', 'Practice'],
+          ] as [string, IconName, string][]
+        ).map(([href, icon, label]) => (
+          <a href={href} key={label}>
+            <Icon name={icon} />
+            <span>{label}</span>
           </a>
-          <a class="studio-button studio-button--quiet" href="#/scripts/new">
-            Write my own
-          </a>
-        </div>
-      </div>
-      {!firstRun && (
-        <>
-          <h2>Up next</h2>
+        ))}
+      </nav>
+      {shownNext.length > 0 && (
+        <section class="studio-up-next" aria-label="Up next">
+          <div class="studio-section-head">
+            <h2>Up next</h2>
+            {queue.length >= 2 && (
+              <a class="studio-pill" href="#/batch">
+                Start batch
+              </a>
+            )}
+            {queue[0] && (
+              <a class="studio-pill" href="#/record/next">
+                Record next
+              </a>
+            )}
+          </div>
           <div class="studio-list">
             {shownNext.map((script) => (
-              <article class="studio-card studio-next-row" key={script.id}>
-                <a href={`#/scripts/${script.id}`}>{script.title || 'Untitled script'}</a>
+              <article class="studio-next-row" key={script.id}>
+                <a href={`#/scripts/${script.id}`}>
+                  <strong>{script.title || 'Untitled script'}</strong>
+                  <small>{parseMarkup(script.body).spokenWordCount} spoken words</small>
+                </a>
                 <a
-                  class="studio-button"
+                  class="studio-round-action"
                   href={`#/record/${script.id}`}
                   aria-label={`Record ${script.title || 'Untitled script'}`}
                 >
-                  Record
+                  <Icon name="camera" />
                 </a>
               </article>
             ))}
           </div>
-          <div class="studio-actions">
-            {queue[0] && (
-              <a class="studio-button" href="#/record/next">
-                Record next
-              </a>
-            )}
-            {queue.length >= 2 && (
-              <a class="studio-button studio-button--quiet" href="#/batch">
-                Start batch
-              </a>
-            )}
-          </div>
-          <div class="studio-actions">
-            <a class="studio-button" href="#/scripts/new">
-              + Script
-            </a>
-            <a class="studio-button studio-button--quiet" href="#/inbox">
-              + Idea
-            </a>
-            <a class="studio-button studio-button--quiet" href="#/scripts?templates=1">
-              Templates
-            </a>
-            {quick && (
-              <a class="studio-button studio-button--quiet" href={`#/practice/${quick.id}`}>
-                Practice
-              </a>
-            )}
-            <a class="studio-button studio-button--quiet" href="#/scripts">
-              All scripts
-            </a>
-          </div>
-          <HabitProgress {...habits} />
-        </>
+          <a class="studio-text-link" href="#/scripts">
+            All scripts
+          </a>
+        </section>
       )}
+      <WeeklyRecap {...habits} />
+      <HabitProgress {...habits} />
+      <StandaloneTransferCard empty={firstRun} />
     </section>
   );
 }
@@ -550,11 +546,14 @@ function Scripts({
     <section class="studio-screen">
       <div class="studio-screen-heading">
         <div>
-          <p class="studio-kicker">Library</p>
           <h1>Scripts</h1>
         </div>
-        <button class="studio-button" onClick={() => void add()}>
-          + Script
+        <button
+          class="studio-button studio-button--quiet studio-icon-button"
+          aria-label="New script"
+          onClick={() => void add()}
+        >
+          <Icon name="plus" />
         </button>
       </div>
       <TemplatePicker
@@ -606,30 +605,29 @@ function Scripts({
           )}
         </section>
       )}
-      <label class="studio-label">
-        Search scripts
+      <div class="studio-filter-row">
         <input
+          type="search"
+          aria-label="Search scripts"
           value={query}
           onInput={(event) => setQuery((event.target as HTMLInputElement).value)}
-          placeholder="Search title or script"
+          placeholder="Search scripts"
         />
-      </label>
-      <label class="studio-label">
-        Status
         <select
+          aria-label="Status"
           value={status}
           onChange={(event) =>
             setStatus((event.target as HTMLSelectElement).value as typeof status)
           }
         >
-          <option value="all">All statuses ({scripts.length})</option>
+          <option value="all">All ({scripts.length})</option>
           <option value="idea">Idea ({statusCount('idea')})</option>
           <option value="draft">Draft ({statusCount('draft')})</option>
           <option value="ready">Ready ({statusCount('ready')})</option>
           <option value="recorded">Recorded ({statusCount('recorded')})</option>
           <option value="posted">Posted ({statusCount('posted')})</option>
         </select>
-      </label>
+      </div>
       <p
         class="studio-visually-hidden"
         aria-live="polite"
@@ -693,7 +691,7 @@ const STATUS_LABELS: Record<ScriptStatus, string> = {
   recorded: 'Recorded',
   posted: 'Posted',
 };
-/** Library card: title and details take the full width; actions sit below, small and secondary. */
+/** Library row: title and details lead; one round record action; the rest sit in a ... menu. */
 function ScriptCard({
   script,
   queued,
@@ -709,11 +707,11 @@ function ScriptCard({
 }) {
   const [confirming, setConfirming] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const deleteRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLElement>(null);
   const opened = useRef(false);
   useEffect(() => {
     if (confirming) cancelRef.current?.focus();
-    else if (opened.current) deleteRef.current?.focus();
+    else if (opened.current) menuRef.current?.focus();
     opened.current = confirming;
   }, [confirming]);
   const title = script.title || 'Untitled script';
@@ -731,16 +729,23 @@ function ScriptCard({
         <strong class="studio-script-card__title">{title}</strong>
         <span class="studio-script-card__meta">{details}</span>
       </a>
+      <a
+        class="studio-round-action studio-script-card__record"
+        href={`#/record/${script.id}`}
+        aria-label={`Record ${title}`}
+      >
+        <Icon name="camera" />
+      </a>
       {confirming ? (
         <div
-          class="studio-script-card__actions is-confirming"
+          class="studio-script-card__confirm"
           role="group"
           aria-label={`Delete ${title}?`}
           onKeyDown={(event) => {
             if (event.key === 'Escape') setConfirming(false);
           }}
         >
-          <span class="studio-script-card__question">Delete this script?</span>
+          <span>Delete this script?</span>
           <button ref={cancelRef} class="studio-chip" onClick={() => setConfirming(false)}>
             Cancel
           </button>
@@ -753,31 +758,21 @@ function ScriptCard({
           </button>
         </div>
       ) : (
-        <div class="studio-script-card__actions">
+        <Overflow label={`More actions for ${title}`} summaryRef={menuRef}>
           <button
-            class="studio-chip"
             aria-label={queued ? `${title} is in Up next` : `Add to Up next: ${title}`}
             disabled={queued}
             onClick={onQueue}
           >
-            {queued ? 'In Up next' : 'Up next'}
+            <Icon name="plus" size={18} /> {queued ? 'In Up next' : 'Up next'}
           </button>
-          <button
-            class="studio-chip"
-            aria-label={`Duplicate ${title}`}
-            onClick={() => void onDuplicate()}
-          >
-            Duplicate
+          <button aria-label={`Duplicate ${title}`} onClick={() => void onDuplicate()}>
+            <Icon name="copy" size={18} /> Duplicate
           </button>
-          <button
-            ref={deleteRef}
-            class="studio-chip studio-chip--danger"
-            aria-label={`Delete ${title}`}
-            onClick={() => setConfirming(true)}
-          >
-            Delete
+          <button aria-label={`Delete ${title}`} onClick={() => setConfirming(true)}>
+            <Icon name="trash" size={18} /> Delete
           </button>
-        </div>
+        </Overflow>
       )}
     </article>
   );
@@ -878,6 +873,10 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
     return <Placeholder title="Script not found" text="This script may have been deleted." />;
   const parsed = parseMarkup(script.body);
   const sections = sectionDurations(parsed.sections, 140);
+  const setTarget = (targetSeconds: number) => {
+    endSessionTarget(script.id);
+    edit({ ...script, targetSeconds });
+  };
   const placeholders = (script.body.match(/\{[^}]+\}/g) ?? []).length;
   return (
     <section class="studio-screen studio-editor">
@@ -935,8 +934,17 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
       <div class="studio-stats">
         <span>{parsed.spokenWordCount} spoken words</span>
         <span>{FORMAT(durationAtWpm(parsed.spokenWordCount, 140))} at 140 WPM</span>
+      </div>
+      <div class="studio-target-row" role="group" aria-label="Target length">
         {[15, 30, 60, 90, 180].map((target) => (
-          <span class={`fit-${fitForTarget(parsed.spokenWordCount, target, 140)}`}>{target}s</span>
+          <button
+            type="button"
+            class={`studio-toggle fit-${fitForTarget(parsed.spokenWordCount, target, 140)}`}
+            aria-pressed={script.targetSeconds === target}
+            onClick={() => setTarget(target)}
+          >
+            {target}s
+          </button>
         ))}
       </div>
       {sections.length > 0 && (
@@ -956,131 +964,130 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
           {placeholders} placeholder{placeholders === 1 ? '' : 's'} left
         </p>
       )}
-      <div class="studio-grid-fields">
-        <label class="studio-label">
-          Target seconds
-          <input
-            type="number"
-            min="0"
-            value={script.targetSeconds}
-            onInput={(event) => {
-              endSessionTarget(script.id);
-              edit({
-                ...script,
-                targetSeconds: Number((event.target as HTMLInputElement).value) || 0,
-              });
-            }}
+      <details class="studio-more">
+        <summary>
+          More
+          <Icon name="chevron" size={18} />
+        </summary>
+        <div class="studio-grid-fields">
+          <label class="studio-label">
+            Target seconds
+            <input
+              type="number"
+              min="0"
+              inputMode="numeric"
+              value={script.targetSeconds}
+              onInput={(event) => setTarget(Number((event.target as HTMLInputElement).value) || 0)}
+            />
+          </label>
+          <div class="studio-label studio-aspect-field">
+            <span id="studio-aspect-label">Aspect</span>
+            <span class="studio-toggle-group" role="group" aria-labelledby="studio-aspect-label">
+              {(['9:16', '16:9'] as const).map((aspect) => (
+                <button
+                  type="button"
+                  class="studio-toggle"
+                  aria-pressed={script.aspect === aspect}
+                  onClick={() => edit({ ...script, aspect })}
+                >
+                  <Icon name={aspect === '9:16' ? 'portrait' : 'landscape'} size={20} />
+                  {aspect}
+                </button>
+              ))}
+            </span>
+          </div>
+          <label class="studio-label">
+            Status
+            <select
+              value={script.status}
+              onChange={(event) =>
+                edit({
+                  ...script,
+                  status: (event.target as HTMLSelectElement).value as ScriptStatus,
+                })
+              }
+            >
+              <option value="idea">Idea</option>
+              <option value="draft">Draft</option>
+              <option value="ready">Ready</option>
+              <option value="recorded">Recorded</option>
+              <option value="posted">Posted</option>
+            </select>
+          </label>
+        </div>
+        <section class="studio-card">
+          <h2>Captions and title</h2>
+          <CountedField
+            label="Instagram caption"
+            multiline
+            value={script.caption}
+            count={script.caption.length}
+            limit={limits.instagramCaption}
+            unit="characters"
+            note={`About ${limits.instagramCaptionVisible} show before the more link.`}
+            onInput={(caption) => edit({ ...script, caption })}
           />
-        </label>
-        <label class="studio-label">
-          Aspect
-          <select
-            value={script.aspect}
-            onChange={(event) =>
-              edit({
-                ...script,
-                aspect: (event.target as HTMLSelectElement).value as StudioScript['aspect'],
-              })
-            }
-          >
-            <option value="9:16">9:16</option>
-            <option value="16:9">16:9</option>
-          </select>
-        </label>
-        <label class="studio-label">
-          Status
-          <select
-            value={script.status}
-            onChange={(event) =>
-              edit({
-                ...script,
-                status: (event.target as HTMLSelectElement).value as ScriptStatus,
-              })
-            }
-          >
-            <option value="idea">Idea</option>
-            <option value="draft">Draft</option>
-            <option value="ready">Ready</option>
-            <option value="recorded">Recorded</option>
-            <option value="posted">Posted</option>
-          </select>
-        </label>
-      </div>
-      <section class="studio-card">
-        <h2>Captions and title</h2>
-        <CountedField
-          label="Instagram caption"
-          multiline
-          value={script.caption}
-          count={script.caption.length}
-          limit={limits.instagramCaption}
-          unit="characters"
-          note={`About ${limits.instagramCaptionVisible} show before the more link.`}
-          onInput={(caption) => edit({ ...script, caption })}
-        />
-        <CountedField
-          label="Hashtags"
-          value={script.hashtags}
-          count={(script.hashtags.match(/#[\p{L}\p{N}_]+/gu) ?? []).length}
-          limit={limits.instagramHashtags}
-          unit="hashtags"
-          onInput={(hashtags) => edit({ ...script, hashtags })}
-        />
-        <CountedField
-          label="YouTube title"
-          value={script.youtubeTitle}
-          count={script.youtubeTitle.length}
-          limit={limits.youtubeTitle}
-          unit="characters"
-          onInput={(youtubeTitle) => edit({ ...script, youtubeTitle })}
-        />
-        <CountedField
-          label="YouTube description"
-          multiline
-          value={script.youtubeDescription}
-          count={script.youtubeDescription.length}
-          limit={limits.youtubeDescription}
-          unit="characters"
-          onInput={(youtubeDescription) => edit({ ...script, youtubeDescription })}
-        />
-        <p>Platform facts checked {verifiedOn}. Limits can change.</p>
-      </section>
-      <div class="studio-actions">
+          <CountedField
+            label="Hashtags"
+            value={script.hashtags}
+            count={(script.hashtags.match(/#[\p{L}\p{N}_]+/gu) ?? []).length}
+            limit={limits.instagramHashtags}
+            unit="hashtags"
+            onInput={(hashtags) => edit({ ...script, hashtags })}
+          />
+          <CountedField
+            label="YouTube title"
+            value={script.youtubeTitle}
+            count={script.youtubeTitle.length}
+            limit={limits.youtubeTitle}
+            unit="characters"
+            onInput={(youtubeTitle) => edit({ ...script, youtubeTitle })}
+          />
+          <CountedField
+            label="YouTube description"
+            multiline
+            value={script.youtubeDescription}
+            count={script.youtubeDescription.length}
+            limit={limits.youtubeDescription}
+            unit="characters"
+            onInput={(youtubeDescription) => edit({ ...script, youtubeDescription })}
+          />
+          <p>Platform facts checked {verifiedOn}. Limits can change.</p>
+        </section>
+      </details>
+      {showSend && <SendToPhone script={script} />}
+      <div class="studio-editor__actions">
         <a class="studio-button" href={`#/record/${script.id}`}>
-          Record
+          <Icon name="camera" size={20} /> Record
         </a>
         <a class="studio-button studio-button--quiet" href={`#/practice/${script.id}`}>
-          Practice
+          <Icon name="play" size={20} /> Practice
         </a>
-        <button
-          class="studio-button studio-button--quiet"
-          onClick={() => void flush().then(() => setShowSend(!showSend))}
-        >
-          Send to phone
-        </button>
-        <button
-          class="studio-button studio-button--quiet"
-          onClick={async () => {
-            await flush();
-            sessionStorage.setItem('studio.presentScript', script.body);
-            location.href = '/?studio-present=1';
-          }}
-        >
-          Present
-        </button>
-        <button
-          class="studio-button studio-button--danger"
-          onClick={async () => {
-            await flush();
-            await softDelete(script.id);
-            await refresh();
-            go('/scripts');
-          }}
-        >
-          Delete
-        </button>
+        <Overflow label="More script actions" up>
+          <button onClick={() => void flush().then(() => setShowSend(!showSend))}>
+            <Icon name="phone" size={18} /> Send to phone
+          </button>
+          <button
+            onClick={async () => {
+              await flush();
+              sessionStorage.setItem('studio.presentScript', script.body);
+              location.href = '/?studio-present=1';
+            }}
+          >
+            <Icon name="present" size={18} /> Present
+          </button>
+          <button
+            onClick={async () => {
+              await flush();
+              await softDelete(script.id);
+              await refresh();
+              go('/scripts');
+            }}
+          >
+            <Icon name="trash" size={18} /> Delete
+          </button>
+        </Overflow>
       </div>
-      {showSend && <SendToPhone script={script} />}
     </section>
   );
 }

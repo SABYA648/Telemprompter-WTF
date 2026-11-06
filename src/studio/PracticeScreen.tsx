@@ -204,7 +204,11 @@ export default function PracticeScreen({ id }: { id: string }) {
           </label>
         </div>
         <div class="studio-actions">
-          <button class="studio-button" disabled={!spokenWords || finished} onClick={toggle}>
+          <button
+            class={finished ? 'studio-button studio-button--quiet' : 'studio-button'}
+            disabled={!spokenWords || finished}
+            onClick={toggle}
+          >
             {running ? 'Pause' : activeSeconds ? 'Resume' : 'Start practice'}
           </button>
           <button

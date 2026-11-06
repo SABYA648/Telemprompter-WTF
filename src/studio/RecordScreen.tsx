@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { analytics, deviceClass } from '../domain/analytics';
 import { markActiveDay } from '../domain/studio/streak';
 import { onKeptTake } from '../domain/studio/habits';
-import { storedArm } from '../domain/studio/experiments';
 import { countWords } from '../domain/studio/words';
 import {
   cameraErrorReason,
@@ -44,6 +43,7 @@ import {
   orientationReadiness,
 } from '../domain/studio/readiness';
 import ProCameraControls from './ProCameraControls';
+import { Icon } from './Icons';
 import { SAFE_ZONES, PLATFORM_FACTS_VERIFIED_ON } from '../content/studio/platformFacts';
 import { SettingsFields } from './SettingsScreen';
 import type { StudioSettings, KeyAction } from '../domain/studio/types';
@@ -995,19 +995,18 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
     );
   if (permission === 'priming')
     return (
-      <section class="studio-screen studio-interstitial">
+      <section class="studio-screen studio-interstitial studio-permission">
         <h1>Camera and mic, please</h1>
-        <p>
-          {storedArm('priming_copy') === 'variant'
-            ? 'Your browser asks for the camera and mic next. Your video stays on this device until you save it.'
-            : 'Your video is recorded and saved on this device. Nothing is uploaded.'}
-        </p>
-        <button class="studio-button" onClick={() => void requestCamera(settings)}>
-          Allow camera and mic
-        </button>
-        <a class="studio-button studio-button--quiet" href={`#/scripts/${id}`}>
-          Not now
-        </a>
+        <div class="studio-permission__frame" aria-hidden="true">
+          <Icon name="camera" size={64} />
+        </div>
+        <div class="studio-permission__bottom">
+          <button class="studio-button" onClick={() => void requestCamera(settings)}>
+            <Icon name="camera" size={20} /> Allow camera
+          </button>
+          <p>Saved on your device. Nothing uploaded.</p>
+          <a href={`#/scripts/${id}`}>Not now</a>
+        </div>
       </section>
     );
   if (permission === 'opening')
@@ -1328,46 +1327,50 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
           </button>
         </div>
         <div class="record-main-controls">
-          <a href={`#/scripts/${id}`} aria-label="Close recording">
-            Close
-          </a>
+          <div class="record-side">
+            <a href={`#/scripts/${id}`} aria-label="Close recording">
+              <Icon name="close" />
+            </a>
+            <button onClick={flip} disabled={recording} aria-label="Flip camera">
+              <Icon name="flip" />
+            </button>
+          </div>
           <button
-            class="record-button"
+            class={recording ? 'record-button is-recording' : 'record-button'}
             disabled={countdown !== null}
             aria-label={recording ? 'Stop recording' : 'Start recording'}
             onClick={() => (recording ? stop() : void begin())}
-          >
-            {recording ? 'Stop' : 'Record'}
-          </button>
-          {recording &&
-            settings.recording.pauseButton &&
-            typeof MediaRecorder.prototype.pause === 'function' && (
-              <button
-                onClick={() => {
-                  if (paused) {
-                    recorder.current?.resume();
-                    controller.current?.start();
-                    setPaused(false);
-                  } else {
-                    recorder.current?.pause();
-                    controller.current?.pause();
-                    setPaused(true);
-                  }
-                }}
-                aria-label={paused ? 'Resume recording' : 'Pause recording'}
-              >
-                {paused ? 'Resume' : 'Pause'}
+          />
+          <div class="record-side">
+            {recording &&
+              settings.recording.pauseButton &&
+              typeof MediaRecorder.prototype.pause === 'function' && (
+                <button
+                  onClick={() => {
+                    if (paused) {
+                      recorder.current?.resume();
+                      controller.current?.start();
+                      setPaused(false);
+                    } else {
+                      recorder.current?.pause();
+                      controller.current?.pause();
+                      setPaused(true);
+                    }
+                  }}
+                  aria-label={paused ? 'Resume recording' : 'Pause recording'}
+                >
+                  <Icon name={paused ? 'play' : 'pause'} />
+                </button>
+              )}
+            {settings.recording.touchLock && recording && (
+              <button onClick={() => setTouchLocked(true)} aria-label="Lock touch">
+                <Icon name="lock" />
               </button>
             )}
-          <button onClick={flip} disabled={recording}>
-            Flip camera
-          </button>
-          {settings.recording.touchLock && recording && (
-            <button onClick={() => setTouchLocked(true)}>Lock touch</button>
-          )}
-          <button onClick={() => setSettingsOpen(true)} aria-label="Quick settings">
-            Settings
-          </button>
+            <button onClick={() => setSettingsOpen(true)} aria-label="Quick settings">
+              <Icon name="settings" />
+            </button>
+          </div>
         </div>
       </div>
       {touchLocked && (

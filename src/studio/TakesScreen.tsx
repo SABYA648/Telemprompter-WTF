@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { analytics, deviceClass } from '../domain/analytics';
 import { exportTake, exportTakes, sizeBucket } from '../domain/studio/exportTake';
 import { parseMarkup } from '../domain/studio/markup';
@@ -7,6 +7,8 @@ import { deleteTake, getTake, listTakes, saveTake, takeBlob } from '../domain/st
 import { formatBytes, minutesLeft, storageEstimate } from '../domain/studio/storage';
 import type { StudioTake } from '../domain/studio/types';
 import { videoBitrate } from '../domain/studio/mime';
+import { Icon } from './Icons';
+import { Overflow } from './Overflow';
 
 function StorageMeter() {
   const [estimate, setEstimate] = useState({ usage: 0, quota: 0 });
@@ -23,12 +25,10 @@ function StorageMeter() {
   if (!estimate.quota) return null;
   const available = estimate.quota - estimate.usage;
   return (
-    <div class="studio-card">
-      <strong>Storage</strong>
+    <div class="studio-storage">
       <p>
-        Using {formatBytes(estimate.usage)}. About{' '}
-        {minutesLeft(available, videoBitrate('1080p', 30, 'high'))} minutes of recording space left
-        at 1080p High.
+        {formatBytes(estimate.usage)} used · about{' '}
+        {minutesLeft(available, videoBitrate('1080p', 30, 'high'))} min left at 1080p
       </p>
       <meter value={estimate.usage} max={estimate.quota} aria-label="Storage used" />
     </div>
@@ -59,18 +59,125 @@ const sectionOf = (take: StudioTake) => take.sectionIndex ?? -1;
 /** Whole-script takes first, then section order, oldest first, so a share reads as the video does. */
 const inSectionOrder = (takes: StudioTake[]) =>
   [...takes].sort((a, b) => sectionOf(a) - sectionOf(b) || a.createdAt - b.createdAt);
-function TakeRow({ take }: { take: StudioTake }) {
+/** A 2-up grid tile: the first frame as a thumbnail, play on tap, actions in a ... menu. */
+function TakeTile({
+  take,
+  title,
+  refresh,
+}: {
+  take: StudioTake;
+  title: string;
+  refresh: () => Promise<void>;
+}) {
+  const tile = useRef<HTMLElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
+  const [near, setNear] = useState(false);
+  const [url, setUrl] = useState('');
+  const [playing, setPlaying] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  useEffect(() => {
+    // Read the take from storage only when its tile is about to scroll into view.
+    if (!tile.current || typeof IntersectionObserver === 'undefined') return setNear(true);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setNear(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(tile.current);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    if (!near) return;
+    let active = true;
+    let objectUrl = '';
+    void takeBlob(take).then((blob) => {
+      objectUrl = URL.createObjectURL(blob);
+      if (active) setUrl(objectUrl);
+      else URL.revokeObjectURL(objectUrl);
+    });
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [take.id, near]);
   return (
-    <a class="take-row" href={`#/takes/${take.id}`}>
-      <span>
-        Take {take.number} · {Math.round(take.durationMs / 1000)}s · {take.container.toUpperCase()}
-      </span>
-      <span>
-        {!take.exportedAt ? 'Unsaved ' : ''}
-        {take.starred ? 'Starred ' : ''}
-        {take.status === 'recovered' ? 'Recovered' : ''}
-      </span>
-    </a>
+    <article class="studio-take-tile" ref={tile}>
+      <div class="studio-take-tile__media">
+        {url ? (
+          // The #t fragment makes Safari paint the first frame as a thumbnail.
+          <video
+            ref={video}
+            src={`${url}#t=0.1`}
+            playsInline
+            preload="metadata"
+            controls={playing}
+            onEnded={() => setPlaying(false)}
+          />
+        ) : (
+          <span class="studio-take-tile__placeholder">
+            <Icon name="takes" size={40} />
+          </span>
+        )}
+        {!playing && (
+          <button
+            class="studio-take-tile__play"
+            aria-label={`Play take ${take.number}`}
+            disabled={!url}
+            onClick={() => {
+              setPlaying(true);
+              void video.current?.play();
+            }}
+          >
+            <Icon name="play" />
+          </button>
+        )}
+        {take.starred && (
+          <span class="studio-take-tile__star" aria-hidden="true">
+            <Icon name="star" size={16} />
+          </span>
+        )}
+      </div>
+      <div class="studio-take-tile__meta">
+        <a href={`#/takes/${take.id}`}>
+          Take {take.number} · {Math.round(take.durationMs / 1000)}s
+          {take.starred && <span class="studio-visually-hidden"> Starred</span>}
+          {take.status === 'recovered' && <small> Recovered</small>}
+        </a>
+        <Overflow label={`More actions for take ${take.number}`} up>
+          <button onClick={() => void exportTake(take, title).then(refresh)}>
+            <Icon name="share" size={18} /> Share
+          </button>
+          <button onClick={() => void saveTake({ ...take, starred: !take.starred }).then(refresh)}>
+            <Icon name="star" size={18} /> {take.starred ? 'Unstar' : 'Star'}
+          </button>
+          <button onClick={() => setConfirming(true)}>
+            <Icon name="trash" size={18} /> Delete
+          </button>
+        </Overflow>
+      </div>
+      {confirming && (
+        <div
+          class="studio-take-tile__confirm"
+          role="group"
+          aria-label={`Delete take ${take.number}?`}
+        >
+          <button class="studio-chip" onClick={() => setConfirming(false)}>
+            Cancel
+          </button>
+          <button
+            class="studio-chip studio-chip--danger-solid"
+            aria-label={`Confirm delete take ${take.number}`}
+            onClick={() => void deleteTake(take.id).then(refresh)}
+          >
+            Delete
+          </button>
+        </div>
+      )}
+    </article>
   );
 }
 export function TakesScreen() {
@@ -111,6 +218,13 @@ export function TakesScreen() {
     (groups[take.scriptId ?? 'free'] ??= []).push(take);
     return groups;
   }, {});
+  const tiles = (rows: StudioTake[], id: string) => (
+    <div class="studio-takes-grid">
+      {rows.map((take) => (
+        <TakeTile key={take.id} take={take} title={titles[id] ?? 'Take'} refresh={refresh} />
+      ))}
+    </div>
+  );
   return (
     <section class="studio-screen">
       <h1>Takes</h1>
@@ -118,49 +232,51 @@ export function TakesScreen() {
       {takes.some((take) => !take.exportedAt) && (
         <p class="studio-storage-warning">Save it to Photos now. Browser storage can be cleared.</p>
       )}
-      {!takes.length && <p>No takes yet. Record a video to see it here.</p>}
+      {!takes.length && <p class="studio-muted">No takes yet. Tap the camera to record one.</p>}
       {message && <p role="status">{message}</p>}
       {Object.entries(grouped).map(([id, rows]) => {
-        const hasSections = rows.some((take) => sectionOf(take) >= 0);
         const parts = [...new Set(rows.map(sectionOf))].sort((a, b) => a - b);
         return (
-          <div class="studio-card" key={id}>
-            <h2>{id === 'free' ? 'Free records' : (titles[id] ?? 'Script')}</h2>
-            {!hasSections && rows.map((take) => <TakeRow take={take} />)}
-            {hasSections &&
-              parts.map((part) => (
-                <div key={part}>
-                  <h3>
-                    {part < 0
-                      ? 'Whole script'
-                      : `Section ${part + 1}${sectionTitles[id]?.[part] ? `: ${sectionTitles[id][part]}` : ''}`}
-                  </h3>
-                  {rows
-                    .filter((take) => sectionOf(take) === part)
-                    .map((take) => (
-                      <TakeRow take={take} />
-                    ))}
-                </div>
-              ))}
-            {rows.some((take) => take.starred) && (
-              <div class="studio-actions">
-                <button class="studio-button" onClick={() => void saveStarred(rows)}>
+          <section class="studio-take-group" key={id}>
+            <div class="studio-section-head">
+              <h2>{id === 'free' ? 'Free records' : (titles[id] ?? 'Script')}</h2>
+              {rows.some((take) => take.starred) && (
+                <button class="studio-pill" onClick={() => void saveStarred(rows)}>
+                  <Icon name="share" size={18} />
                   Save starred takes
                 </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+            {rows.some((take) => sectionOf(take) >= 0)
+              ? parts.map((part) => (
+                  <div key={part}>
+                    <h3>
+                      {part < 0
+                        ? 'Whole script'
+                        : `Section ${part + 1}${sectionTitles[id]?.[part] ? `: ${sectionTitles[id][part]}` : ''}`}
+                    </h3>
+                    {tiles(
+                      rows.filter((take) => sectionOf(take) === part),
+                      id,
+                    )}
+                  </div>
+                ))
+              : tiles(rows, id)}
+          </section>
         );
       })}
-      <button
-        class="studio-button studio-button--danger"
-        onClick={async () => {
-          for (const take of takes.filter((t) => t.exportedAt)) await deleteTake(take.id);
-          await refresh();
-        }}
-      >
-        Delete saved takes
-      </button>
+      {takes.some((take) => take.exportedAt) && (
+        <button
+          class="studio-button studio-button--quiet studio-takes__clear"
+          onClick={async () => {
+            for (const take of takes.filter((t) => t.exportedAt)) await deleteTake(take.id);
+            await refresh();
+          }}
+        >
+          <Icon name="trash" size={20} />
+          Delete saved takes
+        </button>
+      )}
     </section>
   );
 }
@@ -205,6 +321,7 @@ export function TakeScreen({ id }: { id: string }) {
       </p>
       <div class="studio-actions">
         <button class="studio-button" onClick={() => void save()}>
+          <Icon name="share" size={20} />
           {deviceClass() === 'desktop' ? `Download ${take.container.toUpperCase()}` : 'Save video'}
         </button>
         <button
@@ -215,6 +332,7 @@ export function TakeScreen({ id }: { id: string }) {
             )
           }
         >
+          <Icon name="star" size={20} />
           {take.starred ? 'Unstar' : 'Star'}
         </button>
         <button
@@ -225,6 +343,7 @@ export function TakeScreen({ id }: { id: string }) {
             })
           }
         >
+          <Icon name="trash" size={20} />
           Delete
         </button>
       </div>

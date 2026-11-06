@@ -1,4 +1,10 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+/** Send to phone sits in the editor's ... menu, next to Present and Delete. */
+async function sendToPhone(page: Page) {
+  await page.getByLabel('More script actions').click();
+  await page.getByRole('button', { name: 'Send to phone' }).click();
+}
 
 test('public template opens an authored Studio script', async ({ page }) => {
   await page.goto('/templates/30-second-reel-script');
@@ -24,7 +30,7 @@ test('idea becomes a script with a chosen template', async ({ page }) => {
 test('S1 link previews and saves a new script', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/studio#/scripts/quick');
-  await page.getByRole('button', { name: 'Send to phone' }).click();
+  await sendToPhone(page);
   await expect(page.getByRole('heading', { name: 'Send to phone' })).toBeVisible();
   await page.getByRole('button', { name: 'Copy link' }).click();
   const link = await page.evaluate(() => navigator.clipboard.readText());
@@ -87,11 +93,20 @@ test('Up next reorders, and Home records the first script', async ({ page }) => 
   }
   await page.goto('/studio#/scripts');
   // A queued script's button changes name, so the first match is always the next unqueued one.
-  const addButtons = page.getByRole('button', { name: 'Add to Up next' });
+  // Each lives in its row's ... menu, so it is matched by label while the menu is closed.
+  const addButtons = page.locator('button[aria-label^="Add to Up next"]');
+  const addNext = async () => {
+    await page
+      .locator('article.studio-script-card', { has: addButtons })
+      .first()
+      .locator('.studio-overflow summary')
+      .click();
+    await page.getByRole('button', { name: 'Add to Up next' }).first().click();
+  };
   const beforeAdd = await addButtons.count();
-  await addButtons.first().click();
+  await addNext();
   await expect(addButtons).toHaveCount(beforeAdd - 1);
-  await addButtons.first().click();
+  await addNext();
   const firstQueued = page.locator('.studio-row__title').first();
   const before = await firstQueued.textContent();
   await page
@@ -112,19 +127,21 @@ test('Up next reorders, and Home records the first script', async ({ page }) => 
 test('status filter narrows the library with live counts', async ({ page }) => {
   await page.goto('/studio#/scripts/new');
   await page.getByLabel('Title', { exact: true }).fill('Ready to shoot');
+  await page.getByText('More', { exact: true }).click();
   await page.locator('.studio-grid-fields').getByLabel('Status').selectOption('ready');
   await expect(page.getByText('Saved')).toBeVisible();
   await page.goto('/studio#/scripts');
   const status = page.getByLabel('Status');
   await expect(status.locator('option[value="ready"]')).toHaveText('Ready (1)');
   await status.selectOption('ready');
-  await expect(page.getByRole('link', { name: /Ready to shoot/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /^Ready to shoot/ })).toBeVisible();
   await status.selectOption('posted');
-  await expect(page.getByRole('link', { name: /Ready to shoot/ })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /^Ready to shoot/ })).toHaveCount(0);
 });
 
 test('caption counters track limits from platform facts', async ({ page }) => {
   await page.goto('/studio#/scripts/new');
+  await page.getByText('More', { exact: true }).click();
   await page.getByLabel('Hashtags').fill('#a #b #c #d #e #f');
   await expect(page.getByText('6/5 hashtags. 1 over the limit.')).toBeVisible();
   await page.getByLabel('YouTube title').fill('Short');
@@ -159,9 +176,9 @@ test('send sheet shows a QR code, and long scripts fall back to the link', async
   await page.goto('/studio#/scripts/new');
   await page.getByLabel('Script', { exact: true }).fill('A short script for my phone.');
   await expect(page.getByText('Saved')).toBeVisible();
-  await page.getByRole('button', { name: 'Send to phone' }).click();
+  await sendToPhone(page);
   await expect(page.getByAltText('QR code for this script')).toBeVisible();
-  await page.getByRole('button', { name: 'Send to phone' }).click();
+  await sendToPhone(page);
   // Random words barely compress, so the link passes 1,500 characters.
   const words = Array.from(
     { length: 900 },
@@ -169,7 +186,7 @@ test('send sheet shows a QR code, and long scripts fall back to the link', async
   );
   await page.getByLabel('Script', { exact: true }).fill(words.join(' '));
   await expect(page.getByText('Saved')).toBeVisible();
-  await page.getByRole('button', { name: 'Send to phone' }).click();
+  await sendToPhone(page);
   await expect(
     page.getByText('Too long for a QR code. Share or copy the link instead.'),
   ).toBeVisible();
@@ -185,7 +202,7 @@ test('a receive link never reaches analytics and a bad link explains itself', as
 test('receive screen copies a transfer code for the Home Screen app', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/studio#/scripts/quick');
-  await page.getByRole('button', { name: 'Send to phone' }).click();
+  await sendToPhone(page);
   await page.getByRole('button', { name: 'Copy link' }).click();
   const link = await page.evaluate(() => navigator.clipboard.readText());
   await page.goto(link);

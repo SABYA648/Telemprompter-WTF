@@ -88,7 +88,7 @@ export function ReminderCard({
         </>
       )}
       <div class="studio-actions">
-        <button class="studio-button" onClick={() => void add()}>
+        <button class="studio-button studio-button--quiet" onClick={() => void add()}>
           Download calendar file
         </button>
         {onNotNow && !always && (

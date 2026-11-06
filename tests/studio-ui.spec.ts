@@ -100,6 +100,7 @@ for (const viewport of [
     await page.goto('/studio#/scripts');
     const cards = page.locator('article.studio-script-card');
     await expect(cards).toHaveCount(3);
+    await page.getByLabel('More actions for Quick tip').click();
     await page.getByRole('button', { name: 'Add to Up next: Quick tip' }).click();
     await expect(page.getByRole('heading', { name: 'Up next' })).toBeVisible();
 
@@ -113,27 +114,25 @@ for (const viewport of [
       const meta = (await card.locator('.studio-script-card__meta').boundingBox())!;
       expect(box.x).toBeGreaterThanOrEqual(0);
       expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
-      expect(title.width).toBeGreaterThanOrEqual(box.width * 0.7);
-      expect(meta.width).toBeGreaterThanOrEqual(box.width * 0.7);
+      expect(title.width).toBeGreaterThanOrEqual(box.width * 0.5);
+      expect(meta.width).toBeGreaterThanOrEqual(box.width * 0.5);
       // A long title can take more lines, but none of it is clipped.
       expect(
         await card
           .locator('.studio-script-card__title')
           .evaluate((el) => el.scrollHeight - el.clientHeight),
       ).toBe(0);
-      for (const button of await card.getByRole('button').all()) {
-        const target = (await button.boundingBox())!;
-        expect(target.height).toBeGreaterThanOrEqual(44);
-        expect(target.width).toBeLessThanOrEqual(120);
-        expect(target.x + target.width).toBeLessThanOrEqual(box.x + box.width);
-        // Actions sit below the text, never beside it.
-        expect(target.y).toBeGreaterThanOrEqual(meta.y + meta.height);
-        expect(target.y).toBeGreaterThanOrEqual(title.y + title.height);
-      }
+      const record = (await card.getByRole('link', { name: /^Record / }).boundingBox())!;
+      expect(record.width).toBeGreaterThanOrEqual(44);
+      expect(record.x + record.width).toBeLessThanOrEqual(box.x + box.width);
+      expect(record.y).toBeGreaterThanOrEqual(box.y);
     }
     const longCard = cards.filter({ hasText: 'How I film a week' });
     await expect(longCard.locator('.studio-script-card__title')).toHaveText(LONG_TITLE);
-    await expect(longCard.getByRole('link')).toHaveAttribute('href', /#\/scripts\//);
+    await expect(longCard.locator('.studio-script-card__main')).toHaveAttribute(
+      'href',
+      /#\/scripts\//,
+    );
 
     if (viewport.width !== 320) {
       mkdirSync(shots, { recursive: true });
@@ -142,14 +141,16 @@ for (const viewport of [
     }
 
     // Delete asks before it acts, and Escape backs out.
+    await longCard.getByLabel(`More actions for ${LONG_TITLE}`).click();
     await longCard.getByRole('button', { name: `Delete ${LONG_TITLE}` }).click();
     await expect(longCard.getByRole('group', { name: `Delete ${LONG_TITLE}?` })).toBeVisible();
     await expect(longCard.getByRole('button', { name: 'Cancel' })).toBeFocused();
     if (viewport.width !== 320)
       await page.screenshot({ path: `${shots}/scripts-${viewport.width}-confirm.png` });
     await page.keyboard.press('Escape');
-    await expect(longCard.getByRole('button', { name: `Delete ${LONG_TITLE}` })).toBeFocused();
+    await expect(longCard.getByLabel(`More actions for ${LONG_TITLE}`)).toBeFocused();
     await expect(cards).toHaveCount(3);
+    await longCard.getByLabel(`More actions for ${LONG_TITLE}`).click();
     await longCard.getByRole('button', { name: `Delete ${LONG_TITLE}` }).click();
     await page.getByRole('button', { name: `Confirm delete ${LONG_TITLE}` }).click();
     await expect(cards).toHaveCount(2);
@@ -166,7 +167,7 @@ test('script cards and navigation hold up on desktop', async ({ page }) => {
   for (const card of await cards.all()) {
     const box = (await card.boundingBox())!;
     const title = (await card.locator('.studio-script-card__title').boundingBox())!;
-    expect(title.width).toBeGreaterThanOrEqual(box.width * 0.7);
+    expect(title.width).toBeGreaterThanOrEqual(box.width * 0.5);
   }
   await expect(currentItems(page)).toHaveCount(1);
   mkdirSync(shots, { recursive: true });

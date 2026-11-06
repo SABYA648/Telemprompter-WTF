@@ -198,7 +198,7 @@ test('offline: Studio renders its shell, content pages fall back to /offline', a
   await expect(
     page.getByRole('heading', { name: 'Record your first video in 60 seconds' }),
   ).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Scripts' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Scripts', exact: true })).toBeVisible();
   expect(await page.evaluate(async () => (await fetch('/site.webmanifest')).ok)).toBe(true);
   expect(await page.evaluate(async () => (await fetch('/icons/icon-192.png')).ok)).toBe(true);
   expect(
@@ -230,7 +230,7 @@ test('offline Studio keeps working on saved scripts', async ({ page, context }) 
   await waitForController(page);
   await context.setOffline(true);
   await page.reload();
-  await page.getByRole('button', { name: '+ Script' }).click();
+  await page.getByRole('button', { name: 'New script' }).click();
   await page.getByLabel('Title', { exact: true }).fill('Written offline');
   await expect(page.getByText('Saved')).toBeVisible();
   await page.goto('/studio#/scripts');
@@ -244,7 +244,7 @@ test('transfer code restores script and device identity in a fresh context', asy
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/studio#/scripts');
-  await page.getByRole('button', { name: '+ Script' }).click();
+  await page.getByRole('button', { name: 'New script' }).click();
   await page.getByLabel('Title', { exact: true }).fill('Transfer title');
   await page.getByLabel('Script', { exact: true }).fill('The script crosses storage contexts.');
   await expect
@@ -346,7 +346,7 @@ test('transfer code restores script and device identity in a fresh context', asy
   await importedPage.goto('/studio#/inbox');
   await expect(importedPage.getByText('An idea to move')).toBeVisible();
   await importedPage.goto('/studio#/scripts');
-  await importedPage.getByRole('link', { name: /Transfer title/ }).click();
+  await importedPage.getByRole('link', { name: /^Transfer title/ }).click();
   await importedPage.getByLabel('Title', { exact: true }).fill('Locally newer title');
   await expect(importedPage.getByText('Saved')).toBeVisible();
   await importedPage.goto('/studio#/settings');

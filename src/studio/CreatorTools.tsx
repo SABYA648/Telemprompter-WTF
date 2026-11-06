@@ -4,6 +4,7 @@ import { createIdea, deleteIdea, listIdeas } from '../domain/studio/ideasRepo';
 import { createScript } from '../domain/studio/scriptsRepo';
 import type { HookNiche, StudioTemplate } from '../content/studio/types';
 import type { StudioIdea } from '../domain/studio/types';
+import { Icon } from './Icons';
 
 // The packs are large and only some screens use them, so they stay out of the Studio entry chunk.
 const loadTemplates = () => import('../content/studio/templates').then((pack) => pack.templates);
@@ -67,7 +68,10 @@ export function TemplatePicker({ onCreated, open }: { onCreated?: () => void; op
       open={open}
       onToggle={(event) => setExpanded(event.currentTarget.open)}
     >
-      <summary>Start from a template</summary>
+      <summary>
+        <Icon name="grid" size={20} />
+        Start from a template
+      </summary>
       <div class="studio-grid-fields">
         <label class="studio-label">
           Search templates
@@ -129,7 +133,10 @@ export function HookPicker({ insert }: { insert: (text: string) => void }) {
       class="studio-card studio-disclosure"
       onToggle={(event) => setExpanded(event.currentTarget.open)}
     >
-      <summary>Choose a hook</summary>
+      <summary>
+        <Icon name="idea" size={20} />
+        Choose a hook
+      </summary>
       <label class="studio-label">
         Niche
         <select
@@ -159,7 +166,7 @@ export function HookPicker({ insert }: { insert: (text: string) => void }) {
           Shuffle
         </button>
         <button
-          class="studio-button"
+          class="studio-button studio-button--quiet"
           onClick={() => {
             const hook = hooks[index];
             if (hook) {
@@ -201,7 +208,7 @@ function IdeaCard({
       </label>
       <div class="studio-actions">
         <button
-          class="studio-button"
+          class="studio-button studio-button--quiet"
           disabled={!selected}
           onClick={() => void onConvert(idea, selected)}
         >

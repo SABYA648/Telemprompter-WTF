@@ -7,6 +7,10 @@ async function returning(page: Page, title = 'My video plan') {
   await page.getByLabel('Title', { exact: true }).fill(title);
   await expect(page.getByText('Saved')).toBeVisible();
 }
+/** The streak chip on Home expands to show the weekly goal and streak details. */
+async function openStreak(page: Page) {
+  await page.locator('.studio-streak summary').click();
+}
 /** Writes kv entries and kept takes straight into the Studio database. */
 async function seed(
   page: Page,
@@ -53,7 +57,7 @@ test('Today prompt shuffles hooks and writes a local script; the challenge opens
   await today.getByRole('button', { name: 'Another hook' }).click();
   await expect(hook).not.toHaveText(first ?? '');
   const shuffled = (await hook.textContent()) ?? '';
-  await today.getByRole('button', { name: 'Write it' }).click();
+  await today.getByRole('button', { name: 'Write' }).click();
   await expect(page).toHaveURL(/#\/scripts\//);
   await expect(page.getByLabel('Script', { exact: true })).toHaveValue(
     new RegExp(shuffled.slice(0, 20).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
@@ -61,12 +65,14 @@ test('Today prompt shuffles hooks and writes a local script; the challenge opens
   await page.goto('/studio#/challenge');
   await page.getByRole('button', { name: 'Join challenge' }).click();
   await expect(page.getByText('0 of 30 days complete')).toBeVisible();
-  await page.getByRole('button', { name: 'Write it' }).click();
+  await page.getByRole('button', { name: 'Write' }).click();
   await expect(page.getByLabel('Script', { exact: true })).toHaveValue(/Say who you help/);
 });
 
 test('share cards download as full-size PNGs over 10 KB', async ({ page }) => {
   await returning(page, 'Weekly card');
+  // A week card needs a video this week to share.
+  await seed(page, { takes: [{ scriptId: 'quick', at: Date.now() }] });
   await page.goto('/studio#/');
   const download = page.waitForEvent('download');
   await page
@@ -181,14 +187,17 @@ test('the weekly goal resets at Monday 00:00 local time', async ({ page }) => {
     takes: [{ scriptId: 'quick', at: new Date(2026, 10, 15, 23, 30).getTime() }],
   });
   await page.goto('/studio#/');
+  await openStreak(page);
   await expect(page.getByText('1 of 5 videos this week')).toBeVisible();
   await page.clock.setFixedTime(new Date(2026, 10, 16, 0, 0, 1));
   await page.reload();
+  await openStreak(page);
   await expect(page.getByText('0 of 5 videos this week')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Weekly recap' })).toBeVisible();
   await page.goto('/studio#/settings/habit');
   await page.getByRole('combobox', { name: /Weekly goal/ }).selectOption('3');
   await page.goto('/studio#/');
+  await openStreak(page);
   await expect(page.getByText('0 of 3 videos this week')).toBeVisible();
 });
 
@@ -247,10 +256,12 @@ for (const width of [320, 360, 390]) {
       true,
     );
     const buttons = page.locator(
-      '.studio-habit-summary, .studio-today button, .studio-celebration button, [aria-label="Your progress"] .studio-button',
+      '.studio-streak summary, .studio-today button, .studio-celebration button, [aria-label="Your progress"] .studio-button',
     );
     for (const box of await buttons.evaluateAll((els) =>
-      els.filter((el) => el.matches('button, a')).map((el) => el.getBoundingClientRect().height),
+      els
+        .filter((el) => el.matches('button, a, summary'))
+        .map((el) => el.getBoundingClientRect().height),
     ))
       expect(box).toBeGreaterThanOrEqual(48);
     await expect(page.getByRole('progressbar', { name: 'Weekly goal progress' })).toHaveAttribute(
