@@ -328,6 +328,9 @@ async function storedTakes(page: import('@playwright/test').Page) {
           kept: boolean;
           sectionIndex: number | null;
           exportedAt: number | null;
+          container: 'mp4' | 'webm';
+          wordsPerLine?: number;
+          timeline: Array<{ t: number; line: number; section: number }>;
         }>
       >((resolve, reject) => {
         const open = indexedDB.open('teleprompter-wtf');
@@ -746,4 +749,59 @@ test('a real kept take unlocks and celebrates the first badge once', async ({ pa
   await expect(
     page.getByRole('region', { name: 'Your progress' }).getByText('First take'),
   ).toBeVisible();
+});
+
+test('a real kept take exports scroll-timed captions and offers MP4 only when encodable', async ({
+  page,
+}) => {
+  await page.goto('/studio#/record/quick');
+  await page.getByRole('button', { name: 'Allow camera' }).click();
+  await page.getByRole('button', { name: 'Quick settings' }).click();
+  await page.getByLabel('Countdown').selectOption('0');
+  await page
+    .getByRole('dialog', { name: 'Quick settings' })
+    .getByRole('button', { name: 'Close' })
+    .click();
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
+  await page.waitForTimeout(2500);
+  await page.getByRole('button', { name: 'Stop recording' }).click();
+  await page
+    .getByRole('dialog', { name: 'Review take' })
+    .getByRole('button', { name: 'Keep', exact: true })
+    .click();
+  await expect(page.getByRole('button', { name: 'Done' })).toBeVisible();
+  const [take] = await storedTakes(page);
+  expect(take?.wordsPerLine).toBeGreaterThan(0);
+  expect(take?.timeline.length).toBeGreaterThan(0);
+  await page.goto(`/studio#/takes/${take!.id}`);
+  await page.getByLabel('More take actions').click();
+  await page.getByRole('button', { name: 'Captions' }).click();
+  const captions = page.getByRole('dialog', { name: 'Captions' });
+  await expect(captions.getByLabel('Caption preview')).toContainText('00:00:00,000 --> ');
+  await captions.getByRole('button', { name: 'Close' }).click();
+  const supported = await page.evaluate(async () => {
+    if (typeof AudioEncoder === 'undefined') return false;
+    return Boolean(
+      (
+        await AudioEncoder.isConfigSupported({
+          codec: 'mp4a.40.2',
+          sampleRate: 48_000,
+          numberOfChannels: 2,
+          bitrate: 128_000,
+        })
+      ).supported,
+    );
+  });
+  await page.getByLabel('More take actions').click();
+  const convert = page.getByRole('button', { name: 'Convert to MP4' });
+  if (take!.container === 'mp4') {
+    await expect(convert).toHaveCount(0);
+    return;
+  }
+  await convert.click();
+  const sheet = page.getByRole('dialog', { name: 'Convert to MP4' });
+  // Without an AAC encoder (Playwright's Chromium) the sheet says so instead of offering it.
+  if (supported) await expect(sheet.getByRole('button', { name: 'Convert to MP4' })).toBeVisible();
+  else await expect(sheet).toContainText("This browser can't make MP4 files on the device.");
 });

@@ -436,3 +436,51 @@ Built by Claude opus-5-5 medium. Closes P1-B: the guide "Record with camera" lin
 - `tests/m10-seo.spec.ts`: `stubUmami` takes `{ persist: true }` and keeps its log in sessionStorage across the navigation. Two new tests check that each CTA sends exactly one `clicked_open_studio` with the right `page_type`/`cta_location`, and that it comes before `opened_studio`. P2: `practiceFit` now waits for "Finish practice" to be enabled instead of `waitForTimeout(500)`.
 
 Gates (Node 26.7.0): `npm run check` pass (0 errors). `npx playwright test tests/m10-seo.spec.ts` 18/18. The new and changed tests also passed `--repeat-each 4` (12/12).
+
+## M11 Pro export and control - 2026-11-06
+
+Built by Claude opus-5-5 high. It resumed from an earlier attempt that had only installed the dependencies, and keeps those exact pins: `fflate` 0.8.3 and `mediabunny` 1.65.2.
+
+Shipped:
+
+- `timeline.ts`: YouTube chapters from the take's scroll timeline. The first stamp is 00:00, a take needs at least 3 chapters of at least 10 s each, and anything short of that explains why. Chapters are copyable text. An SRT export runs each cue from when its line reached the cue band to when the next line did. Both carry "Timed from your scroll, not from speech." Record stores `wordsPerLine` on kept takes so cue text lines up with the scroll (D-049).
+- `convert.ts`: WebM to MP4 (H.264/AAC) and Trim through a lazy `mediabunny` chunk, with progress and Cancel, behind `VideoEncoder.isConfigSupported` and `AudioEncoder.isConfigSupported`. Otherwise it shows an honest unsupported message. "Suggest trim" decodes the audio with `decodeAudioData` and finds the first and last 50 ms windows above -40 dBFS, plus 0.3 s padding. The user checks the values, then trims. The output is a new MP4 to save; the take is never replaced (D-050).
+- Operator window `#/prompter-window` via `window.open` and `BroadcastChannel('tw-prompter')`, carrying script, position, WPM and play state. It has mirror modes, text size and a full screen button, and opens from the editor's "..." menu or Record's Quick settings (D-051).
+- Gamepad in Record and Practice: A toggles, D-pad up and down change speed by 5 WPM, left and right move a line (D-053).
+- `.docx` (`fflate` plus `DOMParser` over `word/document.xml`), `.md` and `.txt` import from the library and editor "..." menus (D-052). Print or PDF through a print stylesheet that prints only the script.
+- UI follows DESIGN.md and BRIEF.md: new inline-SVG icons (monitor, chapters, captions, convert, scissors, import, print, fullscreen, mirror) and one reusable bottom `Sheet`. Take detail is one accent Save, a Star icon button and a "..." menu holding Chapters, Captions, Convert to MP4 (WebM takes only), Trim and Delete. Every tool opens as a bottom sheet with one accent action. M11 analytics: `exported_chapters`, `exported_captions`, `converted_take` {`result`}, `trimmed_take`, `opened_operator_window`, plus `used_remote_key` {`device: gamepad`}.
+
+Files: `src/domain/studio/{timeline,convert,docImport,gamepad,operator}.ts` and tests, `src/studio/{TakeTools,Sheet,ScriptTools,OperatorWindow}.tsx`, `TakesScreen.tsx`, `StudioApp.tsx`, `RecordScreen.tsx`, `PracticeScreen.tsx`, `Icons.tsx`, `router.ts`, `tabs.ts`, `src/styles/studio.css`, `astro.config.ts`, `scripts/sw-precache.mjs`, `scripts/make-docx-fixture.mjs`, `tests/fixtures/script.docx`, `tests/m11-pro.spec.ts`, `tests/media.spec.ts`.
+
+Gates: check pass (typecheck 0 errors, lint, content lint 79 pages, format, build, budget), unit 340/340 in 52 files, e2e 186/186 in one full `npx playwright test` run (164 Chromium, 22 media), media 22/22, budget Studio 78.2 / 130 KB gzip and largest content page 28.1 / 60 KB. `mediabunny` (141 KB gzip) and `fflate` (2.7 KB gzip) are separate dynamic chunks, outside the Studio entry, and `mediabunny` is outside the service worker precache. Lighthouse was not run.
+
+How acceptance was verified: unit tests cover the chapter rules (00:00 first, at least 3, at least 10 s, the last chapter included, backward scrolls), SRT `HH:MM:SS,mmm` formatting and cues, docx parsing of `tests/fixtures/script.docx` (Title, headings, runs, tab, break, tracked deletion, table cell, entities), Markdown, the trim windows and threshold, MP4 feature detection, the gamepad map and the precache skip. E2E covers these:
+
+- The operator window shows the editor's script, mirrors Start, Pause and Resume from Practice, and scrolls.
+- With WebCodecs removed, Convert and Trim show the unsupported message, send `converted_take` with `unsupported`, and never request the `mediabunny` chunk.
+- Chapters copy to the clipboard and the SRT downloads.
+- A real fake-camera take stores `wordsPerLine` and exports cues.
+- Imports of the `.docx` fixture, a `.md` file and a broken `.docx` work as expected.
+- Print media shows only the script.
+- A gamepad stub drives Practice.
+- Take detail shows at most one accent action, with 44 px or larger menu items and no horizontal overflow at 360 and 390 px, including with a sheet open.
+
+A one-off probe in Playwright's Chromium (H.264 present, AAC stubbed, video-only WebM) produced a playable MP4 (1.94 s) and a trimmed MP4 (1.0 s). Suggest trim on a fake-microphone recording suggested 0.2 s to 4 s. Screenshots of Take detail, its menu, the Chapters, Captions and Trim sheets, the editor and library menus (360 and 390 px), and the operator window were checked by eye.
+
+Deviations: D-049 to D-053. Delete on Take detail moved into the "..." menu with a confirmation. Conversion output is a new file rather than a replacement take. Captions need takes kept after this milestone.
+
+Known issues:
+
+- Desktop Chromium on Linux and Playwright's Chromium have no AAC encoder, so Convert and Trim say unsupported there. Chrome and Edge on Windows and macOS are expected to pass detection, but no real AAC conversion has run in CI.
+- Cue words come from the current script, so editing a script after recording changes the caption text, though not its timing (D-049).
+- The operator window depends on popups; when a browser blocks them, the main window says so.
+- Carried over from M12 (P2): the editor's bottom Record button sits near the raised nav Record.
+
+Owner manual checks:
+
+- On Chrome or Edge on Windows or macOS: convert a WebM take to MP4, cancel one midway, trim with Suggest trim, and confirm the files play and upload to YouTube and Instagram.
+- Paste exported chapters into a YouTube description and confirm YouTube picks them up. Load an `.srt` in YouTube Studio or CapCut.
+- Glass rig: open the operator window on the monitor under the glass, use full screen and the mirror modes, then drive it from Record with a clicker and with a gamepad.
+- Import a real `.docx` from Word and from Google Docs, and print a script to PDF from iPhone Safari and desktop Chrome.
+
+Next: none in section 16. M11 was the last planned milestone (M12 shipped early as the owner's UI revamp). The backlog needs an owner go-ahead, and launch PR #8 still awaits owner device QA.

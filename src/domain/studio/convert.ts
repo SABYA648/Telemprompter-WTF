@@ -79,7 +79,8 @@ export async function convertToMp4(
       : {}),
     showWarnings: false,
   });
-  if (!conversion.isValid) throw new Error('unsupported');
+  // Never hand back a silent or picture-less MP4 because one track could not be encoded.
+  if (!conversion.isValid || conversion.discardedTracks.length) throw new Error('unsupported');
   const cancel = () => void conversion.cancel();
   options.signal?.addEventListener('abort', cancel, { once: true });
   conversion.onProgress = (fraction) => options.onProgress?.(Math.min(1, Math.max(0, fraction)));
