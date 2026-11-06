@@ -13,7 +13,12 @@ import {
   type HabitSnapshot,
 } from '../domain/studio/habits';
 import { createScript } from '../domain/studio/scriptsRepo';
-import { localDay, readStreak, type Streak } from '../domain/studio/streak';
+import {
+  bestStreakInPreviousWeek,
+  localDay,
+  readStreak,
+  type Streak,
+} from '../domain/studio/streak';
 import { loadSettings } from '../domain/studio/settings';
 import { listTakes } from '../domain/studio/takesRepo';
 import { getDb } from '../domain/studio/db';
@@ -257,7 +262,7 @@ export function HomeAsk({ streak, snap, settings }: HabitData) {
       const found =
         held ??
         shareMilestone({
-          streak: settings.habit.streaksEnabled ? streak.current : 0,
+          streak: settings.habit.streaksEnabled ? streak.best : 0,
           weeklyGoalReached: settings.habit.goalsEnabled && snap.weeklyVideos >= snap.weeklyGoal,
           challengeComplete: settings.habit.challengeEnabled && snap.challengeDays >= 30,
           week: mondayOf(new Date()),
@@ -324,7 +329,7 @@ export function HomeAsk({ streak, snap, settings }: HabitData) {
   };
   const shareNumber =
     milestone?.kind === 'streak'
-      ? (streak?.current ?? 0)
+      ? Number(milestone.key.slice('streak_'.length))
       : milestone?.kind === 'weekly'
         ? (snap?.weeklyVideos ?? 0)
         : (snap?.challengeDays ?? 0);
@@ -484,7 +489,7 @@ export function WeeklyRecap({ streak, snap, settings }: HabitData) {
         </div>
         <div>
           <dt>Best streak</dt>
-          <dd>{plural(streak?.best ?? 0, 'day')}</dd>
+          <dd>{plural(bestStreakInPreviousWeek(streak, new Date()), 'day')}</dd>
         </div>
         <div>
           <dt>Goal</dt>

@@ -99,6 +99,39 @@ test('quick rating appears after the third kept take and is asked once', async (
   await expect(rating).toHaveCount(0);
 });
 
+test('all five rating targets fit at 320px and stay at least 48px wide', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await returning(page, 'Rating bounds');
+  await seed(page, {
+    takes: [0, 1, 2].map(() => ({ scriptId: 'quick', at: Date.now() })),
+  });
+  await page.goto('/studio#/');
+  const buttons = page
+    .getByRole('region', { name: 'Rate recording' })
+    .locator('.studio-rating button');
+  await expect(buttons).toHaveCount(5);
+  for (const button of await buttons.all()) {
+    const bounds = (await button.boundingBox())!;
+    expect(bounds.width).toBeGreaterThanOrEqual(48);
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(320);
+  }
+});
+
+test('Monday recap uses only the previous week for best streak', async ({ page }) => {
+  await page.clock.setFixedTime(new Date(2026, 10, 16, 12));
+  await returning(page, 'Weekly recap');
+  const older = Array.from({ length: 30 }, (_, i) => day(2026, 9, i + 1));
+  await seed(page, {
+    kv: { streak: { activeDates: [...older, day(2026, 11, 11)] } },
+    takes: [{ scriptId: 'quick', at: new Date(2026, 10, 11, 12).getTime() }],
+  });
+  await page.goto('/studio#/');
+  const recap = page.getByRole('region', { name: 'Weekly recap' });
+  await expect(recap.getByText('1 day')).toBeVisible();
+  await expect(recap.getByText('30 days')).toHaveCount(0);
+});
+
 test('Home shows one ask per session and the milestone share card once', async ({ page }) => {
   await page.clock.setFixedTime(new Date(2026, 10, 12, 12));
   await returning(page, 'Ladder');

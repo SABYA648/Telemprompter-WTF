@@ -24,6 +24,22 @@ const valid = (day: string) =>
 export const streakBucket = (n: number): '1' | '2_6' | '7_29' | '30_99' | '100_plus' =>
   n >= 100 ? '100_plus' : n >= 30 ? '30_99' : n >= 7 ? '7_29' : n >= 2 ? '2_6' : '1';
 
+/** Longest run inside the previous local Monday-to-Sunday week, including freeze days. */
+export function bestStreakInPreviousWeek(streak: Streak | null, now: Date): number {
+  if (!streak) return 0;
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7) - 7);
+  const start = dayNumber(localDay(monday));
+  const days = new Set([...streak.activeDates, ...streak.freezeUsedDates].map(dayNumber));
+  let run = 0;
+  let best = 0;
+  for (let day = start; day < start + 7; day++) {
+    run = days.has(day) ? run + 1 : 0;
+    best = Math.max(best, run);
+  }
+  return best;
+}
+
 /** Replays local days so a freeze is spent once, even after a long absence or reload. */
 export function streakAt(dates: string[], now: Date, previousBest = 0): Streak {
   const today = dayNumber(localDay(now));

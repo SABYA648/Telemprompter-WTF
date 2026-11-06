@@ -81,11 +81,11 @@ export function shareMilestone(input: {
   offered: string[];
 }): { key: string; kind: 'streak' | 'weekly' | 'challenge' } | null {
   const candidates = [
-    ...(input.challengeComplete ? [{ key: 'challenge', kind: 'challenge' as const }] : []),
-    ...([30, 7, 3].includes(input.streak)
-      ? [{ key: `streak_${input.streak}`, kind: 'streak' as const }]
-      : []),
+    ...([3, 7, 30] as const)
+      .filter((day) => input.streak >= day)
+      .map((day) => ({ key: `streak_${day}`, kind: 'streak' as const })),
     ...(input.weeklyGoalReached ? [{ key: `weekly_${input.week}`, kind: 'weekly' as const }] : []),
+    ...(input.challengeComplete ? [{ key: 'challenge', kind: 'challenge' as const }] : []),
   ];
   return candidates.find((c) => !input.offered.includes(c.key)) ?? null;
 }

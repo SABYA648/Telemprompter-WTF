@@ -336,7 +336,7 @@ Deviations: D-035 to D-042. D-041 adapts the freeze clock test to H1. D-038 exte
 Known issues:
 
 - The practice-credit browser test failed once under the full parallel run and has not reproduced. If it recurs, look at the Home read racing the practice write.
-- Coverage of `src/domain/studio` cannot be measured locally: no vitest coverage provider is installed, and adding one would be a new dependency.
+- Coverage was unmeasured at M9 sign-off; resolved in the review fix-up below.
 - Share sheets with files and a real Instagram story upload cannot be driven in headless Chromium. CI covers the download path and a stubbed `navigator.share`.
 - Experiment arms are visible in Umami only once the server stores session data (Umami 2.18.0 or later, section 18).
 
@@ -348,3 +348,12 @@ Owner manual checks:
 - In Umami, confirm sessions carry `exp_priming_copy`, `exp_countdown`, `takes_bucket` and `streak_bucket`.
 
 Next: M10.
+
+## M9 review fix-up - 2026-11-06
+
+- Share asks now use the persisted best run to recover streak milestones passed while away, offer unshown streak cards in 3, 7, 30 order, and show the earned milestone number on the card. A unit test reaches day 7, returns on day 9 and confirms the day-7 card is offered once.
+- Monday recap calculates its best streak only within the previous local Monday-to-Sunday week, including freeze days. Unit and browser tests seed an older 30-day run and one day last week and confirm the recap says 1 day.
+- Studio populates the takes and streak bucket mirrors before the first Umami identity call, then re-identifies when Keep or a return to the tab changes either bucket. A fake-camera browser test spies on `umami.identify` before and after Keep.
+- Rating buttons use a 3 px grid gap. A 320 px Playwright bounds test confirms all five buttons are at least 48 px wide and stay inside the viewport.
+- D-043 adds exact-version `@vitest/coverage-v8@4.1.10` as a development-only dependency. `npm run test:coverage` enforces 80% line coverage for `src/domain/studio` and measures **89.44% (1008/1127 lines)**. It is outside `npm run check`; no client bytes are added.
+- Gates with Node 26: `npm run check` passed (307/307 unit tests, typecheck, lint, content lint, formatting, build and budget); `npm run test:coverage` passed at 89.44%; `npm run budget` passed (Studio 65.9 KB gzip / 130 KB). The full `npm run test:e2e` run passed 151/153; one transfer assertion assumed a stored `current: 2` remained unchanged despite only one active date, and Chromium crashed before another PWA case. The assertion now expects the correctly recalculated `current: 1` with `best: 2`. After the final build, the specs passed in smaller groups: 32/32 PWA, 56/56 and 44/44 other Chromium, and `npx playwright test --project=media` 21/21; **153/153 total**.

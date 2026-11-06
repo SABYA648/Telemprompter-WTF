@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { localDay, streakAt } from './streak';
+import { bestStreakInPreviousWeek, localDay, streakAt } from './streak';
 
 const run = (from: string, days: number) => {
   const start = new Date(`${from}T12:00:00`);
@@ -63,6 +63,12 @@ describe('streak freezes', () => {
 });
 
 describe('local streak days', () => {
+  it('limits the Monday recap streak to the previous week', () => {
+    const older = run('2026-09-01', 30);
+    const streak = streakAt([...older, '2026-11-11'], new Date(2026, 10, 16));
+    expect(streak.best).toBeGreaterThanOrEqual(30);
+    expect(bestStreakInPreviousWeek(streak, new Date(2026, 10, 16))).toBe(1);
+  });
   it('earns one freeze per seven active days, caps at two and spends them across gaps', () => {
     const dates = Array.from({ length: 21 }, (_, i) => `2026-11-${String(i + 1).padStart(2, '0')}`);
     expect(streakAt(dates, new Date(2026, 10, 21))).toMatchObject({ current: 21, freezes: 2 });

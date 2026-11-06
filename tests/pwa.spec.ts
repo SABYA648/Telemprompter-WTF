@@ -338,7 +338,11 @@ test('transfer code restores script and device identity in a fresh context', asy
     db.close();
     return value;
   });
-  expect(importedStreak).toEqual({ current: 2, best: 2, activeDates: ['2026-11-05'] });
+  expect(importedStreak).toMatchObject({
+    current: 1,
+    best: 2,
+    activeDates: ['2026-11-05'],
+  });
   await importedPage.goto('/studio#/inbox');
   await expect(importedPage.getByText('An idea to move')).toBeVisible();
   await importedPage.goto('/studio#/scripts');

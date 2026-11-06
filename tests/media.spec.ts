@@ -26,6 +26,68 @@ async function recordAndKeep(page: import('@playwright/test').Page) {
   await review.getByRole('button', { name: 'Keep', exact: true }).click();
 }
 
+test('Studio identifies persisted buckets before boot and updates identity after Keep', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date(2026, 10, 6, 12));
+  await page.route('https://analytics.sabya.pm/script.js', (route) =>
+    route.fulfill({
+      contentType: 'application/javascript',
+      body: `window.__identifies = []; window.umami = { identify: (id, data) => window.__identifies.push(data), track: () => {} };`,
+    }),
+  );
+  await page.goto('/studio#/scripts/quick');
+  await expect(page.getByLabel('Title', { exact: true })).toBeVisible();
+  await page.evaluate(async () => {
+    const request = indexedDB.open('teleprompter-wtf');
+    const db = await new Promise<IDBDatabase>((resolve) => {
+      request.onsuccess = () => resolve(request.result);
+    });
+    const tx = db.transaction(['kv', 'takes'], 'readwrite');
+    tx.objectStore('kv').put({ activeDates: ['2026-11-05'] }, 'streak');
+    tx.objectStore('takes').put({
+      id: 'seed-identity',
+      scriptId: 'quick',
+      kept: true,
+      durationMs: 30000,
+      wordsRead: 10,
+      createdAt: new Date(2026, 10, 5, 12).getTime(),
+      exportedAt: null,
+    });
+    await new Promise<void>((resolve) => {
+      tx.oncomplete = () => resolve();
+    });
+    db.close();
+  });
+  await page.goto('/studio#/record/quick');
+  await page.reload();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as typeof window & { __identifies: Array<Record<string, string>> })
+            .__identifies?.[0],
+      ),
+    )
+    .toMatchObject({
+      takes_bucket: '1',
+      streak_bucket: '1',
+    });
+  await recordAndKeep(page);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (
+          window as typeof window & { __identifies: Array<Record<string, string>> }
+        ).__identifies?.at(-1),
+      ),
+    )
+    .toMatchObject({
+      takes_bucket: '2_5',
+      streak_bucket: '2_6',
+    });
+});
+
 test('Record tab stays active and camera controls clear the navigation at phone widths', async ({
   page,
 }) => {

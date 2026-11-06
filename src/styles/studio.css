@@ -1295,7 +1295,7 @@ ol.studio-row-list .studio-row__title::before {
 .studio-rating {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 4px;
+  gap: 3px;
   margin-top: 12px;
 }
 .studio-rating .studio-button {

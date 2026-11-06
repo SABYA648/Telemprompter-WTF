@@ -32,6 +32,8 @@ import PracticeScreen from './PracticeScreen';
 import SettingsScreen from './SettingsScreen';
 import { TakesScreen, TakeScreen } from './TakesScreen';
 import { recoverTakes } from '../domain/studio/takesRepo';
+import { readHabits } from '../domain/studio/habits';
+import { readStreak } from '../domain/studio/streak';
 import InstallSheet from './InstallSheet';
 import {
   BadgeCelebration,
@@ -91,13 +93,34 @@ export default function StudioApp(): preact.JSX.Element {
     if (request === refreshRequest.current) setScripts(result);
   };
   useEffect(() => {
+    let identifiedBuckets = '';
+    const bucketPair = () => {
+      try {
+        return `${localStorage.getItem('tw.takes_bucket')}/${localStorage.getItem('tw.streak_bucket')}`;
+      } catch {
+        return '';
+      }
+    };
+    const refreshIdentity = () => {
+      const next = bucketPair();
+      if (next !== identifiedBuckets) {
+        identifiedBuckets = next;
+        analytics.identify();
+      }
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible')
+        void Promise.all([readHabits(), readStreak()]).then(refreshIdentity);
+    };
     const boot = async () => {
       try {
         await migrateQuickScript();
         await purgeDeletedScripts();
         await ensureFirstScript();
         await experimentArms();
-        analytics.identify();
+        await Promise.all([readHabits(), readStreak()]);
+        identifiedBuckets = bucketPair();
+        analytics.initialize();
         try {
           if (!isMemoryStorage()) localStorage.setItem('studio.hasData', '1');
         } catch {
@@ -155,13 +178,20 @@ export default function StudioApp(): preact.JSX.Element {
       }
     };
     addEventListener('hashchange', onHash);
+    addEventListener('studio-streak-changed', refreshIdentity);
+    addEventListener('studio-habits-changed', refreshIdentity);
+    document.addEventListener('visibilitychange', onVisible);
     // Effects run after paint, so a hash change since the first render has no listener to catch it.
     const latest = routeFromHash(location.hash);
     setRoute((route) =>
       route.screen === latest.screen && route.id === latest.id ? route : latest,
     );
-    analytics.initialize();
-    return () => removeEventListener('hashchange', onHash);
+    return () => {
+      removeEventListener('hashchange', onHash);
+      removeEventListener('studio-streak-changed', refreshIdentity);
+      removeEventListener('studio-habits-changed', refreshIdentity);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
   useEffect(() => {
     if (ready)

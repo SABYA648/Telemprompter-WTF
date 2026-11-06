@@ -15,6 +15,7 @@ import {
   shareMilestone,
 } from './asks';
 import { resetDbForTests } from './db';
+import { streakAt } from './streak';
 
 const DAY = 86400000;
 const base = {
@@ -117,9 +118,9 @@ describe('ask ladder', () => {
       key: 'streak_3',
       kind: 'streak',
     });
-    expect(shareMilestone({ ...input, streak: 4, offered: [] })).toBeNull();
+    expect(shareMilestone({ ...input, streak: 4, offered: [] })?.key).toBe('streak_3');
     expect(shareMilestone({ ...input, streak: 7, offered: ['streak_3'] })?.key).toBe('streak_7');
-    expect(shareMilestone({ ...input, streak: 30, offered: [] })?.key).toBe('streak_30');
+    expect(shareMilestone({ ...input, streak: 30, offered: [] })?.key).toBe('streak_3');
     expect(shareMilestone({ ...input, weeklyGoalReached: true, offered: [] })?.key).toBe(
       'weekly_2026-11-02',
     );
@@ -132,6 +133,20 @@ describe('ask ladder', () => {
     await markMilestoneOffered('streak_3');
     await markMilestoneOffered('streak_3');
     expect(await offeredMilestones()).toEqual(['streak_3']);
+  });
+  it('offers an earned day-7 card once on day 9 after the exact milestone was missed', async () => {
+    const dates = Array.from({ length: 7 }, (_, i) => `2026-11-${String(i + 1).padStart(2, '0')}`);
+    const streak = streakAt(dates, new Date(2026, 10, 9));
+    const input = {
+      streak: streak.best,
+      weeklyGoalReached: false,
+      challengeComplete: false,
+      week: '2026-11-09',
+    };
+    await markMilestoneOffered('streak_3');
+    expect(shareMilestone({ ...input, offered: await offeredMilestones() })?.key).toBe('streak_7');
+    await markMilestoneOffered('streak_7');
+    expect(shareMilestone({ ...input, offered: await offeredMilestones() })).toBeNull();
   });
   it('shows inline save guidance and storage cleanup at their thresholds', () => {
     expect(inlineAsk('save_take', { review: true })).toBe(true);

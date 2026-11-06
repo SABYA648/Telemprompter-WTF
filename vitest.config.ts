@@ -5,7 +5,8 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     coverage: {
       reporter: ['text', 'html'],
-      include: ['src/domain/**/*.ts'],
+      include: ['src/domain/studio/**/*.ts'],
+      thresholds: { lines: 80 },
     },
   },
 });
