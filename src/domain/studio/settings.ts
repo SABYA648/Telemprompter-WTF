@@ -303,6 +303,10 @@ export function sessionTargetSeconds(id: string): number | null {
     return null;
   }
 }
+/** An explicit target edit for this script ends the preset's override, as a camera edit does (D-048). */
+export function endSessionTarget(id: string): void {
+  if (sessionTargetSeconds(id) !== null) applySessionTarget(null);
+}
 let saveQueue: Promise<void> = Promise.resolve();
 export async function loadSettings(): Promise<StudioSettings> {
   const db = await getDb();

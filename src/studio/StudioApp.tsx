@@ -4,7 +4,11 @@ import { analytics, deviceClass, displayMode, studioEntry } from '../domain/anal
 import { parseMarkup } from '../domain/studio/markup';
 import { presetById } from '../content/studio/presets';
 import { starterById } from '../content/studio/starterScripts';
-import { applySessionPreset, applySessionTarget } from '../domain/studio/settings';
+import {
+  applySessionPreset,
+  applySessionTarget,
+  endSessionTarget,
+} from '../domain/studio/settings';
 import type { StudioPreset } from '../content/studio/types';
 import {
   migrateQuickScript,
@@ -959,12 +963,13 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
             type="number"
             min="0"
             value={script.targetSeconds}
-            onInput={(event) =>
+            onInput={(event) => {
+              endSessionTarget(script.id);
               edit({
                 ...script,
                 targetSeconds: Number((event.target as HTMLInputElement).value) || 0,
-              })
-            }
+              });
+            }}
           />
         </label>
         <label class="studio-label">

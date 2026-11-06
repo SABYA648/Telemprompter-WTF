@@ -1,6 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
+test.use({
+  launchOptions: {
+    args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
+  },
+});
+
 type EventLog = { __ev?: unknown[][] };
 async function readRecord<T>(page: Page, store: string, key: string): Promise<T> {
   return page.evaluate(
@@ -198,6 +204,47 @@ test('an existing library offers starter or an existing script for a preset', as
   );
   expect(after.targetSeconds).toBe(before.targetSeconds);
   expect(after.aspect).toBe(before.aspect);
+});
+
+test('an editor target edit ends the preset target in Record and Practice', async ({ page }) => {
+  await page.context().grantPermissions(['camera', 'microphone']);
+  const body = Array.from({ length: 150 }, (_, i) => `word${i + 1}`).join(' ');
+  await page.goto('/studio#/scripts/quick');
+  await page.getByLabel('Script', { exact: true }).fill(body);
+  await expect
+    .poll(async () => (await readRecord<{ body: string }>(page, 'scripts', 'quick')).body)
+    .toBe(body);
+  await page.goto('/studio?preset=youtube');
+  const dialog = page.getByRole('dialog', { name: 'Choose a script to record' });
+  await dialog.getByRole('button', { name: 'Introduce yourself in 30 seconds' }).click();
+  await expect(page).toHaveURL(/\/studio#\/record\/quick/);
+  await page.getByRole('button', { name: 'Allow camera and mic' }).click();
+  // The YouTube preset has an open duration, so Record uses the saved speed, not a fit.
+  await expect(page.getByText('140 WPM')).toBeVisible();
+  // Practice reads the same target as Record. At 140 WPM, 150 words project to 64 seconds.
+  const practiceFit = async (fit: string) => {
+    await page.goto('/studio#/practice/quick');
+    await page.getByRole('button', { name: 'Start practice' }).click();
+    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: 'Finish practice' }).click();
+    await expect(page.getByRole('region', { name: 'Practice summary' })).toContainText(
+      `Target fit: ${fit}`,
+    );
+  };
+  await practiceFit('No target set');
+  await page.goto('/studio#/scripts/quick');
+  await page.getByLabel('Target seconds').fill('60');
+  await expect
+    .poll(
+      async () =>
+        (await readRecord<{ targetSeconds: number }>(page, 'scripts', 'quick')).targetSeconds,
+    )
+    .toBe(60);
+  expect(await page.evaluate(() => sessionStorage.getItem('studio.sessionTarget'))).toBeNull();
+  await page.goto('/studio#/record/quick');
+  // 150 spoken words over a 60 second target.
+  await expect(page.getByText('150 WPM')).toBeVisible();
+  await practiceFit('On target');
 });
 
 test('a preset on a library holding only a trashed quick script keeps that script', async ({

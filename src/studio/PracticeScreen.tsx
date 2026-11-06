@@ -7,7 +7,7 @@ import {
   practiceSummary,
   type PracticeFit,
 } from '../domain/studio/practice';
-import { loadSettings } from '../domain/studio/settings';
+import { loadSettings, sessionTargetSeconds } from '../domain/studio/settings';
 import { markActiveDay } from '../domain/studio/streak';
 import { refreshBadges } from '../domain/studio/habits';
 import { analytics, progressBucket } from '../domain/analytics';
@@ -105,7 +105,7 @@ export default function PracticeScreen({ id }: { id: string }) {
     Math.min(wordsPassed, spokenWords),
     spokenWords,
     activeSeconds,
-    script?.targetSeconds ?? 0,
+    script ? (sessionTargetSeconds(script.id) ?? script.targetSeconds) : 0,
   );
   useEffect(() => {
     if (scroller.current)

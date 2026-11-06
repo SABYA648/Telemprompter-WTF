@@ -2,10 +2,13 @@ import 'fake-indexeddb/auto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   applySessionPreset,
+  applySessionTarget,
   defaultSettings,
+  endSessionTarget,
   loadSettings,
   sanitizeSettings,
   saveSettings,
+  sessionTargetSeconds,
 } from './settings';
 import { getDb, resetDbForTests } from './db';
 import { cameraConstraints } from './camera';
@@ -117,6 +120,25 @@ describe('Studio settings', () => {
     expect(values.has('studio.sessionPreset')).toBe(false);
     const after = (await (await getDb()).get('kv', 'settings')) as typeof merged;
     expect(after.camera).toMatchObject({ aspect: '9:16', safeZone: 'tiktok' });
+  });
+  it('ends a preset target when the visitor edits that script target', () => {
+    const values = new Map<string, string>();
+    vi.stubGlobal('sessionStorage', {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        values.set(key, value);
+      },
+      removeItem: (key: string) => {
+        values.delete(key);
+      },
+    });
+    applySessionTarget({ id: 'quick', seconds: 0 });
+    expect(sessionTargetSeconds('quick')).toBe(0);
+    endSessionTarget('other');
+    expect(sessionTargetSeconds('quick')).toBe(0);
+    endSessionTarget('quick');
+    expect(sessionTargetSeconds('quick')).toBeNull();
+    expect(values.has('studio.sessionTarget')).toBe(false);
   });
   it('imports M4 quick camera preferences once', async () => {
     vi.stubGlobal('matchMedia', () => ({ matches: true }));
