@@ -642,10 +642,22 @@ function sessionData(): Record<string, string> {
     display: displayMode(),
     device_class: deviceClass(),
     cohort_week: cohort,
-    takes_bucket: '0',
-    streak_bucket: '0',
+    takes_bucket: mirrored('tw.takes_bucket', TAKES_BUCKETS),
+    streak_bucket: mirrored('tw.streak_bucket', ['0', ...STREAK_BUCKETS]),
     app_version: '1.0.0',
+    ...Object.fromEntries(
+      ['priming_copy', 'countdown'].flatMap((name) => {
+        const arm = readStorage(`tw.exp.${name}`);
+        return arm === 'control' || arm === 'variant' ? [[`exp_${name}`, arm]] : [];
+      }),
+    ),
   };
+}
+const TAKES_BUCKETS = ['0', '1', '2_5', '6_20', '21_plus'] as const;
+/** Studio writes these enum mirrors from IndexedDB; anything unexpected falls back to `0`. */
+function mirrored(key: string, allowed: readonly string[]): string {
+  const value = readStorage(key);
+  return value && allowed.includes(value) ? value : '0';
 }
 export function normalizeStudioPath(path: string): string {
   const route = path.replace(/^.*#/, '').split('?')[0] ?? '';

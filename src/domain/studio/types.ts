@@ -44,6 +44,7 @@ export interface StudioTake {
   sizeBytes: number;
   chunkCount: number;
   kept: boolean;
+  wordsRead?: number; // snapshot at Keep so later script edits do not rewrite stats
   starred: boolean;
   exportedAt: number | null;
   createdAt: number;
@@ -149,5 +150,16 @@ export interface StudioSettings {
   };
   keys: Record<KeyAction, string[]>;
   reminders: { fileDownloaded: boolean; askEnabled: boolean; time: string };
-  habit: { weeklyGoal: 3 | 5 | 7; streaksEnabled: boolean; dailyPromptEnabled: boolean };
+  habit: {
+    weeklyGoal: 3 | 5 | 7;
+    streaksEnabled: boolean;
+    dailyPromptEnabled: boolean;
+    goalsEnabled: boolean;
+    badgesEnabled: boolean;
+    challengeEnabled: boolean;
+    ratingEnabled: boolean;
+    statsEnabled: boolean;
+    recapEnabled: boolean;
+    shareCardsEnabled: boolean;
+  };
 }

@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { experimentArms } from './experiments';
 import type { KeyAction, StudioSettings } from './types';
 export const KEY_ACTIONS: KeyAction[] = [
   'toggleScroll',
@@ -80,7 +81,18 @@ export function defaultSettings(phone: boolean): StudioSettings {
     },
     keys: structuredClone(DEFAULT_KEYS),
     reminders: { fileDownloaded: false, askEnabled: true, time: '19:00' },
-    habit: { weeklyGoal: 5, streaksEnabled: true, dailyPromptEnabled: true },
+    habit: {
+      weeklyGoal: 5,
+      streaksEnabled: true,
+      dailyPromptEnabled: true,
+      goalsEnabled: true,
+      badgesEnabled: true,
+      challengeEnabled: true,
+      ratingEnabled: true,
+      statsEnabled: true,
+      recapEnabled: true,
+      shareCardsEnabled: true,
+    },
   };
 }
 const record = (v: unknown): Record<string, unknown> =>
@@ -221,6 +233,13 @@ export function sanitizeSettings(raw: unknown, phone: boolean): StudioSettings {
       weeklyGoal: choice(h.weeklyGoal, [3, 5, 7], 5),
       streaksEnabled: bool(h.streaksEnabled, true),
       dailyPromptEnabled: bool(h.dailyPromptEnabled, true),
+      goalsEnabled: bool(h.goalsEnabled, true),
+      badgesEnabled: bool(h.badgesEnabled, true),
+      challengeEnabled: bool(h.challengeEnabled, true),
+      ratingEnabled: bool(h.ratingEnabled, true),
+      statsEnabled: bool(h.statsEnabled, true),
+      recapEnabled: bool(h.recapEnabled, true),
+      shareCardsEnabled: bool(h.shareCardsEnabled, true),
     },
   };
 }
@@ -233,6 +252,8 @@ export async function loadSettings(): Promise<StudioSettings> {
   const raw = await db.get('kv', 'settings');
   const settings = sanitizeSettings(raw, isPhone());
   if (!raw) {
+    const arms = await experimentArms();
+    if (arms.countdown === 'variant') settings.recording.countdownSeconds = 0;
     const previous = (await db.get('kv', 'record.quick')) as Record<string, unknown> | undefined;
     if (previous) {
       settings.camera.facing = previous.facing === 'environment' ? 'environment' : 'user';

@@ -63,8 +63,8 @@ describe('exportTakes', () => {
       'my-reel-section2-take1-20261105.mp4',
     ]);
     expect((await getTake('a'))?.exportedAt).toBeTruthy();
-    expect(analytics.track).toHaveBeenCalledTimes(2);
-    expect(dispatchEvent).toHaveBeenCalledTimes(1);
+    expect(analytics.track).toHaveBeenCalledWith('unlocked_badge', { badge_id: 'first_save' });
+    expect(dispatchEvent).toHaveBeenCalled();
   });
 
   it('keeps duplicate file names apart', async () => {

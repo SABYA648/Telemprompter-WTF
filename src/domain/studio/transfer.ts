@@ -70,7 +70,7 @@ function safeStreak(value: unknown, depth = 0): unknown {
   if (typeof value === 'string') return text(value, 256);
   if (depth >= 5 || !value || typeof value !== 'object') throw new Error('Invalid streak');
   if (Array.isArray(value)) {
-    if (value.length > 366) throw new Error('Invalid streak');
+    if (value.length > 400) throw new Error('Invalid streak');
     return value.map((item) => safeStreak(item, depth + 1));
   }
   const entries = Object.entries(value);

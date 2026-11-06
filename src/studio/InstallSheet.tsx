@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { analytics } from '../domain/analytics';
 import { exportTransfer } from '../domain/studio/transfer';
+import { claimSessionAsk, sessionAsk } from '../domain/studio/asks';
 import {
   installAskAllowed,
   installPlatform,
@@ -104,9 +105,12 @@ export default function InstallSheet({ recording }: { recording: boolean }) {
         shown: count('studio.install.shown'),
         dismissedAt: count('studio.install.dismissed'),
         now: Date.now(),
-        shownThisSession: Boolean(read(session, 'studio.install.shownSession')),
+        // 4.3: one ask per session, so a Home ask shown earlier also holds the install sheet back.
+        shownThisSession:
+          Boolean(read(session, 'studio.install.shownSession')) || sessionAsk() !== null,
         recording: blocking,
-      })
+      }) &&
+      claimSessionAsk('install')
     ) {
       setOpen(true);
       write(session, 'studio.install.shownSession', '1');

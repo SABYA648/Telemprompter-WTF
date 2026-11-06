@@ -1,5 +1,4 @@
 import { getDb } from './db';
-import { analytics } from '../analytics';
 
 export interface BatchState {
   ids: string[];
@@ -7,7 +6,6 @@ export interface BatchState {
   takeIds: string[];
 }
 const key = 'studio.batch';
-const BADGE_KEY = 'badge.batch_day';
 const save = (state: BatchState) => sessionStorage.setItem(key, JSON.stringify(state));
 export function readBatch(): BatchState | null {
   try {
@@ -40,17 +38,11 @@ export async function advanceBatch(scriptId: string, takeId: string): Promise<bo
   state.takeIds.push(takeId);
   state.index++;
   save(state);
-  if (state.index >= 2 && state.index >= state.ids.length) {
-    const db = await getDb();
-    if (!(await db.get('kv', BADGE_KEY))) {
-      await db.put('kv', true, BADGE_KEY);
-      analytics.track('unlocked_badge', { badge_id: 'batch_day' });
-    }
-  }
   return true;
 }
 export async function hasBatchBadge(): Promise<boolean> {
-  return Boolean(await (await getDb()).get('kv', BADGE_KEY));
+  const db = await getDb();
+  return Boolean(((await db.get('kv', 'badges')) as string[] | undefined)?.includes('batch_day'));
 }
 /** End before the last script. Takes already kept still reach the summary. */
 export function finishBatchEarly(): BatchState | null {

@@ -16,6 +16,7 @@ const TAB_FOR_SCREEN: Record<Route['screen'], TabId> = {
   scripts: 'scripts',
   editor: 'scripts',
   batch: 'scripts',
+  challenge: 'home',
   receive: 'scripts',
   record: 'record',
   practice: 'record',

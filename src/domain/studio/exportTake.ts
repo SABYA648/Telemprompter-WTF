@@ -1,4 +1,5 @@
 import { analytics } from '../analytics';
+import { onExportedTake } from './habits';
 import { getTake, saveTake, takeBlob } from './takesRepo';
 import type { StudioTake } from './types';
 export function takeFilename(title: string | null, take: StudioTake): string {
@@ -58,6 +59,7 @@ export async function exportTake(
     const latest = await getTake(take.id);
     if (latest) await saveTake({ ...latest, exportedAt: Date.now() });
   }
+  await onExportedTake();
   return method;
 }
 
@@ -112,5 +114,6 @@ export async function exportTakes(
     });
   }
   dispatchEvent(new Event('studio-take-exported'));
+  await onExportedTake();
   return method;
 }

@@ -113,7 +113,7 @@ export default function BatchScreen() {
               <li>{titleOf(id)}</li>
             ))}
           </ol>
-          {badge && state.takeIds.length >= 2 && <p>Batch day badge unlocked.</p>}
+          {badge && state.takeIds.length >= 5 && <p>Batch day badge unlocked.</p>}
           <div class="studio-actions">
             <button class="studio-button" onClick={() => void saveAll()}>
               Save all

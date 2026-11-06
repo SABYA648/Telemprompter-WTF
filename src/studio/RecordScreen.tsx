@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { analytics, deviceClass } from '../domain/analytics';
 import { markActiveDay } from '../domain/studio/streak';
+import { onKeptTake } from '../domain/studio/habits';
+import { storedArm } from '../domain/studio/experiments';
+import { countWords } from '../domain/studio/words';
 import {
   cameraErrorReason,
   openCamera,
@@ -128,6 +131,8 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
   const timeline = useRef<TimelineMark[]>([]);
   const markers = useRef<number[]>([]);
   const sections = useRef<number[]>([]);
+  /** How far the prompter got when the take stopped, from 0 to 1, for the words-read stat. */
+  const stopProgress = useRef(0);
   const consumed = useRef(new Set<number>());
   const cueOffset = useRef(0);
   const linePx = useRef(40);
@@ -730,15 +735,14 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
           setKept(false);
           if (why === 'interruption')
             setNotice('Recording stopped when the app went to the background. Your take is saved.');
+          stopProgress.current = scroller.current
+            ? scroller.current.scrollTop /
+              Math.max(1, scroller.current.scrollHeight - scroller.current.clientHeight)
+            : 0;
           analytics.track('stopped_take', {
             take_length_bucket: lengthBucket(take.durationMs),
             ended_by: why,
-            progress_bucket: progressBucket(
-              scroller.current
-                ? scroller.current.scrollTop /
-                    Math.max(1, scroller.current.scrollHeight - scroller.current.clientHeight)
-                : 0,
-            ),
+            progress_bucket: progressBucket(stopProgress.current),
           });
         },
         onError: (error) => {
@@ -795,9 +799,19 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
     }, 250);
     return () => clearInterval(timer);
   }, [recording, targetMs, settings.recording.autoStopAtTarget]);
+  /** A section take read that section; a full take read up to where the prompter stopped. */
+  const wordsReadFor = (take: StudioTake): number => {
+    if (!script) return 0;
+    const markup = parseMarkup(script.body);
+    if (take.sectionIndex !== null) {
+      const section = markup.sections[take.sectionIndex];
+      return section ? countWords(section.spokenText) : 0;
+    }
+    return Math.round(Math.min(1, Math.max(0, stopProgress.current)) * markup.spokenWordCount);
+  };
   const keep = async () => {
     if (!review) return;
-    const next = { ...review, kept: true };
+    const next = { ...review, kept: true, wordsRead: wordsReadFor(review) };
     try {
       await saveTake(next);
     } catch (error) {
@@ -818,6 +832,7 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
         status: 'recorded',
         order: 0,
       });
+    await onKeptTake();
     const db = await getDb();
     if (!(await db.get('kv', 'storage.persistRequested'))) {
       await db.put('kv', true, 'storage.persistRequested');
@@ -974,7 +989,11 @@ export default function RecordScreen({ id, memory }: { id: string; memory: boole
     return (
       <section class="studio-screen studio-interstitial">
         <h1>Camera and mic, please</h1>
-        <p>Your video is recorded and saved on this device. Nothing is uploaded.</p>
+        <p>
+          {storedArm('priming_copy') === 'variant'
+            ? 'Your browser asks for the camera and mic next. Your video stays on this device until you save it.'
+            : 'Your video is recorded and saved on this device. Nothing is uploaded.'}
+        </p>
         <button class="studio-button" onClick={() => void requestCamera(settings)}>
           Allow camera and mic
         </button>

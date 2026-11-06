@@ -87,8 +87,11 @@ test('Up next reorders, and Home records the first script', async ({ page }) => 
   }
   await page.goto('/studio#/scripts');
   // A queued script's button changes name, so the first match is always the next unqueued one.
-  await page.getByRole('button', { name: 'Add to Up next' }).first().click();
-  await page.getByRole('button', { name: 'Add to Up next' }).first().click();
+  const addButtons = page.getByRole('button', { name: 'Add to Up next' });
+  const beforeAdd = await addButtons.count();
+  await addButtons.first().click();
+  await expect(addButtons).toHaveCount(beforeAdd - 1);
+  await addButtons.first().click();
   const firstQueued = page.locator('.studio-row__title').first();
   const before = await firstQueued.textContent();
   await page

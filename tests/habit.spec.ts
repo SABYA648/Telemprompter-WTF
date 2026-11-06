@@ -38,7 +38,7 @@ test('streak badge follows the local calendar with the Playwright clock', async 
   await page.reload();
   await expect(page.getByText('Fresh start today', { exact: true })).toBeVisible();
   await page.goto('/studio#/settings/habit');
-  await page.getByLabel('Show streak badge').uncheck();
+  await page.getByLabel('Show streaks and freezes').uncheck();
   await page.goto('/studio#/');
   await expect(page.getByText('Fresh start today', { exact: true })).toHaveCount(0);
 });

@@ -24,9 +24,6 @@ import { limits, verifiedOn } from '../content/studio/platformFacts';
 import { TemplatePicker, HookPicker, IdeasInbox, createFromTemplate } from './CreatorTools';
 import { SendToPhone, ReceiveScreen } from './SendReceive';
 import { isStandaloneDisplay } from '../domain/studio/install';
-import { localDay, readStreak, type Streak } from '../domain/studio/streak';
-import { loadSettings } from '../domain/studio/settings';
-import { ReminderCard } from './ReminderCard';
 import { persistOnFirstStandaloneLaunch } from '../domain/studio/storage';
 import { routeFromHash, bootHash, type Route } from './router';
 import { tabItems } from './tabs';
@@ -36,6 +33,17 @@ import SettingsScreen from './SettingsScreen';
 import { TakesScreen, TakeScreen } from './TakesScreen';
 import { recoverTakes } from '../domain/studio/takesRepo';
 import InstallSheet from './InstallSheet';
+import {
+  BadgeCelebration,
+  ChallengeScreen,
+  HabitProgress,
+  HabitSummary,
+  HomeAsk,
+  TodayCard,
+  useHabits,
+  WeeklyRecap,
+} from './HabitUI';
+import { experimentArms } from '../domain/studio/experiments';
 import { ServiceWorkerUpdate, StandaloneTransferCard, TransferControls } from './PwaControls';
 import {
   browserHandoffScript,
@@ -88,6 +96,8 @@ export default function StudioApp(): preact.JSX.Element {
         await migrateQuickScript();
         await purgeDeletedScripts();
         await ensureFirstScript();
+        await experimentArms();
+        analytics.identify();
         try {
           if (!isMemoryStorage()) localStorage.setItem('studio.hasData', '1');
         } catch {
@@ -139,7 +149,10 @@ export default function StudioApp(): preact.JSX.Element {
         const script = await createRoutedScript();
         await refresh();
         go(`/scripts/${script.id}`);
-      } else setRoute(next);
+      } else {
+        setRoute(next);
+        if (next.screen === 'home' || next.screen === 'scripts') await refresh();
+      }
     };
     addEventListener('hashchange', onHash);
     // Effects run after paint, so a hash change since the first render has no listener to catch it.
@@ -212,6 +225,7 @@ export default function StudioApp(): preact.JSX.Element {
       {route.screen === 'inbox' && <IdeasInbox refreshScripts={refresh} />}
       {route.screen === 'receive' && <ReceiveScreen code={route.id ?? ''} />}
       {route.screen === 'batch' && <BatchScreen />}
+      {route.screen === 'challenge' && <ChallengeScreen />}
       {route.screen === 'scripts' && (
         <Scripts scripts={active} deleted={deleted} refresh={refresh} />
       )}
@@ -249,19 +263,12 @@ function Tabs({ route }: { route: Route }) {
   );
 }
 function Home({ scripts }: { scripts: StudioScript[] }) {
-  const [streak, setStreak] = useState<Streak | null>(null);
-  const [showStreak, setShowStreak] = useState(true);
-  useEffect(() => {
-    const refresh = () => void readStreak().then(setStreak);
-    refresh();
-    void loadSettings().then((value) => setShowStreak(value.habit.streaksEnabled));
-    addEventListener('studio-streak-changed', refresh);
-    return () => removeEventListener('studio-streak-changed', refresh);
-  }, []);
+  const habits = useHabits();
   const firstRun =
     scripts.length === 1 &&
     scripts[0]?.id === 'quick' &&
-    scripts[0]?.title === 'Introduce yourself in 30 seconds';
+    scripts[0]?.title === 'Introduce yourself in 30 seconds' &&
+    scripts[0]?.takeCount === 0;
   const quick = scripts.find((script) => script.id === 'quick') ?? scripts[0];
   const queue = upNext(scripts);
   const shownNext = (queue.length ? queue : scripts).slice(0, 3);
@@ -269,21 +276,11 @@ function Home({ scripts }: { scripts: StudioScript[] }) {
     <section class="studio-screen studio-home">
       <p class="studio-kicker">teleprompter.wtf Studio</p>
       <h1>{firstRun ? 'Record your first video in 60 seconds' : 'Welcome back'}</h1>
-      {showStreak && streak && streak.activeDates.length > 0 && (
-        <div class="studio-card" aria-label="Recording streak">
-          <strong>
-            {streak.current > 0 ? `${streak.current}-day streak` : 'Fresh start today'}
-          </strong>
-          <p>
-            {streak.activeDates.at(-1) === localDay(new Date())
-              ? 'Recorded today. See you tomorrow.'
-              : streak.current > 0
-                ? 'Record today to keep your streak.'
-                : `Fresh start today. Your best streak is ${streak.best} days.`}
-          </p>
-        </div>
-      )}
-      <ReminderCard activeDays={streak?.activeDates.length ?? 0} />
+      <HabitSummary {...habits} firstRun={firstRun} />
+      <BadgeCelebration settings={habits.settings} snap={habits.snap} />
+      <HomeAsk {...habits} />
+      {!firstRun && <TodayCard settings={habits.settings} />}
+      {!firstRun && <WeeklyRecap {...habits} />}
       <StandaloneTransferCard empty={firstRun} />
       {firstRun && <p>We loaded a 30-second starter script. Edit it or paste your own.</p>}
       <div class="studio-card">
@@ -350,6 +347,7 @@ function Home({ scripts }: { scripts: StudioScript[] }) {
               All scripts
             </a>
           </div>
+          <HabitProgress {...habits} />
         </>
       )}
     </section>

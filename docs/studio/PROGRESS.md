@@ -300,3 +300,51 @@ Next: M9.
 - The initial single Playwright command was terminated by the runner after 30 passing tests (exit 143); every spec file passed on the subsequent grouped runs. Physical phone checks remain with the owner.
 - Follow-up P1 gate, 2026-11-05: The review sheet now ends above the 56 px bottom nav (plus safe area), and Practice reserves that same space below its scrollable actions. The Record tab preserves the current script route during an active take. At 320×640, 360×800 and 390×844, browser tests confirmed Finish practice and Restart can be scrolled above the nav and tapped; fake-camera tests confirmed Keep is above the nav, and a Record-tab tap mid-take leaves the take and recorded status on the intended script.
 - Follow-up results with Node 26: `npm run typecheck` passed (0 errors, 0 warnings, 3 hints); focused ESLint passed; `npm test` passed (43 files, 267 tests); `npm run build` passed (63 pages). Focused Playwright runs passed 4/4 Chromium and 4/4 fake-camera tests; the full relevant `studio-ui`, `creator-workflow` and `media` specs passed 41/41 (24 Chromium, 17 fake-camera). Physical phone checks remain with the owner.
+
+## M9 Habit system - 2026-11-06
+
+Shipped:
+
+- Today card (H3, 14.3): the date-seeded prompt from the 120-entry pack, the same for everyone on a local date, with "Write it", "Another hook" (always a different hook) and "Record". The prompt's hook replaces the template's hook line and the angle becomes a note, so nothing is read twice. `viewed_today_prompt` is sent once per day per session.
+- Streak freezes (H1, Appendix B `StreakState`): one freeze per 7 real streak days, at most 2, spent automatically on missed local days before today. Frozen days count in the run and the best, but earn nothing. Existing D-027 records migrate on first read. The copy is supportive and always shows the best streak, and today's recording takes precedence over the freeze message. Events: `extended_streak`, `lost_streak`, `used_streak_freeze`.
+- Weekly goal and ring (H4): 3, 5 or 7 distinct scripts with a kept take per Monday-start local week, set in Settings (`set_weekly_goal`), with `reached_weekly_goal` once per week. Stats: videos, takes, minutes recorded, words read (snapshotted at Keep from where the prompter stopped, or from the section) and average WPM.
+- Badges (H7) with fixed labels: all 11 ids, unlocked idempotently (serialized, so a simultaneous Keep and export cannot double-unlock) and re-checked after practice credit. The celebration card stays until "Nice" and has no motion under `prefers-reduced-motion`. `batch_day` now follows H7 (five scripts kept in one local day).
+- Share cards (H8): an on-device 1080x1920 PNG with a fixed heading, the big number, a fixed label and the wordmark, never script text. Shared through Web Share with a file and the `/?utm_source=share_card` link, with a download fallback. Cards cover streak, weekly, recap, challenge and badge.
+- 30-day challenge (H9, 14.4): `#/challenge` (virtual page `/studio/challenge`) with Join, a progress bar, today's assignment with Write it and Record (source `challenge`), the 30-day list, and completion after kept takes on 30 different local days since joining, with no deadline. Events: `joined_challenge` and `completed_challenge`, plus the `challenge_30` badge.
+- Monday recap (H10): last week's videos, minutes, best streak and goal status, with a share card.
+- `asks.ts` (4.3): a single session ask in `sessionStorage`, shared by the install sheet, the reminder, the milestone share card and the rating, in ladder order and never while recording. Install keeps 3 shows and a 7-day cooldown. The reminder gets a 7-day "Not now". Each share milestone (streak 3, 7, 30, weekly goal, challenge) is offered once. Storage cleanup (over 80% of quota or more than 20 unexported takes) is a guardrail outside the slot.
+- `experiments.ts`: at most 2 live experiments, assigned deterministically from the device id hash, stored in `kv`, and mirrored as `exp_priming_copy` and `exp_countdown` session data. The first two are the priming copy, and a default countdown of 0 against 3 for newly created settings only. Session data now also reports real `takes_bucket` and `streak_bucket` values.
+- Quick rating (H11): "How did recording feel today?" after the third kept take, 1 to 5 in one tap or Skip, stored once.
+- Settings > Habit: the weekly goal plus 9 switches (streaks, goal, today's prompt, stats, badges, challenge, recap, share cards, rating). Each one removes its feature from Home.
+- Home layout for 320 to 390 px: one summary card (ring plus streak), then the celebration, one ask, the Today card and the recap above Up next, with "Your progress" (stats, badge chips, challenge entry, manual shares) after the quick actions. Home habit data refreshes when a tab becomes visible again. The privacy page now describes the coarse session labels and on-device habit data.
+
+Files: `src/domain/studio/{streak,habits,asks,experiments,shareCard,settings,transfer,batch,exportTake}.ts` and their tests, `src/domain/analytics.ts`, `src/studio/{HabitUI,StudioApp,RecordScreen,PracticeScreen,InstallSheet,ReminderCard,SettingsScreen,BatchScreen}.tsx`, `router.ts`, `tabs.ts`, `src/styles/studio.css`, `src/pages/privacy.astro`, `tests/habits.spec.ts`, `tests/habit.spec.ts`, `tests/media.spec.ts`, `tests/creator-workflow.spec.ts`.
+
+Acceptance:
+
+- Freezes: `streak.test.ts` covers earning on the seventh day, the cap of 2, auto-apply across a 2-day gap, loss when the gap exceeds the freezes (best kept), no spend on today, no earning from frozen days, and the 400-date cap. `habits.test.ts` covers D-027 migration with a persisted spent freeze.
+- Monday 00:00 local: unit tests at Sunday 23:59:59 and Monday 00:00:00 in local time and in `America/New_York`, plus the browser test "the weekly goal resets at Monday 00:00 local time".
+- Idempotent badges: three simultaneous `unlockBadge` calls unlock once, repeated rule runs track `unlocked_badge` once per id, and the media test confirms one real Keep celebrates "First take" once.
+- Ask ladder: `asks.test.ts` covers one ask per session, the session claim, the install limit of 3 and the 7-day cooldown boundary, the reminder rule, the rating once (including Skip), ladder order with switched-off steps, and each share milestone once. The browser test shows only the reminder when three asks are eligible, then the share card in a new session, then the rating.
+- Playwright clock: day 1 gives 1 and day 2 gives 2 with real fake-camera takes. The freeze test is adapted per D-041: six seeded days, then a real take on day 7 shows "1 freeze ready". Skipping day 8 shows the 8-day streak and the freeze message on day 9 before recording, and 9 after.
+- Share card: the browser download is a PNG over 10 KB, with IHDR 1080x1920.
+
+Gates (Node 26.7): `npm run check` pass (typecheck 0 errors, lint, content lint 62 pages, format, unit 305/305, build, budget). `npm run test:e2e` first full run 149/150; the failure was "practice credits the streak after 80 percent" (Home showed no streak card). It passed 12 of 12 times repeated alone, and the immediate full rerun passed 150/150 (130 Chromium, 20 fake camera). `npx playwright test --project=media` 20/20. `npm run budget`: Studio 65.7 KB gzip / 130 KB, largest content page 27.9 KB / 60 KB. The privacy copy changed after both e2e builds, so `npm run check` was rerun (pass) and the SEO, visual, app, tools and analytics specs were rerun on the fresh build: 35/35. Screenshots at 320, 360 and 390 px were checked by eye. Lighthouse and the Docker crawl were not run for M9.
+
+Deviations: D-035 to D-042. D-041 adapts the freeze clock test to H1. D-038 extends the one-sheet rule to all Home asks. D-039 sends the share link as share text instead of painting it. The analytics `setting` enum still has no `habit` group, so the habit switches send no `changed_studio_setting` (the goal sends `set_weekly_goal`).
+
+Known issues:
+
+- The practice-credit browser test failed once under the full parallel run and has not reproduced. If it recurs, look at the Home read racing the practice write.
+- Coverage of `src/domain/studio` cannot be measured locally: no vitest coverage provider is installed, and adding one would be a new dependency.
+- Share sheets with files and a real Instagram story upload cannot be driven in headless Chromium. CI covers the download path and a stubbed `navigator.share`.
+- Experiment arms are visible in Umami only once the server stores session data (Umami 2.18.0 or later, section 18).
+
+Owner manual checks:
+
+- On iPhone and Android: share a streak card to Instagram Stories and Photos, and confirm the image is full screen and the link arrives in the share text.
+- Leave Studio open overnight and return: the Home streak and week update without a reload, and a skipped day after 7 streak days shows the freeze message.
+- Turn each Habit switch off and confirm Home stays clean at your phone width.
+- In Umami, confirm sessions carry `exp_priming_copy`, `exp_countdown`, `takes_bucket` and `streak_bucket`.
+
+Next: M10.

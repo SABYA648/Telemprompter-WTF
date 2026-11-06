@@ -240,7 +240,7 @@ test('two-script batch produces two kept takes and summary', async ({ page }) =>
   await recordAndKeep(page);
   await expect(page.getByRole('heading', { name: 'Batch complete' })).toBeVisible();
   await expect(page.getByText('2 kept takes from 2 scripts.')).toBeVisible();
-  await expect(page.getByText('Batch day badge unlocked.')).toBeVisible();
+  await expect(page.getByText('Batch day badge unlocked.')).toHaveCount(0);
   const takes = (await storedTakes(page)).filter((take) => take.kept);
   expect(takes).toHaveLength(2);
   const downloads: string[] = [];
@@ -304,6 +304,12 @@ test('records, reviews, keeps, lists, and downloads a real media file', async ({
   await page.goto('/studio#/record/quick');
   await page.getByRole('button', { name: 'Allow camera and mic' }).click();
   await expect(page.getByRole('button', { name: 'Start recording' })).toBeVisible();
+  await page.getByRole('button', { name: 'Quick settings' }).click();
+  await page.getByLabel('Countdown').selectOption('3');
+  await page
+    .getByRole('dialog', { name: 'Quick settings' })
+    .getByRole('button', { name: 'Close' })
+    .click();
   await page.getByRole('button', { name: 'Start recording' }).click();
   await expect(page.getByText('3', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Stop recording' })).toBeVisible();
@@ -598,4 +604,88 @@ test('the install sheet waits for the export and never interrupts a recording', 
   await expect(sheet).toBeVisible();
   await sheet.getByRole('button', { name: 'Not now' }).click();
   await expect(sheet).toHaveCount(0);
+});
+
+test('local clock moves a kept-take streak from day one to day two', async ({ page }) => {
+  await page.clock.setFixedTime(new Date(2026, 10, 1, 12));
+  await page.goto('/studio#/record/quick');
+  await recordAndKeep(page);
+  await page.goto('/studio#/');
+  await expect(page.getByText('1-day streak')).toBeVisible();
+  await page.clock.setFixedTime(new Date(2026, 10, 2, 12));
+  await page.goto('/studio#/record/quick');
+  await recordAndKeep(page);
+  await page.goto('/studio#/');
+  await expect(page.getByText('2-day streak')).toBeVisible();
+});
+
+test('a freeze earned on day 7 covers a skipped day and the streak continues', async ({ page }) => {
+  // H1 earns a freeze every 7 streak days, so seed six days and earn it with a real take.
+  await page.clock.setFixedTime(new Date(2026, 10, 2, 12));
+  await page.goto('/studio#/');
+  await expect(
+    page.getByRole('heading', { name: 'Record your first video in 60 seconds' }),
+  ).toBeVisible();
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open('teleprompter-wtf');
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const tx = db.transaction('kv', 'readwrite');
+          tx.objectStore('kv').put(
+            {
+              current: 6,
+              best: 6,
+              activeDates: [
+                '2026-10-27',
+                '2026-10-28',
+                '2026-10-29',
+                '2026-10-30',
+                '2026-10-31',
+                '2026-11-01',
+              ],
+            },
+            'streak',
+          );
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+  );
+  await page.goto('/studio#/record/quick');
+  await recordAndKeep(page);
+  await page.goto('/studio#/');
+  await expect(page.getByText('7-day streak', { exact: true })).toBeVisible();
+  await expect(page.getByText('Best 7 days · 1 freeze ready')).toBeVisible();
+  // Day 8 is skipped. On day 9 the freeze has covered it before anything is recorded.
+  await page.clock.setFixedTime(new Date(2026, 10, 4, 12));
+  await page.reload();
+  await expect(page.getByText('8-day streak', { exact: true })).toBeVisible();
+  await expect(page.getByText('A streak freeze kept your 8-day streak alive.')).toBeVisible();
+  await expect(page.getByText('Best 8 days · 0 freezes ready')).toBeVisible();
+  await page.goto('/studio#/record/quick');
+  await recordAndKeep(page);
+  await page.goto('/studio#/');
+  await expect(page.getByText('9-day streak', { exact: true })).toBeVisible();
+  await expect(page.getByText('Recorded today. See you tomorrow.')).toBeVisible();
+});
+
+test('a real kept take unlocks and celebrates the first badge once', async ({ page }) => {
+  await page.goto('/studio#/record/quick');
+  await recordAndKeep(page);
+  await page.goto('/studio#/');
+  const celebration = page.getByRole('status', { name: 'Badge unlocked' });
+  await expect(celebration.getByRole('heading', { name: 'First take' })).toBeVisible();
+  await celebration.getByRole('button', { name: 'Nice' }).click();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: "Today's prompt" })).toBeVisible();
+  await expect(celebration).toHaveCount(0);
+  await expect(
+    page.getByRole('region', { name: 'Your progress' }).getByText('First take'),
+  ).toBeVisible();
 });

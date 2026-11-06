@@ -566,24 +566,57 @@ export default function SettingsScreen({ section }: { section?: string | undefin
       <a href="#/settings">← Settings</a>
       <h1>{sections.find(([id]) => id === selected)?.[1]}</h1>
       {selected === 'habit' ? (
-        <label class="studio-setting-field">
-          <input
-            type="checkbox"
-            checked={settings.habit.streaksEnabled}
-            onChange={(event) => {
-              const next = {
-                ...settings,
-                habit: {
-                  ...settings.habit,
-                  streaksEnabled: (event.target as HTMLInputElement).checked,
-                },
-              };
-              setSettings(next);
-              void saveSettings(next);
-            }}
-          />{' '}
-          Show streak badge
-        </label>
+        <div class="studio-settings-fields">
+          <label class="studio-setting-field">
+            Weekly goal
+            <select
+              value={settings.habit.weeklyGoal}
+              onChange={(event) => {
+                const weeklyGoal = Number((event.target as HTMLSelectElement).value) as 3 | 5 | 7;
+                const next = { ...settings, habit: { ...settings.habit, weeklyGoal } };
+                setSettings(next);
+                void saveSettings(next);
+                analytics.track('set_weekly_goal', { goal: weeklyGoal });
+              }}
+            >
+              <option value="3">3 videos</option>
+              <option value="5">5 videos</option>
+              <option value="7">7 videos</option>
+            </select>
+          </label>
+          <p class="studio-muted">
+            A video is a script with at least one kept take, counted Monday to Sunday.
+          </p>
+          {(
+            [
+              ['streaksEnabled', 'Show streaks and freezes'],
+              ['goalsEnabled', 'Show weekly goal'],
+              ['dailyPromptEnabled', "Show today's prompt"],
+              ['statsEnabled', 'Show recording stats'],
+              ['badgesEnabled', 'Show badges and celebrations'],
+              ['challengeEnabled', 'Show 30-day challenge'],
+              ['recapEnabled', 'Show Monday recap'],
+              ['shareCardsEnabled', 'Offer share cards'],
+              ['ratingEnabled', 'Ask how recording feels'],
+            ] as const
+          ).map(([key, label]) => (
+            <label class="studio-setting-field studio-setting-field--check" key={key}>
+              <input
+                type="checkbox"
+                checked={settings.habit[key]}
+                onChange={(event) => {
+                  const next = {
+                    ...settings,
+                    habit: { ...settings.habit, [key]: (event.target as HTMLInputElement).checked },
+                  };
+                  setSettings(next);
+                  void saveSettings(next);
+                }}
+              />{' '}
+              {label}
+            </label>
+          ))}
+        </div>
       ) : selected === 'reminders' ? (
         <ReminderCard always />
       ) : selected === 'keys' ? (

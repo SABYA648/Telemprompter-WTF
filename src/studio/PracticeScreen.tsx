@@ -9,6 +9,7 @@ import {
 } from '../domain/studio/practice';
 import { loadSettings } from '../domain/studio/settings';
 import { markActiveDay } from '../domain/studio/streak';
+import { refreshBadges } from '../domain/studio/habits';
 import { analytics, progressBucket } from '../domain/analytics';
 import type { StudioScript } from '../domain/studio/types';
 
@@ -114,7 +115,7 @@ export default function PracticeScreen({ id }: { id: string }) {
   useEffect(() => {
     if (spokenWords > 0 && percent >= 80 && !credited.current) {
       credited.current = true;
-      void markActiveDay();
+      void markActiveDay().then(() => refreshBadges());
     }
     if (percent >= 100) {
       setRunning(false);

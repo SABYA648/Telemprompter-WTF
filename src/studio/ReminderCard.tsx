@@ -7,9 +7,12 @@ import type { StudioSettings } from '../domain/studio/types';
 export function ReminderCard({
   activeDays = 0,
   always = false,
+  onNotNow,
 }: {
   activeDays?: number;
   always?: boolean;
+  /** Home only: snoozes the suggestion so other asks get their turn. */
+  onNotNow?: () => void;
 }) {
   const [settings, setSettings] = useState<StudioSettings | null>(null);
   const [installed, setInstalled] = useState(() => isStandaloneDisplay());
@@ -84,9 +87,16 @@ export function ReminderCard({
           </label>
         </>
       )}
-      <button class="studio-button" onClick={() => void add()}>
-        Download calendar file
-      </button>
+      <div class="studio-actions">
+        <button class="studio-button" onClick={() => void add()}>
+          Download calendar file
+        </button>
+        {onNotNow && !always && (
+          <button class="studio-button studio-button--quiet" onClick={onNotNow}>
+            Not now
+          </button>
+        )}
+      </div>
     </section>
   );
 }

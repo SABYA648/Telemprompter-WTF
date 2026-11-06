@@ -1,7 +1,6 @@
 import { IDBFactory } from 'fake-indexeddb';
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { analytics } from '../analytics';
 import {
   advanceBatch,
   endBatch,
@@ -28,8 +27,7 @@ beforeEach(() => {
 });
 
 describe('batch mode', () => {
-  it('walks the scripts in order and unlocks the badge once at the end', async () => {
-    const track = vi.spyOn(analytics, 'track').mockImplementation(() => undefined);
+  it('walks scripts in order without awarding a five-script-day badge early', async () => {
     startBatch(['a', 'b', 'a']);
     expect(readBatch()?.ids).toEqual(['a', 'b']);
     expect(isBatchScript('a')).toBe(true);
@@ -40,12 +38,11 @@ describe('batch mode', () => {
     expect(await hasBatchBadge()).toBe(false);
     expect(await advanceBatch('b', 'take-b')).toBe(true);
     expect(readBatch()).toMatchObject({ index: 2, takeIds: ['take-a', 'take-b'] });
-    expect(await hasBatchBadge()).toBe(true);
-    expect(track).toHaveBeenCalledWith('unlocked_badge', { badge_id: 'batch_day' });
+    expect(await hasBatchBadge()).toBe(false);
     startBatch(['c', 'd']);
     await advanceBatch('c', 'take-c');
     await advanceBatch('d', 'take-d');
-    expect(track.mock.calls.filter(([event]) => event === 'unlocked_badge')).toHaveLength(1);
+    expect(await hasBatchBadge()).toBe(false);
   });
 
   it('gives no badge for a one-script run', async () => {
