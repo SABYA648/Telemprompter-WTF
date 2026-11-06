@@ -484,3 +484,15 @@ Owner manual checks:
 - Import a real `.docx` from Word and from Google Docs, and print a script to PDF from iPhone Safari and desktop Chrome.
 
 Next: none in section 16. M11 was the last planned milestone (M12 shipped early as the owner's UI revamp). The backlog needs an owner go-ahead, and launch PR #8 still awaits owner device QA.
+
+## M12 P2 polish - 2026-11-06
+
+Commit `8a79c44`. Built by Claude opus-5-5. It finished uncommitted work left by an earlier session that hit a usage limit. This closes the two M12 P2 items.
+
+- Scripts editor: the red Record button in the bottom row is gone. The row is now a ghost Practice button that fills the width, plus the (...) menu. While a script is open in the editor, the raised center Record in the nav links to `#/record/<id>` and is named "Record this script". Everywhere else it keeps the name "Record" and works as before. The old button was a plain link and sent no analytics event, so there was no event to move. `tabs.ts` `recordTarget()` holds the rule, and a unit test covers it.
+- Takes header: the storage line and its meter are now one chip with a storage icon, for example "0.8 MB · ~23 min". The full sentence is in its `title` and `aria-label`. The two-line warning is now one line, "Save to Photos — browser storage can clear", with a 44px close button. The dismissal is stored in `localStorage` (`studio.saveTipDismissed`), and the text ends with an ellipsis instead of wrapping at 360px. The take grid is unchanged.
+- Tests: the media helper now uses the nav "Record this script". New e2e tests check that the nav Record is the only accent action in the editor and sits clear of the row, with targets of at least 44px, at 360 and 390. They also check that it opens Record with the edited script and that the prompter shows the new words. A third test checks the Takes chip and that the tip stays dismissed after a reload.
+
+Gates (Node 26.7.0): `npm run check` pass (0 errors, unit 341/341 in 52 files, content lint 79 pages, build, budget). Studio bundle 78.4/130 KB gzip. `npx playwright test` 190/190 (167 Chromium, 23 media) in a clean full run. Each of the two earlier full runs had one different failure in code this change does not touch. In the first, Chromium crashed during `browser.newContext` in the `pwa.spec.ts` clipboard test, which then passed 32/32 on rerun. In the second, the `m11-pro.spec.ts` gamepad test missed 145 WPM. That test holds each button press for 80ms, and it passed 8/8 with `--repeat-each 8`. `scripts/m12-screenshots.mjs` at 360 and 390: all 12 screens pass (no overflow, no target under 44px, no overlaps, nothing under the nav).
+
+Known P2: the m11 gamepad e2e depends on timing (80ms press windows) and can fail on a loaded machine.
