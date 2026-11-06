@@ -410,3 +410,19 @@ Fixed, from the M10 review (`git diff 1510af1..1468db5`):
 Deferred: P2-3 (debounce the live counters; this needs a manual VoiceOver check), P2-4 (one starter copy per preset visit; scripts have no starter id to match on), P2-6 (inbound-link lint scope, M11 lint pass) and P2-7 (TikTok caption limit, owner verification).
 
 Gates (Node 26.7.0): `npm run check` pass (typecheck 0 errors, lint, content lint 79 indexable pages, format, unit 311/311 in 47 files, build, budget). `npx playwright test` 169/169 in one full run (148 Chromium, 21 media), no browser crash. `npm run budget`: Studio 67.8/130 KB gzip, largest content page 28.1/60 KB. SEO crawl against `serve dist` on port 4173: pass, 77 sitemap URLs, image sitemap 27 pages and 27 images. Mobile Lighthouse against the same server: all five `/record/*` pages scored 100 Performance, 100 Accessibility, 100 Best Practices and 100 SEO, with LCP 1.4 to 1.5 s, TBT 0 ms and CLS 0. `scripts/lighthouse.mjs` now accepts `LIGHTHOUSE_PATHS` for audits of selected routes.
+
+## M12 mobile UI revamp (CapCut/Reels-grade) - 2026-11-06
+
+Commit `ba13019`. Built by Claude opus-5-5 high (Codex gpt-6-sol is usage-limited until 2026-11-11 14:00 UTC). It finished partial uncommitted work left by an earlier worker that died. Spec: `ui-revamp/DESIGN.md` + `ui-revamp/BRIEF.md` (tokens: near-black canvas, single `#F0472A` accent).
+
+- Nav: a five-slot create bar (Home, Scripts, raised red center Record, Takes, Settings) with inline-SVG icons and 11px labels. Only one tab is active at a time (`aria-current`).
+- Icons: new `src/studio/Icons.tsx` (inline SVG, no new dependencies) and an `Overflow.tsx` (...) menu.
+- Home: a compact streak chip, one "Today's prompt" hero with one accent "Record this" and a ghost "Write", "Up next" rows with round record icon-buttons, an icon toolbar, and a one-line empty state instead of the 2x2 grid of zeros.
+- Record permission: a dark viewfinder frame, one accent "Allow camera", the line "Saved on your device. Nothing uploaded." and a text link "Not now".
+- Scripts editor: script text leads, Aspect/Status/Captions sit behind "More", aspect uses icon toggles, and one accent Record sits at the bottom.
+- Scripts library: compact rows with a round record icon-button and a (...) menu (Up next/Duplicate/Delete). Delete still asks for confirmation.
+- Takes: a 2-up thumbnail grid with play on tap and share/star/delete in a per-item menu.
+
+Gates (independent rerun, Node 26.7.0): `npm run check` pass (0 errors, unit 312/312, content lint, build, budget). `npx playwright test` 174/174, including the new `tests/m12-mobile.spec.ts` (one current tab on every route, at most one accent action per screen) and 21 media tests. Studio bundle 70.1/130 KB gzip. `scripts/m12-screenshots.mjs` at 360 and 390 for Home, Home first run, Record permission, Scripts editor, Scripts library and Takes found no horizontal overflow, no target under 44px, no overlapping targets and no nav overlap. The classic home `editor.png` render is visually unchanged.
+
+Known P2: in the editor, the bottom Record button sits about 6px above the raised nav Record. These are two accent record entries close together. The Takes header copy is still fairly text-heavy.
