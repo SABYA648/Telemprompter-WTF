@@ -16,19 +16,35 @@ teleprompter.wtf is a free, open-source browser teleprompter and local video rec
 ## Creator pages
 
 - [Studio video recording](https://www.teleprompter.wtf/studio)
+- [Recording preset hub](https://www.teleprompter.wtf/record)
+- [Instagram Reels recorder](https://www.teleprompter.wtf/record/instagram-reels)
+- [YouTube Shorts recorder](https://www.teleprompter.wtf/record/youtube-shorts)
+- [TikTok recorder](https://www.teleprompter.wtf/record/tiktok)
+- [Landscape YouTube recorder](https://www.teleprompter.wtf/record/youtube)
+- [LinkedIn video recorder](https://www.teleprompter.wtf/record/linkedin-video)
 - [Video script templates](https://www.teleprompter.wtf/templates)
 - [Niche hooks](https://www.teleprompter.wtf/hooks)
-- Creator tools and more guides are planned but not yet published.
 
 ## Tools
 
 - [Teleprompter tools hub](https://www.teleprompter.wtf/tools)
 - [Teleprompter speed calculator](https://www.teleprompter.wtf/tools/teleprompter-speed-calculator)
 - [Words to minutes calculator](https://www.teleprompter.wtf/tools/words-to-minutes)
+- [Script length checker](https://www.teleprompter.wtf/tools/script-length-checker)
+- [Caption and hashtag counter](https://www.teleprompter.wtf/tools/caption-counter)
+- [Template-based hook generator](https://www.teleprompter.wtf/tools/hook-generator)
 
 ## Guides
 
 - [Teleprompter guide hub](https://www.teleprompter.wtf/guides)
+- [Instagram teleprompter](https://www.teleprompter.wtf/guides/instagram-teleprompter)
+- [CapCut teleprompter](https://www.teleprompter.wtf/guides/capcut-teleprompter)
+- [Film a talking-head Reel](https://www.teleprompter.wtf/guides/how-to-film-talking-head-reels)
+- [Batch record a week of videos](https://www.teleprompter.wtf/guides/how-to-batch-record-videos)
+- [Write a 30-second script](https://www.teleprompter.wtf/guides/how-to-write-a-30-second-video-script)
+- [Teleprompter remote control](https://www.teleprompter.wtf/guides/teleprompter-remote-control)
+- [Camera settings for Reels](https://www.teleprompter.wtf/guides/best-camera-settings-for-reels)
+- [External microphone for phone video](https://www.teleprompter.wtf/guides/external-microphone-for-phone-video)
 - [How to use a teleprompter](https://www.teleprompter.wtf/guides/how-to-use-a-teleprompter)
 - [Teleprompter for YouTube videos](https://www.teleprompter.wtf/guides/teleprompter-for-youtube)
 - [Teleprompter setup for video recording](https://www.teleprompter.wtf/guides/teleprompter-for-video-recording)

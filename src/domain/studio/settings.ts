@@ -246,6 +246,38 @@ export function sanitizeSettings(raw: unknown, phone: boolean): StudioSettings {
 export function isPhone(): boolean {
   return matchMedia('(pointer: coarse)').matches && Math.min(innerWidth, innerHeight) < 600;
 }
+let sessionPreset: {
+  aspect: StudioSettings['camera']['aspect'];
+  safeZone: StudioSettings['camera']['safeZone'];
+} | null = null;
+export function applySessionPreset(preset: typeof sessionPreset): void {
+  sessionPreset = preset;
+  try {
+    if (preset) sessionStorage.setItem('studio.sessionPreset', JSON.stringify(preset));
+    else sessionStorage.removeItem('studio.sessionPreset');
+  } catch {
+    /* Session storage is optional in private contexts. */
+  }
+}
+function currentSessionPreset(): typeof sessionPreset {
+  if (sessionPreset) return sessionPreset;
+  try {
+    const stored = sessionStorage.getItem('studio.sessionPreset');
+    if (!stored) return null;
+    const value = JSON.parse(stored) as Record<string, unknown>;
+    if (
+      (value.aspect === '9:16' || value.aspect === '16:9') &&
+      ['off', 'instagram', 'youtube_shorts', 'tiktok'].includes(String(value.safeZone))
+    )
+      return {
+        aspect: value.aspect,
+        safeZone: value.safeZone as StudioSettings['camera']['safeZone'],
+      };
+  } catch {
+    /* Invalid or unavailable session storage. */
+  }
+  return null;
+}
 let saveQueue: Promise<void> = Promise.resolve();
 export async function loadSettings(): Promise<StudioSettings> {
   const db = await getDb();
@@ -274,9 +306,11 @@ export async function loadSettings(): Promise<StudioSettings> {
     }
     await db.put('kv', settings, 'settings');
   }
-  return settings;
+  const preset = currentSessionPreset();
+  return preset ? { ...settings, camera: { ...settings.camera, ...preset } } : settings;
 }
 export function saveSettings(settings: StudioSettings): Promise<void> {
+  applySessionPreset(null);
   saveQueue = saveQueue
     .catch(() => undefined)
     .then(async () => {

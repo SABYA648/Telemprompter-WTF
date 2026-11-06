@@ -2929,3 +2929,86 @@ kbd {
   display: inline-block;
   padding: 0.35rem 0;
 }
+.record-hero .button {
+  margin-top: 1rem;
+}
+.record-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  margin: 1rem 0;
+  list-style: none;
+}
+.record-trust li {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+.record-page section,
+.tool-page section {
+  max-width: 76ch;
+}
+.record-page pre,
+.creator-tool__cut {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.tool-page astro-island[client='visible'] {
+  display: block;
+}
+.creator-tool {
+  max-width: 76ch;
+  padding: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 1rem;
+}
+.creator-tool label {
+  display: block;
+  margin: 0.75rem 0 0.25rem;
+  font-weight: 700;
+}
+.creator-tool textarea,
+.creator-tool input[type='text'],
+.creator-tool select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  font: inherit;
+}
+.creator-tool input[type='range'] {
+  display: block;
+  width: 100%;
+}
+.creator-tool button {
+  min-height: 44px;
+  margin: 0.3rem 0.3rem 0.3rem 0;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  cursor: pointer;
+}
+.creator-tool__results {
+  display: grid;
+  gap: 0.6rem;
+  padding-left: 1.3rem;
+}
+.creator-tool__results section,
+.creator-tool__results li {
+  padding: 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+}
+.creator-tool__results h3 {
+  margin-top: 0;
+}
+.creator-tool__cut mark {
+  background: #f9d885;
+}
+.creator-related a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}

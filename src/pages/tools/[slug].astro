@@ -1,0 +1,138 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ScriptLengthChecker from '../../components/tools/ScriptLengthChecker';
+import CaptionCounter from '../../components/tools/CaptionCounter';
+import HookGenerator from '../../components/tools/HookGenerator';
+import { toolPages } from '../../content/studio/toolPages';
+import { hookNiches } from '../../content/studio/hooks';
+import { guideBySlug } from '../../content/guides';
+import { factById, verifiedOn } from '../../content/studio/platformFacts';
+export function getStaticPaths() {
+  return toolPages.map((page) => ({ params: { slug: page.slug }, props: { page } }));
+}
+const { page } = Astro.props;
+const base = 'https://www.teleprompter.wtf';
+const canonical = `${base}/tools/${page.slug}`;
+const storySlugs: Record<string, string[]> = {
+  'script-length-checker': [
+    'how-to-write-a-30-second-video-script',
+    'teleprompter-speed',
+    'how-to-format-a-teleprompter-script',
+    'teleprompter-for-short-form-video',
+    'how-to-batch-record-videos',
+  ],
+  'caption-counter': [
+    'instagram-teleprompter',
+    'how-to-film-talking-head-reels',
+    'how-to-write-a-30-second-video-script',
+    'best-camera-settings-for-reels',
+    'how-to-batch-record-videos',
+  ],
+  'hook-generator': [
+    'how-to-write-a-30-second-video-script',
+    'how-to-film-talking-head-reels',
+    'how-to-batch-record-videos',
+    'instagram-teleprompter',
+    'teleprompter-for-short-form-video',
+  ],
+};
+const stories = (storySlugs[page.slug] ?? []).map((slug) => guideBySlug.get(slug)).filter(Boolean);
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: page.seo.h1,
+    description: page.seo.description,
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any',
+    url: canonical,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${base}/` },
+      { '@type': 'ListItem', position: 2, name: 'Tools', item: `${base}/tools` },
+      { '@type': 'ListItem', position: 3, name: page.seo.h1, item: canonical },
+    ],
+  },
+];
+---
+
+<Layout title={page.seo.title} description={page.seo.description} schema={schema}>
+  <main class="guide-page section-wrap creator-content tool-page">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><a href="/tools">Tools</a><span>/</span><span
+        aria-current="page">{page.seo.h1}</span
+      >
+    </nav>
+    <header class="guide-header">
+      <p class="eyebrow">Free creator tool</p><h1>{page.seo.h1}</h1><p>{page.directAnswer}</p>
+    </header>
+    {page.slug === 'script-length-checker' && <ScriptLengthChecker client:visible />}
+    {page.slug === 'caption-counter' && <CaptionCounter client:visible />}
+    {
+      page.slug === 'hook-generator' && (
+        <HookGenerator
+          client:visible
+          niches={hookNiches.map((niche) => ({
+            id: niche.id,
+            name: niche.name,
+            hooks: niche.groups.flatMap((group) => group.hooks.map((hook) => hook.text)),
+          }))}
+        />
+      )
+    }
+    <section>
+      <h2>{page.howToRead.heading}</h2>{
+        page.howToRead.paragraphs.map((paragraph) => <p>{paragraph}</p>)
+      }
+    </section>
+    <section>
+      <h2>Limits and facts</h2><p>{page.factsIntro} Facts checked {verifiedOn}.</p><ul>
+        {page.factIds.map((id) => <li>{factById.get(id)?.text}</li>)}
+      </ul><ul>{page.limits.map((limit) => <li>{limit}</li>)}</ul>
+    </section>
+    <section>
+      <h2>Questions</h2>{
+        page.faq.map((item) => (
+          <div>
+            <>
+              <h3>{item.question}</h3>
+              <p>{item.answer}</p>
+            </>
+          </div>
+        ))
+      }
+    </section>
+    <section class="creator-related">
+      <h2>Related recording resources</h2><ul>
+        {
+          page.related.map((link) => (
+            <li>
+              <a href={link.href}>{link.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+    <section class="related-guides">
+      <h2>Guides for your next video</h2><div data-story-count={stories.length}>
+        {
+          stories.map(
+            (guide) =>
+              guide && (
+                <a href={`/guides/${guide.slug}`}>
+                  <>
+                    <span>{guide.eyebrow}</span>
+                    <strong>{guide.title}</strong>
+                  </>
+                </a>
+              ),
+          )
+        }
+      </div>
+    </section>
+  </main>
+</Layout>

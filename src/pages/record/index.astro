@@ -1,0 +1,72 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { recordHub, presets } from '../../content/studio';
+const seo = recordHub.seo;
+const base = 'https://www.teleprompter.wtf';
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: seo.h1,
+    description: seo.description,
+    url: `${base}/record`,
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: recordHub.cards.map((card, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: presets.find((preset) => preset.id === card.presetId)?.name,
+        url: `${base}/record/${card.slug}`,
+      })),
+    },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${base}/` },
+      { '@type': 'ListItem', position: 2, name: 'Record', item: `${base}/record` },
+    ],
+  },
+];
+---
+
+<Layout title={seo.title} description={seo.description} schema={schema}>
+  <main class="listing-page section-wrap creator-content">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><span aria-current="page">Record</span>
+    </nav>
+    <header class="page-intro">
+      <p class="eyebrow">Record with camera</p><h1>{seo.h1}</h1>{
+        recordHub.intro.map((paragraph) => <p>{paragraph}</p>)
+      }<a class="button button--primary" href={recordHub.ctaHref}>{recordHub.ctaLabel}</a>
+    </header>
+    <div class="creator-grid">
+      {
+        recordHub.cards.map((card) => (
+          <article class="creator-card">
+            <>
+              <h2>
+                <a href={`/record/${card.slug}`}>
+                  {presets.find((preset) => preset.id === card.presetId)?.name}
+                </a>
+              </h2>
+              <p>{card.summary}</p>
+              <a href={`/record/${card.slug}`}>See recording setup</a>
+            </>
+          </article>
+        ))
+      }
+    </div>
+    <section>
+      <h2>{recordHub.howToChoose.heading}</h2>{
+        recordHub.howToChoose.paragraphs.map((paragraph) => <p>{paragraph}</p>)
+      }
+    </section>
+    <p>
+      Need words first? <a href="/templates">Choose a timed video script</a>, <a href="/hooks"
+        >find an opening hook</a
+      >, or <a href="/tools/script-length-checker">check your script length</a>.
+    </p>
+  </main>
+</Layout>

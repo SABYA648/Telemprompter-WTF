@@ -1,4 +1,6 @@
 import type { APIRoute } from 'astro';
+import { guides } from '../content/guides';
+import noindexRoutes from '../content/noindexRoutes.json';
 
 export const prerender = true;
 
@@ -78,17 +80,26 @@ const entries: ImageSitemapEntry[] = [
 ];
 
 export const GET: APIRoute = () => {
-  const urls = entries
+  const creatorEntries = guides
+    .filter((guide) => ['short_form', 'creator'].includes(guide.cluster) && guide.illustration)
+    .map((guide) => ({
+      pages: [`/guides/${guide.slug}`],
+      image: guide.illustration!.src,
+      title: guide.illustration!.alt,
+    }));
+  const urls = [...entries, ...creatorEntries]
     .flatMap((entry) =>
-      entry.pages.map(
-        (page) => `  <url>
+      entry.pages
+        .filter((page) => !noindexRoutes.includes(page))
+        .map(
+          (page) => `  <url>
     <loc>${escapeXml(`${BASE}${page}`)}</loc>
     <image:image>
       <image:loc>${escapeXml(`${BASE}${entry.image}`)}</image:loc>
       <image:title>${escapeXml(entry.title)}</image:title>
     </image:image>
   </url>`,
-      ),
+        ),
     )
     .join('\n');
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

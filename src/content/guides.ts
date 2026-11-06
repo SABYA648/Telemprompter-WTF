@@ -1,4 +1,5 @@
 import type { PresenterPreferences } from '../domain/types';
+import { creatorGuides } from './creatorGuides';
 
 export interface GuideSection {
   heading: string;
@@ -14,7 +15,9 @@ export type GuideCluster =
   | 'zoom'
   | 'speed'
   | 'voice_tracking'
-  | 'mobile';
+  | 'mobile'
+  | 'short_form'
+  | 'creator';
 
 export interface GuideIllustration {
   src: string;
@@ -37,11 +40,12 @@ export interface Guide {
   updated: string;
   sections: GuideSection[];
   related: string[];
+  relatedPages?: { label: string; href: string }[];
   illustration?: GuideIllustration;
   embed?: GuideEmbed;
 }
 
-export const guides: Guide[] = [
+const originalGuides: Guide[] = [
   {
     slug: 'how-to-use-a-teleprompter',
     cluster: 'getting_started',
@@ -1339,4 +1343,21 @@ export const guides: Guide[] = [
   },
 ];
 
+const creatorByCluster: Record<Exclude<GuideCluster, 'short_form' | 'creator'>, string> = {
+  getting_started: 'how-to-write-a-30-second-video-script',
+  youtube: 'capcut-teleprompter',
+  recording: 'how-to-film-talking-head-reels',
+  presentation: 'teleprompter-remote-control',
+  zoom: 'teleprompter-remote-control',
+  speed: 'how-to-write-a-30-second-video-script',
+  voice_tracking: 'teleprompter-remote-control',
+  mobile: 'external-microphone-for-phone-video',
+};
+export const guides: Guide[] = [
+  ...originalGuides.map((guide) => ({
+    ...guide,
+    related: [...guide.related, creatorByCluster[guide.cluster as keyof typeof creatorByCluster]],
+  })),
+  ...creatorGuides,
+];
 export const guideBySlug = new Map(guides.map((guide) => [guide.slug, guide]));

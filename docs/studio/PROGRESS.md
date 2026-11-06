@@ -362,3 +362,31 @@ Next: M10.
 ## M9 independent approval - 2026-11-06
 
 Hermes reran the gates on `ec770bbc5fac43d2255b46731137f2c933059341` with Node 26: `npm ci`, `npm run check` (307/307 unit), `npm run test:coverage` (89.44% lines, 1008/1127, threshold 80%), `npm run test:e2e` (154/154), media (21/21), and `npm run budget` all passed. Docker read-only image size: 85,398,663 bytes; `/health`, `/studio`, `sw.js`, and manifest returned 200, `/private-voice-tracking` returned 301, CSP and Permissions-Policy were present, and `sw.js` sent `no-cache`. Container SEO crawl passed. Mobile Lighthouse on `/`: Performance 99, Accessibility 100, Best Practices 100, SEO 100 (LCP 1.8 s, TBT 110 ms, CLS 0); other sampled indexable routes scored Performance 95-100 and Accessibility/Best Practices/SEO 100. iPhone 15 and Pixel 7 emulation across `/`, `/studio`, `/templates`, `/hooks`, a guide and a tool: 12/12 no console errors or horizontal overflow. Fix-round re-review: P0=0, P1=0 (one P2 about the failure injection test's strength). PR #8 remains open and unmerged; no production deploy. Next: M10.
+
+## M10 SEO expansion - 2026-11-06
+
+Shipped:
+
+- `/record` and five platform recording pages with dated facts, three authored starter scripts, six contextual related resources, FAQs, schema, mobile CTA and Studio preset handoff. An empty library opens the matching starter; an existing library offers its scripts or a fresh starter. Aspect and safe zone remain scoped to the browser tab until explicitly changed.
+- Three working `client:visible` Preact tools: spoken script timing with target cut points, caption and hashtag limits with a 125-character Instagram preview, and a template-based niche hook generator with copy feedback and direct recording. Each island has a 15 KB gzip gate.
+- Eight creator guides integrated into the guide hub, RSS and image sitemap, with authored sample handoff through each embed's "Record with camera" link. Short-form, creator and phone guides hand off a 9:16 script with a 30 second target; the other guides hand off 16:9 with no target. Existing guides now lead to a relevant creator guide. Record, template, hook, tool and homepage links make the new pages discoverable.
+- Content lint now checks section 13.1 word floors, 12-word paragraph shingle similarity, title and description lengths, exactly one primary Studio CTA on record/template/hook pages, and three contextual inbound sources plus a hub link for each new page. The SEO research map and `llms.txt` reflect the shipped routes.
+
+Files: `src/pages/record`, `src/pages/tools/[slug].astro`, `src/components/tools`, `src/pages/guides`, `src/content/guides.ts`, `src/studio/StudioApp.tsx`, `src/domain/studio/settings.ts`, `scripts/content-lint.mjs`, `scripts/bundle-budget.mjs`, `scripts/lighthouse.mjs`, `docs/seo-research.md`, `public/llms.txt`, `tests/m10-seo.spec.ts`.
+
+Gates (independent rerun, Node 26.7.0, final tree): `npm run check` pass (typecheck 0 errors and 0 warnings, lint, content lint 79 indexable HTML pages on the fresh build, format, unit 308/308 in 47 files, build, budget). `npm run test:e2e` 162/162 in one full run (141 Chromium, 21 media), no browser crash. `npx playwright test --project=media` 21/21. `npm run budget`: Studio 67.5/130 KB gzip, largest content page 28.1/60 KB, tool islands script-length-checker 14.8, caption-counter 7.7 and hook-generator 11.6/15 KB. SEO crawl against `serve dist` on port 4173: pass, 77 sitemap URLs, image sitemap 27 pages and 27 images, 5 tools with at least 5 stories each. Mobile Lighthouse against the same server with Playwright's Chromium: `/record/instagram-reels`, `/templates/30-second-reel-script`, `/hooks/fitness`, `/tools/caption-counter` and `/guides/instagram-teleprompter` each 100 Performance, 100 Accessibility, 100 Best Practices, 100 SEO, LCP 1.4 s, TBT 0 ms, CLS 0. The other audited indexable routes scored Performance 99 to 100 and 100 in the other categories (`/` LCP 1.5 s, TBT 140 ms). The Codex worker's earlier run also checked the new tools at 390x844 and 360x740 (first controls above the fold, no horizontal overflow), and `tests/m10-seo.spec.ts` now enforces that at both sizes. The Docker image was not used, because port 8080 on this host belongs to the Coolify proxy.
+
+Deviations: D-044 scopes preset camera changes to `sessionStorage` and offers a script picker; D-045 serializes authored hooks into the tool page to hold its browser island under budget. The new tool pages also include five relevant guide stories to satisfy the existing SEO crawl rule.
+
+Known issues:
+
+- During the Codex worker's run, the first full Playwright command passed 161/162 because Chromium headless shell crashed with SIGSEGV while starting one PWA context, the intermittent browser failure recorded after M8. The independent full rerun had no crash.
+- In the worker's run, one Lighthouse pass measured a 540 ms homepage TBT under transient local load. The independent rerun measured 140 ms, within budget.
+- TikTok's 4,000-character caption limit (Appendix C) still needs the owner's verification.
+
+Owner manual checks:
+
+- On iPhone Safari and Android Chrome, open each `/record/*` page, choose its preset, record and save a short take. Check portrait and landscape framing, safe zones and a reload in the same tab.
+- In the native posting apps, recheck dated platform limits and the caption preview, and verify an exported file can be posted. Try the hook copy button and guide sample handoff on a physical phone.
+
+Next: M11.

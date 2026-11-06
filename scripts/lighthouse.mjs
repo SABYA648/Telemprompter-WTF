@@ -19,6 +19,9 @@ const routes = [
   { name: 'template', path: '/templates/30-second-reel-script' },
   { name: 'hooks-hub', path: '/hooks' },
   { name: 'hooks', path: '/hooks/fitness' },
+  { name: 'record-reels', path: '/record/instagram-reels' },
+  { name: 'caption-counter', path: '/tools/caption-counter' },
+  { name: 'instagram-guide', path: '/guides/instagram-teleprompter' },
   // The genuine 404 path returns an error status, which Lighthouse scores as an errored
   // document. The nginx production origin serves /404.html directly with status 200, so
   // audit that URL; its SEO score stays low on purpose because the page is noindex.
@@ -30,6 +33,7 @@ const chrome = await launch({
 });
 
 const summary = [];
+const failures = [];
 try {
   for (const route of routes) {
     const url = `${baseUrl}${route.path}`;
@@ -56,6 +60,22 @@ try {
       tbt: audits['total-blocking-time'].displayValue ?? 'n/a',
       cls: audits['cumulative-layout-shift'].displayValue ?? 'n/a',
     });
+    if (route.path !== '/404.html') {
+      const scores = {
+        performance: categories.performance.score * 100,
+        accessibility: categories.accessibility.score * 100,
+        seo: categories.seo.score * 100,
+      };
+      if (
+        scores.performance < 90 ||
+        scores.accessibility < 95 ||
+        scores.seo < 100 ||
+        audits['largest-contentful-paint'].numericValue > 2500 ||
+        audits['total-blocking-time'].numericValue > 200 ||
+        audits['cumulative-layout-shift'].numericValue > 0.05
+      )
+        failures.push(`${route.path}: below the section 13.5 content-page budget`);
+    }
   }
 } finally {
   chrome.kill();
@@ -63,3 +83,7 @@ try {
 
 writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
 console.table(summary);
+if (failures.length) {
+  console.error(failures.join('\n'));
+  process.exitCode = 1;
+}

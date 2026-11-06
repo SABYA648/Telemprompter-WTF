@@ -96,6 +96,11 @@ const schema = [
       ))
     }
     <h2>Related</h2><ul>
+      <li>
+        <a href={`/record/${template.related.recordPreset}`}
+          >Record a {template.format} video with a teleprompter</a
+        >
+      </li>
       {
         template.related.templates.map((id) => {
           const related = templates.find((item) => item.id === id);

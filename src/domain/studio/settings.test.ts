@@ -1,9 +1,16 @@
 import 'fake-indexeddb/auto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { defaultSettings, loadSettings, sanitizeSettings, saveSettings } from './settings';
+import {
+  applySessionPreset,
+  defaultSettings,
+  loadSettings,
+  sanitizeSettings,
+  saveSettings,
+} from './settings';
 import { getDb, resetDbForTests } from './db';
 import { cameraConstraints } from './camera';
 afterEach(async () => {
+  applySessionPreset(null);
   await resetDbForTests();
   vi.unstubAllGlobals();
 });
@@ -53,6 +60,32 @@ describe('Studio settings', () => {
     vi.stubGlobal('dispatchEvent', () => true);
     await saveSettings(next);
     expect(await loadSettings()).toEqual(next);
+  });
+  it('keeps a preset in this tab until the visitor saves a setting', async () => {
+    const values = new Map<string, string>();
+    vi.stubGlobal('sessionStorage', {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        values.set(key, value);
+      },
+      removeItem: (key: string) => {
+        values.delete(key);
+      },
+    });
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    vi.stubGlobal('innerWidth', 390);
+    vi.stubGlobal('innerHeight', 844);
+    vi.stubGlobal('dispatchEvent', () => true);
+    const saved = await loadSettings();
+    applySessionPreset({ aspect: '16:9', safeZone: 'instagram' });
+    expect((await loadSettings()).camera).toMatchObject({ aspect: '16:9', safeZone: 'instagram' });
+    expect(values.has('studio.sessionPreset')).toBe(true);
+    await saveSettings(saved);
+    expect(values.has('studio.sessionPreset')).toBe(false);
+    expect((await loadSettings()).camera).toMatchObject({
+      aspect: saved.camera.aspect,
+      safeZone: saved.camera.safeZone,
+    });
   });
   it('imports M4 quick camera preferences once', async () => {
     vi.stubGlobal('matchMedia', () => ({ matches: true }));

@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { SCRIPT_SIZE_BUCKETS } from '../domain/analytics';
 import { analytics, deviceClass, displayMode, studioEntry } from '../domain/analytics';
 import { parseMarkup } from '../domain/studio/markup';
+import { presetById } from '../content/studio/presets';
+import { starterById } from '../content/studio/starterScripts';
+import { applySessionPreset } from '../domain/studio/settings';
+import type { StudioPreset } from '../content/studio/types';
 import {
   migrateQuickScript,
   listScripts,
@@ -86,6 +90,7 @@ export default function StudioApp(): preact.JSX.Element {
   const [memory, setMemory] = useState(false);
   const [recovered, setRecovered] = useState(false);
   const [transferResult, setTransferResult] = useState('');
+  const [presetChoice, setPresetChoice] = useState<StudioPreset | null>(null);
   const refreshRequest = useRef(0);
   const refresh = async () => {
     const request = ++refreshRequest.current;
@@ -118,9 +123,26 @@ export default function StudioApp(): preact.JSX.Element {
     };
     const boot = async () => {
       try {
+        const presetId = new URLSearchParams(location.search).get('preset');
+        const preset = presetId ? presetById.get(presetId as StudioPreset['id']) : undefined;
+        let libraryWasEmpty = false;
+        if (preset && !location.hash)
+          applySessionPreset({ aspect: preset.aspect, safeZone: preset.safeZone });
         try {
           await migrateQuickScript();
           await purgeDeletedScripts();
+          libraryWasEmpty = preset ? (await listScripts()).length === 0 : false;
+          if (preset && libraryWasEmpty) {
+            const starter = starterById.get(preset.starterId);
+            if (starter)
+              await createScript({
+                id: 'quick',
+                title: starter.title,
+                body: starter.body,
+                aspect: preset.aspect,
+                targetSeconds: preset.targetSeconds,
+              });
+          }
           await ensureFirstScript();
           await experimentArms();
           await Promise.all([readHabits(), readStreak()]);
@@ -159,6 +181,11 @@ export default function StudioApp(): preact.JSX.Element {
           go(`/scripts/${script.id}`);
         }
         await refresh();
+        if (preset && !location.hash) {
+          history.replaceState(null, '', '/studio');
+          if (libraryWasEmpty) go('/record/quick');
+          else setPresetChoice(preset);
+        }
         const boot = bootHash(location.search);
         if (boot && !location.hash) location.hash = boot;
         analytics.track('opened_studio', {
@@ -221,12 +248,55 @@ export default function StudioApp(): preact.JSX.Element {
     );
   const active = scripts.filter((script) => !script.deletedAt);
   const deleted = scripts.filter((script) => script.deletedAt);
+  const openPresetScript = async (preset: StudioPreset, script?: StudioScript) => {
+    const starter = starterById.get(preset.starterId);
+    const chosen = script
+      ? await saveScript({ ...script, aspect: preset.aspect, targetSeconds: preset.targetSeconds })
+      : await createScript({
+          title: starter?.title ?? preset.name,
+          body: starter?.body ?? '',
+          aspect: preset.aspect,
+          targetSeconds: preset.targetSeconds,
+        });
+    setPresetChoice(null);
+    await refresh();
+    go(`/record/${chosen.id}`);
+  };
   const inApp = isInAppBrowser(navigator.userAgent);
   const handoffScript = active.find((script) => script.id === route.id) ?? active[0] ?? null;
   return (
     <div class="studio-shell">
       <ServiceWorkerUpdate hidden={route.screen === 'record'} />
-      <InstallSheet recording={route.screen === 'record'} />
+      <InstallSheet recording={route.screen === 'record' || !!presetChoice} />
+      {presetChoice && (
+        <section class="studio-preset-choice studio-screen" aria-labelledby="preset-choice-title">
+          <p class="eyebrow">{presetChoice.name} preset</p>
+          <h1 id="preset-choice-title">Choose a script to record</h1>
+          <p>
+            We set the {presetChoice.aspect} frame,{' '}
+            {presetChoice.targetSeconds
+              ? `${presetChoice.targetSeconds} second target`
+              : 'open duration'}{' '}
+            and recording safe zone for this session.
+          </p>
+          <button class="studio-button" onClick={() => void openPresetScript(presetChoice)}>
+            Use starter
+          </button>
+          <h2>Use my script</h2>
+          <ul>
+            {active.map((script) => (
+              <li>
+                <button
+                  class="studio-button studio-button--quiet"
+                  onClick={() => void openPresetScript(presetChoice, script)}
+                >
+                  {script.title}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {inApp && route.screen !== 'record' && (
         <div class="studio-storage-warning" role="status">
           Instagram's browser can't record video. Open this page in{' '}

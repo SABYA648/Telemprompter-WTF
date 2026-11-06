@@ -46,5 +46,29 @@ for (const page of await pages(root)) {
     `${pagePath}: ${(bytes / 1024).toFixed(1)} KB gzip (max ${(max / 1024).toFixed(0)} KB)`,
   );
   if (bytes > max) failed = true;
+  if (/^\/tools\/(script-length-checker|caption-counter|hook-generator)\/$/.test(pagePath)) {
+    const island = html.match(/component-url="(\/_astro\/[^" ]+\.js)"/)?.[1];
+    if (!island) {
+      console.error(`${pagePath}: missing interactive island`);
+      failed = true;
+    } else {
+      const islandFiles = new Set();
+      let islandBytes = 0;
+      async function addIsland(href) {
+        if (islandFiles.has(href)) return;
+        islandFiles.add(href);
+        const file = resolve(root, `.${href}`);
+        const source = await readFile(file);
+        islandBytes += gzipSync(source).length;
+        for (const match of source
+          .toString('utf8')
+          .matchAll(/\b(?:from|import)\s*["'](\.[^"']+\.js)["']/g))
+          await addIsland(`/${relative(root, resolve(dirname(file), match[1]))}`);
+      }
+      await addIsland(island);
+      console.log(`${pagePath} island: ${(islandBytes / 1024).toFixed(1)} KB gzip (max 15 KB)`);
+      if (islandBytes > 15 * 1024) failed = true;
+    }
+  }
 }
 if (failed) process.exitCode = 1;
