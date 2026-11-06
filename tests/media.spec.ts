@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test';
 
 async function openRecordFromEditor(page: import('@playwright/test').Page) {
-  await page.locator('.studio-editor').getByRole('link', { name: 'Record', exact: true }).click();
+  // The editor has no Record button of its own; the nav's center Record records this script.
+  await page
+    .getByRole('navigation', { name: 'Studio navigation' })
+    .getByRole('link', { name: 'Record this script' })
+    .click();
 }
 
 async function recordAndKeep(page: import('@playwright/test').Page) {
@@ -192,6 +196,30 @@ test('practice camera preview is optional and stops with the toggle', async ({ p
     .toBe(true);
   await page.getByLabel('Camera preview').uncheck();
   await expect(page.locator('video')).toHaveCount(0);
+});
+
+test('the nav Record in the editor opens Record on the edited script', async ({ page }) => {
+  await page.goto('/studio#/scripts/new');
+  await page.getByLabel('Title', { exact: true }).fill('Nav record target');
+  await page.getByLabel('Script', { exact: true }).fill('These are the words I just edited.');
+  await expect(page.getByText('Saved')).toBeVisible();
+  const scriptId = page.url().split('#/scripts/')[1];
+  await openRecordFromEditor(page);
+  await expect(page).toHaveURL(new RegExp(`#\\/record\\/${scriptId}$`));
+  const allow = page.getByRole('button', { name: 'Allow camera' });
+  const start = page.getByRole('button', { name: 'Start recording' });
+  await expect(allow.or(start)).toBeVisible();
+  if (await allow.isVisible()) await allow.click();
+  await expect(start).toBeVisible();
+  await expect(page.locator('.prompter-scroll')).toContainText(
+    'These are the words I just edited.',
+  );
+  // Away from the editor, the center button is plain Record again.
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Studio navigation' })
+      .getByRole('link', { name: 'Record', exact: true }),
+  ).toHaveAttribute('href', `#/record/${scriptId}`);
 });
 
 test('template to script to kept take', async ({ page }) => {

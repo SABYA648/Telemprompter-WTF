@@ -1091,10 +1091,8 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
       {(notice || importer.status) && <p role="status">{notice || importer.status}</p>}
       {importer.element}
       <PrintableScript script={script} />
+      {/* Record is the raised nav button, which records this script while the editor is open. */}
       <div class="studio-editor__actions">
-        <a class="studio-button" href={`#/record/${script.id}`}>
-          <Icon name="camera" size={20} /> Record
-        </a>
         <a class="studio-button studio-button--quiet" href={`#/practice/${script.id}`}>
           <Icon name="play" size={20} /> Practice
         </a>

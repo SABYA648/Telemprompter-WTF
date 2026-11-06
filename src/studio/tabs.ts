@@ -26,15 +26,26 @@ const TAB_FOR_SCREEN: Record<Route['screen'], TabId> = {
   settings: 'settings',
 };
 
+/** The script the center Record button records: the one in Record, or the one being edited. */
+function recordTarget(route: Route): string | null {
+  if (route.screen === 'record') return route.id ?? 'quick';
+  if (route.screen === 'editor' && route.id && route.id !== 'new') return route.id;
+  return null;
+}
+
 /** Every route belongs to exactly one tab, so exactly one item can ever be current. */
 export function tabItems(route: Route) {
   const active = TAB_FOR_SCREEN[route.screen];
-  return TABS.map((tab) => ({
-    ...tab,
-    href:
-      tab.id === 'record' && route.screen === 'record'
-        ? `#/record/${route.id ?? 'quick'}`
-        : tab.href,
-    current: tab.id === active,
-  }));
+  const target = recordTarget(route);
+  return TABS.map((tab) =>
+    tab.id === 'record' && target
+      ? {
+          ...tab,
+          // In the editor, the nav button is the screen's only Record action (M12 P2).
+          label: route.screen === 'editor' ? 'Record this script' : tab.label,
+          href: `#/record/${target}`,
+          current: tab.id === active,
+        }
+      : { ...tab, current: tab.id === active },
+  );
 }

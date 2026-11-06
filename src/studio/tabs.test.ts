@@ -37,3 +37,15 @@ it('keeps the Record tab on the current script', () => {
     '#/record/quick',
   );
 });
+
+it('records the edited script from the editor, and only there says so', () => {
+  const record = (hash: string) => tabItems(routeFromHash(hash)).find((tab) => tab.id === 'record');
+  expect(record('#/scripts/my-script')).toMatchObject({
+    href: '#/record/my-script',
+    label: 'Record this script',
+    current: false,
+  });
+  expect(record('#/scripts/new')).toMatchObject({ href: '#/record/quick', label: 'Record' });
+  for (const hash of ['#/', '#/scripts', '#/takes', '#/record/abc', '#/practice/abc'])
+    expect(record(hash)?.label, hash).toBe('Record');
+});

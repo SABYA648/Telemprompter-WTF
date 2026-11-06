@@ -32,7 +32,8 @@ export type IconName =
   | 'import'
   | 'print'
   | 'fullscreen'
-  | 'mirror';
+  | 'mirror'
+  | 'storage';
 
 const paths: Record<IconName, preact.JSX.Element> = {
   home: (
@@ -190,6 +191,13 @@ const paths: Record<IconName, preact.JSX.Element> = {
     <>
       <path d="M12 3v18" />
       <path d="M9 7 4 17h5zM15 7l5 10h-5z" />
+    </>
+  ),
+  storage: (
+    <>
+      <ellipse cx="12" cy="6" rx="8" ry="3" />
+      <path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6" />
+      <path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
     </>
   ),
 };

@@ -11,7 +11,7 @@ import { Icon } from './Icons';
 import { Overflow } from './Overflow';
 import { TakeToolSheet, type TakeTool } from './TakeTools';
 
-function StorageMeter() {
+function StorageChip() {
   const [estimate, setEstimate] = useState({ usage: 0, quota: 0 });
   useEffect(() => {
     void storageEstimate().then((value) => {
@@ -24,14 +24,48 @@ function StorageMeter() {
     });
   }, []);
   if (!estimate.quota) return null;
-  const available = estimate.quota - estimate.usage;
+  const used = formatBytes(estimate.usage);
+  const minutes = minutesLeft(estimate.quota - estimate.usage, videoBitrate('1080p', 30, 'high'));
+  const detail = `${used} used · about ${minutes} min left at 1080p`;
   return (
-    <div class="studio-storage">
-      <p>
-        {formatBytes(estimate.usage)} used · about{' '}
-        {minutesLeft(available, videoBitrate('1080p', 30, 'high'))} min left at 1080p
-      </p>
-      <meter value={estimate.usage} max={estimate.quota} aria-label="Storage used" />
+    <p class="studio-storage" role="img" aria-label={detail} title={detail}>
+      <Icon name="storage" size={16} />
+      {used} · ~{minutes} min
+    </p>
+  );
+}
+const SAVE_TIP_KEY = 'studio.saveTipDismissed';
+/** One line, dismissed for good: unsaved takes live only in browser storage. */
+function SaveTip() {
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return localStorage.getItem(SAVE_TIP_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  if (hidden) return null;
+  const text = 'Save to Photos — browser storage can clear';
+  return (
+    <div class="studio-tip" role="note" aria-label={text}>
+      <Icon name="share" size={18} />
+      <span class="studio-tip__text" title={text}>
+        {text}
+      </span>
+      <button
+        class="studio-tip__close"
+        aria-label="Dismiss tip"
+        onClick={() => {
+          setHidden(true);
+          try {
+            localStorage.setItem(SAVE_TIP_KEY, '1');
+          } catch {
+            // Private modes can refuse writes; the tip still hides for this visit.
+          }
+        }}
+      >
+        <Icon name="close" size={18} />
+      </button>
     </div>
   );
 }
@@ -229,10 +263,8 @@ export function TakesScreen() {
   return (
     <section class="studio-screen">
       <h1>Takes</h1>
-      <StorageMeter />
-      {takes.some((take) => !take.exportedAt) && (
-        <p class="studio-storage-warning">Save it to Photos now. Browser storage can be cleared.</p>
-      )}
+      <StorageChip />
+      {takes.some((take) => !take.exportedAt) && <SaveTip />}
       {!takes.length && <p class="studio-muted">No takes yet. Tap the camera to record one.</p>}
       {message && <p role="status">{message}</p>}
       {Object.entries(grouped).map(([id, rows]) => {

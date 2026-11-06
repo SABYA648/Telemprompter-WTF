@@ -104,3 +104,91 @@ test('the permission screen leads with the camera frame and one Allow action', a
   await expect(page.getByRole('link', { name: 'Not now' })).not.toHaveClass(/studio-button/);
   expect(await accentActions(page)).toEqual(['Allow camera']);
 });
+
+for (const viewport of [
+  { width: 360, height: 780 },
+  { width: 390, height: 844 },
+]) {
+  test(`the editor's only accent action is the nav Record, clear of its row, at ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/studio#/scripts/new');
+    await page.getByLabel('Title', { exact: true }).fill('One record action');
+    await page.getByLabel('Script', { exact: true }).fill('Only the nav records this.');
+    await expect(page.getByText('Saved')).toBeVisible();
+    const scriptId = page.url().split('#/scripts/')[1];
+    const everyAccent = await page.evaluate(() =>
+      [...document.querySelectorAll('a, button, summary, [role="button"]')]
+        .filter((el) => el.checkVisibility({ visibilityProperty: true }))
+        .filter((el) => getComputedStyle(el).backgroundColor === 'rgb(240, 71, 42)')
+        .map((el) => (el.getAttribute('aria-label') || el.textContent || '').trim()),
+    );
+    expect(everyAccent).toEqual(['Record this script']);
+    const record = page
+      .getByRole('navigation', { name: 'Studio navigation' })
+      .getByRole('link', { name: 'Record this script' });
+    await expect(record).toHaveAttribute('href', `#/record/${scriptId}`);
+    const actions = page.locator('.studio-editor__actions');
+    await expect(actions.getByRole('link', { name: 'Record' })).toHaveCount(0);
+    const practice = (await actions.getByRole('link', { name: 'Practice' }).boundingBox())!;
+    const more = (await actions.locator('summary').boundingBox())!;
+    const fab = (await record.boundingBox())!;
+    for (const box of [practice, more]) {
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(box.y + box.height).toBeLessThanOrEqual(fab.y);
+    }
+    // Practice fills the row beside the overflow button.
+    expect(practice.width).toBeGreaterThan(viewport.width - 32 - 44 - 8 - 2);
+    await record.click();
+    await expect(page).toHaveURL(new RegExp(`#\\/record\\/${scriptId}$`));
+  });
+}
+
+test('Takes leads with a storage chip and a one-line tip that stays dismissed', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto('/studio#/takes');
+  await expect(page.locator('h1')).toHaveText('Takes');
+  await page.evaluate(async () => {
+    const request = indexedDB.open('teleprompter-wtf');
+    const db = await new Promise<IDBDatabase>((resolve) => {
+      request.onsuccess = () => resolve(request.result);
+    });
+    const tx = db.transaction('takes', 'readwrite');
+    tx.objectStore('takes').put({
+      id: 'seed-tip',
+      scriptId: 'quick',
+      kept: true,
+      durationMs: 30000,
+      wordsRead: 70,
+      createdAt: Date.now(),
+      exportedAt: null,
+    });
+    await new Promise<void>((resolve) => {
+      tx.oncomplete = () => resolve();
+    });
+    db.close();
+  });
+  await page.reload();
+  const chip = page.getByRole('img', { name: /used · about \d+ min left at 1080p/ });
+  await expect(chip).toBeVisible();
+  await expect(chip).toHaveText(/^\S+ \S?B · ~\d+ min$/);
+  await expect(page.locator('meter')).toHaveCount(0);
+  const tip = page.getByRole('note', { name: 'Save to Photos — browser storage can clear' });
+  await expect(tip).toBeVisible();
+  const text = tip.locator('.studio-tip__text');
+  // One line, never wrapped: shorter than two lines of its own font size.
+  const fontSize = await text.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  expect((await text.boundingBox())!.height).toBeLessThan(fontSize * 2.2);
+  const close = tip.getByRole('button', { name: 'Dismiss tip' });
+  const box = (await close.boundingBox())!;
+  expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
+  await close.click();
+  await expect(tip).toHaveCount(0);
+  await page.reload();
+  await expect(chip).toBeVisible();
+  await expect(page.getByRole('note')).toHaveCount(0);
+});
