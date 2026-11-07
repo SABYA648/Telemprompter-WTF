@@ -82,14 +82,24 @@ test('an unknown template id opens a blank script', async ({ page }) => {
 
 test('hook picker shuffles and inserts into the script', async ({ page }) => {
   await page.goto('/studio#/scripts/new');
-  await page.getByText('Choose a hook').click();
-  await page.getByLabel('Niche').selectOption('tech');
+  // The hook picker is a round lightbulb in the action row that opens a sheet.
+  const bulb = page
+    .locator('.studio-editor__actions')
+    .getByRole('button', { name: 'Choose a hook' });
+  await expect(bulb.locator('.studio-captioned__label')).toHaveText('Hook');
+  const box = (await bulb.boundingBox())!;
+  expect(box.width).toBeGreaterThanOrEqual(44);
+  expect(box.height).toBeGreaterThanOrEqual(44);
+  await bulb.click();
+  const sheet = page.getByRole('dialog', { name: 'Choose a hook' });
+  await sheet.getByLabel('Niche').selectOption('tech');
   const hook = page.getByTestId('hook-text');
   const first = await hook.textContent();
   await page.getByRole('button', { name: 'Shuffle' }).click();
   await expect(hook).not.toHaveText(first ?? '');
   const shuffled = (await hook.textContent()) ?? '';
   await page.getByRole('button', { name: 'Insert hook' }).click();
+  await expect(sheet).toHaveCount(0);
   await expect(page.getByLabel('Script', { exact: true })).toHaveValue(
     new RegExp(shuffled.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
   );
@@ -391,18 +401,20 @@ test('creator pages expose schema, one primary CTA, and clean mobile layout', as
   await expect(page.locator('[data-analytics-cta]')).toHaveCount(1);
 });
 
-test("Home's Templates link opens the template list in the library's new-script sheet", async ({
+test("Home's create row is Idea and Practice; Up next rows read like library rows", async ({
   page,
 }) => {
   await page.goto('/studio#/');
-  await page
-    .getByRole('navigation', { name: 'Create tools' })
-    .getByRole('link', { name: 'Templates' })
-    .click();
+  // Write and the library's "+" sheet already start a script or a template, so no tile repeats them.
+  const tools = page.getByRole('navigation', { name: 'Create tools' });
+  await expect(tools.getByRole('link')).toHaveText(['Idea', 'Practice']);
+  const row = page.locator('.studio-next-row').first();
+  await expect(row.locator('small')).toHaveText('30 words · 0:13');
+  await page.goto('/studio#/scripts');
+  await expect(page.locator('.studio-script-card__meta').first()).toContainText('30 words · 0:13');
+  // The template list is still one link away for template pages that send a visitor here.
+  await page.goto('/studio#/');
+  await page.evaluate(() => (location.hash = '#/scripts?templates=1'));
   const sheet = page.getByRole('dialog', { name: 'Templates' });
-  await expect(sheet).toBeVisible();
   await expect(sheet.getByLabel('Search templates')).toBeVisible();
-  await sheet.getByRole('button', { name: 'Close' }).click();
-  await expect(sheet).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Scripts' })).toBeVisible();
 });

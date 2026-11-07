@@ -63,11 +63,30 @@ test('every route marks exactly one tab and shows at most one accent action', as
   // Practice speaks the camera's language: play is the one accent, every control is an icon,
   // and the camera preview is an icon switch, not a native checkbox.
   expect(await accentActions(page)).toEqual(['Start practice']);
-  for (const name of ['Start practice', 'Restart', 'Finish practice']) {
-    const button = page.getByRole('button', { name });
+  // Play is a bare glyph; Camera and Restart carry an 11px word; Done waits for a run.
+  const play = page.getByRole('button', { name: 'Start practice' });
+  await expect(play.locator('svg')).toHaveCount(1);
+  expect(((await play.textContent()) ?? '').trim()).toBe('');
+  for (const [name, word] of [
+    ['Camera preview', 'Camera'],
+    ['Restart', 'Restart'],
+  ] as const) {
+    const button = page.locator('.studio-practice-row').getByLabel(name, { exact: true });
     await expect(button.locator('svg')).toHaveCount(1);
-    expect(((await button.textContent()) ?? '').trim()).toBe('');
+    const label = button.locator('.studio-captioned__label');
+    await expect(label).toHaveText(word);
+    expect(await label.evaluate((el) => getComputedStyle(el).fontSize)).toBe('11px');
+    const box = (await button.boundingBox())!;
+    expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
   }
+  await expect(page.getByRole('button', { name: 'Finish practice' })).toHaveCount(0);
+  await play.click();
+  const done = page.getByRole('button', { name: 'Finish practice' });
+  await expect(done).toBeVisible();
+  await expect(done.locator('.studio-captioned__label')).toHaveText('Done');
+  await done.click();
+  await expect(done).toHaveCount(0);
+  await page.getByRole('button', { name: 'Restart' }).click();
   await expect(page.getByRole('switch', { name: 'Camera preview' })).toHaveAttribute(
     'aria-checked',
     'false',
@@ -256,20 +275,33 @@ for (const viewport of [
     await page.getByText('More', { exact: true }).click();
     await expect(page.getByLabel('Target seconds')).toHaveCount(0);
     const practiceLink = actions.getByRole('link', { name: 'Practice' });
-    // Practice is a round ghost play glyph beside ..., not a wide button.
-    expect(((await practiceLink.textContent()) ?? '').trim()).toBe('');
+    // Practice is a round ghost play glyph with an 11px word, not a wide button.
     await expect(practiceLink.locator('svg')).toHaveCount(1);
+    const fab = (await record.boundingBox())!;
+    const captioned = [
+      [practiceLink, 'Practice'],
+      [markup.getByLabel('Format'), 'Format'],
+      [actions.getByRole('button', { name: 'Choose a hook' }), 'Hook'],
+    ] as const;
+    for (const [control, word] of captioned) {
+      const label = control.locator('.studio-captioned__label');
+      await expect(label).toHaveText(word);
+      expect(await label.evaluate((el) => getComputedStyle(el).fontSize)).toBe('11px');
+    }
     const practice = (await practiceLink.boundingBox())!;
     const more = (await actions.getByLabel('More script actions').boundingBox())!;
-    const fab = (await record.boundingBox())!;
-    for (const box of [practice, more]) {
+    const format = (await markup.getByLabel('Format').boundingBox())!;
+    const hook = (await actions.getByRole('button', { name: 'Choose a hook' }).boundingBox())!;
+    for (const box of [practice, more, format, hook]) {
       expect(box.height).toBeGreaterThanOrEqual(44);
       expect(box.width).toBeGreaterThanOrEqual(44);
-      expect(box.width).toBeLessThanOrEqual(48);
+      expect(box.width).toBeLessThanOrEqual(56);
       expect(box.y + box.height).toBeLessThanOrEqual(fab.y);
-      // Right-aligned, clear of the raised record button's column.
-      expect(box.x).toBeGreaterThan(fab.x + fab.width);
     }
+    // Writing tools sit left of the raised record button, Practice and ... right of it, so none
+    // shares its column.
+    for (const box of [format, hook]) expect(box.x + box.width).toBeLessThan(fab.x);
+    for (const box of [practice, more]) expect(box.x).toBeGreaterThan(fab.x + fab.width);
     expect(more.x + more.width).toBeLessThanOrEqual(viewport.width - 8);
     // The nav Record word uses the 11px label token.
     expect(
@@ -418,10 +450,22 @@ test('the editor opens on the words: chevron, title as heading, and timing on th
   expect(((await back.textContent()) ?? '').trim()).toBe('');
   const backBox = (await back.boundingBox())!;
   expect(backBox.width).toBeGreaterThanOrEqual(44);
-  // The title wraps instead of truncating, and shares its row with "Saved".
-  const field = (await title.boundingBox())!;
+  // Focused, the title shows every line; it shares its row with "Saved".
   expect(await title.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+  // At rest it uses the h2 token and clamps to two lines.
+  await title.blur();
+  expect(await title.evaluate((el) => getComputedStyle(el).fontSize)).toBe('20px');
+  const clamp = page.locator('.studio-editor__title-clamp');
+  await expect(clamp).toBeVisible();
+  expect(await clamp.evaluate((el) => getComputedStyle(el).webkitLineClamp)).toBe('2');
+  const field = (await title.boundingBox())!;
   expect(field.height).toBeGreaterThan(40);
+  expect(field.height).toBeLessThanOrEqual(2 * 22 + 16 + 1);
+  expect((await clamp.boundingBox())!.height).toBeLessThanOrEqual(2 * 22 + 16 + 1);
+  await title.focus();
+  await expect(clamp).toBeHidden();
+  expect((await title.boundingBox())!.height).toBeGreaterThan(2 * 22 + 16);
+  await title.blur();
   const saved = (await page.getByText('Saved').boundingBox())!;
   expect(saved.y).toBeLessThan(field.y + field.height);
   expect(saved.x).toBeGreaterThan(field.x + field.width - 1);
@@ -433,3 +477,100 @@ test('the editor opens on the words: chevron, title as heading, and timing on th
   expect(row.y + row.height).toBeLessThanOrEqual(actions.y);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
 });
+
+test("the editor's ... menu is four items, and Delete asks first, then offers Undo", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto('/studio#/scripts/new');
+  await page.getByLabel('Title', { exact: true }).fill('Delete with undo');
+  await expect(page.getByText('Saved')).toBeVisible();
+  const scriptId = page.url().split('#/scripts/')[1];
+  await page.getByLabel('More script actions').click();
+  const menu = page.locator(
+    '.studio-editor__actions .studio-overflow[open] .studio-overflow__menu',
+  );
+  await expect(menu.getByRole('button')).toHaveText([
+    'Captions',
+    'Send to phone',
+    'Present',
+    'Delete',
+  ]);
+  // Present holds the full-screen prompter, the operator window and print in one sheet.
+  await menu.getByRole('button', { name: 'Present' }).click();
+  const present = page.getByRole('dialog', { name: 'Present' });
+  await expect(present.locator('.studio-create-options button')).toHaveText([
+    'Present',
+    'Operator window',
+    'Print or PDF',
+  ]);
+  await present.getByRole('button', { name: 'Close' }).click();
+  // Delete confirms in place of the action row; Cancel puts the row back.
+  await page.getByLabel('More script actions').click();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  const confirm = page.getByRole('group', { name: 'Delete Delete with undo?' });
+  await expect(confirm).toBeVisible();
+  await expect(confirm.getByRole('button', { name: 'Cancel' })).toBeFocused();
+  await expect(page).toHaveURL(new RegExp(`#/scripts/${scriptId}$`));
+  await confirm.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByLabel('More script actions')).toBeFocused();
+  await page.getByLabel('More script actions').click();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm delete Delete with undo' }).click();
+  await expect(page).toHaveURL(/#\/scripts$/);
+  const toast = page.locator('.studio-undo');
+  await expect(toast).toContainText('Moved to Recently deleted');
+  await expect(page.getByRole('status')).toHaveText('Delete with undo moved to Recently deleted.');
+  await toast.getByRole('button', { name: 'Undo delete Delete with undo' }).click();
+  await expect(toast).toHaveCount(0);
+  await expect(
+    page.locator('.studio-script-card__main', { hasText: 'Delete with undo' }),
+  ).toBeVisible();
+});
+
+for (const viewport of [
+  { width: 360, height: 780 },
+  { width: 390, height: 844 },
+]) {
+  test(`opening More shows Aspect and Status on one row above the action row at ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/studio#/scripts/new');
+    await page
+      .getByLabel('Script', { exact: true })
+      .fill('# Hook\nI film seven videos in two hours.\n# Body\nHere is the system.');
+    await expect(page.getByText('Saved')).toBeVisible();
+    await page.getByText('More', { exact: true }).click();
+    const aspect = page.getByRole('radiogroup', { name: 'Aspect' });
+    const status = page.getByRole('radiogroup', { name: 'Status' });
+    await expect(aspect.getByRole('radio')).toHaveText(['9:16', '16:9']);
+    await expect(aspect.getByRole('radio', { name: '9:16' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await expect(status).toBeVisible();
+    // Opening More scrolls, so the two groups clear the sticky action row without a swipe.
+    await page.waitForTimeout(150);
+    const a = (await aspect.boundingBox())!;
+    const b = (await status.boundingBox())!;
+    const actions = (await page.locator('.studio-editor__actions').boundingBox())!;
+    expect(Math.abs(a.y - b.y)).toBeLessThanOrEqual(2);
+    expect(b.x).toBeGreaterThan(a.x + a.width);
+    expect(b.x + b.width).toBeLessThanOrEqual(viewport.width - 16);
+    for (const box of [a, b]) {
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.y + box.height).toBeLessThanOrEqual(actions.y);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+    await aspect.getByRole('radio', { name: '9:16' }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(aspect.getByRole('radio', { name: '16:9' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      viewport.width,
+    );
+  });
+}

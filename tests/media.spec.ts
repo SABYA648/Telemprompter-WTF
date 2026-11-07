@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test';
 
+/** Text a sighted user sees: everything except visually hidden spans. */
+const visibleText = (locator: import('@playwright/test').Locator) =>
+  locator.evaluate((el) => {
+    const copy = el.cloneNode(true) as HTMLElement;
+    copy.querySelectorAll('.studio-visually-hidden').forEach((node) => node.remove());
+    return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
+  });
+
 async function openRecordFromEditor(page: import('@playwright/test').Page) {
   // The editor has no Record button of its own; the nav's center Record records this script.
   await page
@@ -122,7 +130,8 @@ test('the live camera is full-bleed with no tab bar, and the X is the exit, at p
       .click();
     const frame = page.locator('.record-safe-zone');
     await expect(frame).toBeVisible();
-    await expect(frame).toHaveText('');
+    // The frame names its zone in one small caption, nothing more.
+    await expect(frame).toHaveText('Instagram safe area');
     await expect(frame).toHaveAttribute('aria-hidden', 'true');
     const zone = (await frame.boundingBox())!;
     const row = (await page.locator('.record-main-controls').boundingBox())!;
@@ -147,7 +156,7 @@ test('the live camera is full-bleed with no tab bar, and the X is the exit, at p
         }).length,
     );
     expect(covered).toBe(0);
-    for (const name of ['Smaller text', 'Larger text', 'Fit speed to target length']) {
+    for (const name of ['Smaller text', 'Larger text']) {
       const button = page.getByRole('button', { name });
       await expect(button).toBeVisible();
       await expect(button.locator('svg')).toHaveCount(1);
@@ -1058,16 +1067,29 @@ for (const width of [360, 390]) {
     await expect(tray.getByRole('group', { name: 'Speed' }).locator('svg')).not.toHaveCount(0);
     await expect(tray.getByRole('group', { name: 'Text size' }).locator('svg')).not.toHaveCount(0);
     await expect(tray.locator('.studio-stepper__value').first()).toHaveText(/^\d+ WPM$/);
-    const fit = tray.getByRole('button', { name: 'Fit speed to target length' });
-    // Off, Fit is an outline ghost; on, it fills like any pressed ghost button.
-    expect(await fit.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
-      (await fit.getAttribute('aria-pressed')) === 'true' ? 'rgb(32, 32, 36)' : 'rgba(0, 0, 0, 0)',
-    );
-    // Fit sits inline right after +, not alone in the far corner.
+    // Fit is a pill that names its target and fills the speed row's right side.
+    const fit = tray.getByRole('button', { name: /^Fit speed to \d+:\d\d$/ });
+    await expect(fit).toBeEnabled();
+    expect(await visibleText(fit)).toMatch(/^Fit \d+:\d\d$/);
     const faster = (await tray.getByRole('button', { name: 'Faster' }).boundingBox())!;
     const fitBox = (await fit.boundingBox())!;
-    expect(fitBox.x - (faster.x + faster.width)).toBeLessThanOrEqual(12);
+    const trayBox = (await tray.boundingBox())!;
+    expect(fitBox.x).toBeGreaterThan(faster.x + faster.width);
+    expect(trayBox.x + trayBox.width - (fitBox.x + fitBox.width)).toBeLessThanOrEqual(16);
     expect(Math.abs(fitBox.y - faster.y)).toBeLessThanOrEqual(2);
+    expect(fitBox.height).toBeGreaterThanOrEqual(44);
+    // Off, Fit is a ghost like its neighbours, never darker like a disabled button; on, it takes
+    // the shared selected style, a light fill with dark text.
+    const ghost = await tray
+      .getByRole('button', { name: 'Larger text' })
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+    const look = () =>
+      fit.evaluate((el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el).color]);
+    expect(await look()).toEqual(
+      (await fit.getAttribute('aria-pressed')) === 'true'
+        ? ['rgb(244, 241, 234)', 'rgb(10, 10, 11)']
+        : [ghost, 'rgb(244, 241, 234)'],
+    );
     // The open Aa is a raised surface with a neutral ring, never a solid white disk.
     const aa = page.getByRole('button', { name: 'Prompter controls' });
     expect(await aa.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(32, 32, 36)');
@@ -1106,6 +1128,15 @@ for (const width of [360, 390]) {
     expect(zone.y).toBeGreaterThanOrEqual(panel.y + panel.height + 8 - 1);
     const row = (await page.locator('.record-main-controls').boundingBox())!;
     expect(zone.y + zone.height).toBeLessThanOrEqual(row.y);
+    // An 11px caption at the guide's bottom names the zone while it peeks.
+    const caption = guide.locator('.record-safe-zone__caption');
+    await expect(caption).toHaveText('Instagram safe area');
+    expect(await caption.evaluate((el) => getComputedStyle(el).fontSize)).toBe('11px');
+    const box = (await caption.boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(zone.y + zone.height);
+    expect(zone.y + zone.height - (box.y + box.height)).toBeLessThanOrEqual(12);
+    expect(box.x).toBeGreaterThanOrEqual(zone.x);
+    expect(box.x + box.width).toBeLessThanOrEqual(zone.x + zone.width);
   });
 }
 
@@ -1140,6 +1171,14 @@ test('the camera, Practice, editor and library agree on a script speed and time'
   expect(await speedIn('#/record/quick')).toBe('140 WPM');
   await expect(page.locator('.record-timer .is-fit')).toHaveCount(0);
   await expect(page.getByText(/^Speed fits/)).toHaveCount(0);
+  // Fit stays off and, tapped, says why instead of pinning the speed at 80.
+  const fit = page.getByRole('button', { name: 'Fit speed to 0:30' });
+  await expect(fit).toHaveAttribute('aria-pressed', 'false');
+  await fit.click();
+  await expect(page.locator('.record-notice')).toHaveText(
+    'This script cannot fit 0:30 between 80 and 240 WPM.',
+  );
+  await expect(page.getByRole('group', { name: 'Speed' })).toContainText('140');
   // 150 words over 60 seconds fit at 150 WPM, on every screen.
   const body = Array.from({ length: 150 }, (_, i) => `word${i + 1}`).join(' ');
   await page.goto('/studio#/scripts/quick');
@@ -1152,4 +1191,12 @@ test('the camera, Practice, editor and library agree on a script speed and time'
   expect(await speedIn('#/practice/quick')).toBe('150 WPM');
   expect(await speedIn('#/record/quick')).toBe('150 WPM');
   await expect(page.locator('.record-timer .is-fit')).toHaveText('/ 1:00');
+  const fitOn = page.getByRole('button', { name: 'Fit speed to 1:00' });
+  await expect(fitOn).toHaveAttribute('aria-pressed', 'true');
+  expect(
+    await fitOn.evaluate((el) => [
+      getComputedStyle(el).backgroundColor,
+      getComputedStyle(el).color,
+    ]),
+  ).toEqual(['rgb(244, 241, 234)', 'rgb(10, 10, 11)']);
 });

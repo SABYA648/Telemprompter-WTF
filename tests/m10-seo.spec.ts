@@ -242,9 +242,9 @@ test('an editor target edit ends the preset target in Record and Practice', asyn
   const practiceFit = async (fit: string) => {
     await page.goto('/studio#/practice/quick');
     await page.getByRole('button', { name: 'Start practice' }).click();
-    // Finish enables once practice has counted active time.
+    // Finish appears once practice has counted active time.
     const finish = page.getByRole('button', { name: 'Finish practice' });
-    await expect(finish).toBeEnabled();
+    await expect(finish).toBeVisible();
     await finish.click();
     await expect(page.getByRole('region', { name: 'Practice summary' })).toContainText(
       `Target fit: ${fit}`,

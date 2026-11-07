@@ -210,7 +210,12 @@ try {
     }
     await shoot(page, 'scripts-editor', w);
     await page.getByText('More', { exact: true }).click();
-    await page.screenshot({ path: `${outDir}/scripts-editor-more-${w}.png`, fullPage: true });
+    // M12 P7: Aspect and Status share a row; scroll it above the sticky action row first.
+    await page
+      .locator('.studio-more__fields')
+      .evaluate((el) => el.scrollIntoView({ block: 'nearest' }));
+    await page.waitForTimeout(150);
+    await page.screenshot({ path: `${outDir}/scripts-editor-more-${w}.png` });
     // M12 P5: caption fields live in a sheet from the ... menu.
     await page.getByLabel('More script actions').click();
     await page.getByRole('button', { name: 'Captions' }).click();

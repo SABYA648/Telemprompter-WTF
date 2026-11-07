@@ -8,12 +8,15 @@ export function Overflow({
   up = false,
   icon = 'more',
   summaryRef,
+  caption,
   children,
 }: {
   label: string;
   up?: boolean;
   icon?: IconName;
   summaryRef?: Ref<HTMLElement> | undefined;
+  /** An 11px word under the glyph, for a menu that needs naming, like Aa "Format". */
+  caption?: string;
   children: ComponentChildren;
 }) {
   const ref = useRef<HTMLDetailsElement>(null);
@@ -42,8 +45,23 @@ export function Overflow({
           ref.current?.removeAttribute('open');
       }}
     >
-      <summary ref={summaryRef ?? fallback} aria-label={label}>
-        <Icon name={icon} />
+      <summary
+        ref={summaryRef ?? fallback}
+        aria-label={label}
+        class={caption ? 'studio-captioned' : undefined}
+      >
+        {caption ? (
+          <>
+            <span class="studio-captioned__disc">
+              <Icon name={icon} />
+            </span>
+            <span class="studio-captioned__label" aria-hidden="true">
+              {caption}
+            </span>
+          </>
+        ) : (
+          <Icon name={icon} />
+        )}
       </summary>
       <div class="studio-overflow__menu">{children}</div>
     </details>

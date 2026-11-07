@@ -232,7 +232,8 @@ export default function PracticeScreen({ id }: { id: string }) {
           {percent >= 80 ? ' Practice counted for today.' : ''}
         </p>
         <SpeedRow wpm={wpm} onChange={setWpm} />
-        {/* The camera's shutter row: close, camera, play (the one accent), restart, finish. */}
+        {/* The camera's shutter row: close, camera, play (the one accent), restart, finish.
+            Camera, Restart and Done carry an 11px word; Done shows only once it can act. */}
         <div class="studio-practice-row">
           <a href={`#/scripts/${script.id}`} aria-label="Close practice">
             <Icon name="close" />
@@ -241,10 +242,15 @@ export default function PracticeScreen({ id }: { id: string }) {
             role="switch"
             aria-checked={cameraOn}
             aria-label="Camera preview"
-            class={cameraOn ? 'is-on' : ''}
+            class={cameraOn ? 'studio-captioned is-on' : 'studio-captioned'}
             onClick={() => setCameraOn(!cameraOn)}
           >
-            <Icon name="camera" />
+            <span class="studio-captioned__disc">
+              <Icon name="camera" />
+            </span>
+            <span class="studio-captioned__label" aria-hidden="true">
+              Camera
+            </span>
           </button>
           <button
             class={finished ? 'studio-practice-play' : 'studio-practice-play is-primary'}
@@ -255,6 +261,7 @@ export default function PracticeScreen({ id }: { id: string }) {
             <Icon name={running ? 'pause' : 'play'} size={30} />
           </button>
           <button
+            class="studio-captioned"
             aria-label="Restart"
             onClick={() => {
               setRunning(false);
@@ -266,18 +273,32 @@ export default function PracticeScreen({ id }: { id: string }) {
               credited.current = false;
             }}
           >
-            <Icon name="restart" />
+            <span class="studio-captioned__disc">
+              <Icon name="restart" />
+            </span>
+            <span class="studio-captioned__label" aria-hidden="true">
+              Restart
+            </span>
           </button>
-          <button
-            aria-label="Finish practice"
-            disabled={!activeSeconds || finished}
-            onClick={() => {
-              setRunning(false);
-              setFinished(true);
-            }}
-          >
-            <Icon name="check" />
-          </button>
+          {activeSeconds > 0 && !finished ? (
+            <button
+              class="studio-captioned"
+              aria-label="Finish practice"
+              onClick={() => {
+                setRunning(false);
+                setFinished(true);
+              }}
+            >
+              <span class="studio-captioned__disc">
+                <Icon name="check" />
+              </span>
+              <span class="studio-captioned__label" aria-hidden="true">
+                Done
+              </span>
+            </button>
+          ) : (
+            <span class="studio-practice-row__spacer" aria-hidden="true" />
+          )}
         </div>
       </div>
     </section>

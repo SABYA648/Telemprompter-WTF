@@ -90,7 +90,9 @@ test('the operator window mirrors play and pause from the main window', async ({
   await page.goto('/studio#/scripts/quick');
   await page.getByLabel('Script', { exact: true }).fill(SCRIPT);
   await expect(page.getByText('Saved')).toBeVisible();
+  // Present, Operator window and Print share one Present sheet in the ... menu.
   await page.getByLabel('More script actions').click();
+  await page.getByRole('button', { name: 'Present', exact: true }).click();
   const [operator] = await Promise.all([
     page.waitForEvent('popup'),
     page.getByRole('button', { name: 'Operator window' }).click(),
@@ -169,8 +171,8 @@ test('a gamepad A press toggles practice and the D-pad changes speed', async ({ 
   await expect(page.getByText('135 WPM')).toBeVisible();
   await press(0);
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
-  // Wait for practice time to tick (Finish enables) so the pause reads as Resume, not a fresh start.
-  await expect(page.getByRole('button', { name: 'Finish practice' })).toBeEnabled();
+  // Wait for practice time to tick (Finish appears) so the pause reads as Resume, not a fresh start.
+  await expect(page.getByRole('button', { name: 'Finish practice' })).toBeVisible();
   await press(0);
   await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible();
 });
@@ -309,10 +311,15 @@ test('imports a .docx and a .md script from the library + sheet', async ({ page 
   );
   expect(await tracks(page)).toContainEqual(['created_script', { source: 'import' }]);
 
+  // Import lives in the library's "+" sheet only, not the editor's ... menu.
   await page.getByLabel('More script actions').click();
+  await expect(page.getByRole('button', { name: /^Import/ })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.goto('/studio#/scripts');
+  await page.getByRole('button', { name: 'New script' }).click();
   const [mdChooser] = await Promise.all([
     page.waitForEvent('filechooser'),
-    page.getByRole('button', { name: 'Import file' }).click(),
+    page.getByRole('button', { name: 'Import', exact: true }).click(),
   ]);
   await mdChooser.setFiles({
     name: 'launch.md',
@@ -345,8 +352,10 @@ test('print shows only the script', async ({ page }) => {
   await page.getByLabel('Script', { exact: true }).fill(SCRIPT);
   await expect(page.getByText('Saved')).toBeVisible();
   await page.getByLabel('More script actions').click();
+  await page.getByRole('button', { name: 'Present', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Print or PDF' })).toBeVisible();
   await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Present' })).toHaveCount(0);
   await expect(page.locator('.studio-print')).toBeHidden();
   await page.emulateMedia({ media: 'print' });
   await expect(page.locator('.studio-print')).toBeVisible();

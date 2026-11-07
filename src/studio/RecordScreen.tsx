@@ -52,6 +52,11 @@ import { SAFE_ZONES } from '../content/studio/platformFacts';
 import { SettingsFields } from './SettingsScreen';
 import type { StudioSettings, KeyAction } from '../domain/studio/types';
 
+const SAFE_ZONE_NAMES: Record<keyof typeof SAFE_ZONES, string> = {
+  instagram: 'Instagram',
+  youtube_shorts: 'YouTube Shorts',
+  tiktok: 'TikTok',
+};
 const formatTime = (ms: number) =>
   `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
 const lengthBucket = (ms: number) =>
@@ -1296,7 +1301,12 @@ export default function RecordScreen({
           class="record-safe-zone"
           aria-hidden="true"
           style={safeZoneStyle(SAFE_ZONES[settings.camera.safeZone])}
-        />
+        >
+          {/* An 11px caption names the zone, so the frame reads as the app's UI area. */}
+          <span class="record-safe-zone__caption">
+            {SAFE_ZONE_NAMES[settings.camera.safeZone]} safe area
+          </span>
+        </div>
       )}
       {hasScript && (
         <div
@@ -1464,29 +1474,30 @@ export default function RecordScreen({
         {controlsOpen && (
           <div id="record-tray" class="record-tray" role="group" aria-label="Prompter controls">
             <SpeedRow wpm={wpm} onChange={setSpeed}>
-              <button
-                class="record-tray__fit"
-                aria-label="Fit speed to target length"
-                title="Fit speed to target length"
-                aria-pressed={settings.prompter.fitToTarget}
-                disabled={!targetSeconds}
-                onClick={() => {
-                  // A fit outside 80 to 240 WPM would run out early or late, so keep the speed.
-                  if (fitSpeed === null) {
-                    setNotice(
-                      `This script cannot fit ${formatTime(targetMs)} between 80 and 240 WPM.`,
+              {targetSeconds > 0 && (
+                // A pill naming the target it fits; on, it takes the shared selected style.
+                <button
+                  class="record-tray__fit"
+                  aria-pressed={fitted}
+                  onClick={() => {
+                    // A fit outside 80 to 240 WPM would run out early or late, so keep the speed.
+                    if (fitSpeed === null) {
+                      setNotice(
+                        `This script cannot fit ${formatTime(targetMs)} between 80 and 240 WPM.`,
+                      );
+                      return;
+                    }
+                    setWpm(fitSpeed);
+                    updateSettings(
+                      { ...settings, prompter: { ...settings.prompter, fitToTarget: true } },
+                      'prompter_fit_to_target',
                     );
-                    return;
-                  }
-                  setWpm(fitSpeed);
-                  updateSettings(
-                    { ...settings, prompter: { ...settings.prompter, fitToTarget: true } },
-                    'prompter_fit_to_target',
-                  );
-                }}
-              >
-                <Icon name="timer-check" />
-              </button>
+                  }}
+                >
+                  <Icon name="timer-check" size={18} />
+                  Fit<span class="studio-visually-hidden"> speed to</span> {formatTime(targetMs)}
+                </button>
+              )}
             </SpeedRow>
             <div class="studio-stepper" role="group" aria-label="Text size">
               <button onClick={() => setFontSize(font - 2)} aria-label="Smaller text">

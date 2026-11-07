@@ -79,6 +79,8 @@ for (const viewport of [
     await page.getByRole('button', { name: 'Start practice' }).click();
     for (const name of ['Finish practice', 'Restart']) {
       const button = page.getByRole('button', { name });
+      // Done appears once practice has counted time.
+      await expect(button).toBeVisible();
       await page.locator('.studio-practice').evaluate((element) => {
         element.scrollTop = element.scrollHeight;
       });

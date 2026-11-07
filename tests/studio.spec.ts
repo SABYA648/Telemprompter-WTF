@@ -129,6 +129,7 @@ test('deleting a just-edited script does not restore it on reload', async ({ pag
   await page.getByLabel('Script', { exact: true }).fill('Unsaved words');
   await page.getByLabel('More script actions').click();
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm delete Delete immediately' }).click();
   await expect(page.getByRole('heading', { name: 'Scripts' })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Recently deleted' })).toBeVisible();

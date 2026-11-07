@@ -4,7 +4,7 @@ import { createIdea, deleteIdea, listIdeas } from '../domain/studio/ideasRepo';
 import { createScript } from '../domain/studio/scriptsRepo';
 import type { HookNiche, StudioTemplate } from '../content/studio/types';
 import type { StudioIdea } from '../domain/studio/types';
-import { Icon } from './Icons';
+import { Sheet } from './Sheet';
 
 // The packs are large and only some screens use them, so they stay out of the Studio entry chunk.
 const loadTemplates = () => import('../content/studio/templates').then((pack) => pack.templates);
@@ -113,22 +113,21 @@ export function TemplatePicker({ onCreated }: { onCreated?: () => void }) {
   );
 }
 
-export function HookPicker({ insert }: { insert: (text: string) => void }) {
-  const [expanded, setExpanded] = useState(false);
-  const hookNiches = usePack<HookNiche>(loadHooks, expanded);
+/** The hook picker, a sheet opened from the editor's round lightbulb. Insert closes it. */
+export function HookSheet({
+  insert,
+  onClose,
+}: {
+  insert: (text: string) => void;
+  onClose: () => void;
+}) {
+  const hookNiches = usePack<HookNiche>(loadHooks);
   const [niche, setNiche] = useState<HookNiche['id']>('fitness');
   const [index, setIndex] = useState(0);
   const hooks =
     hookNiches.find((item) => item.id === niche)?.groups.flatMap((group) => group.hooks) ?? [];
   return (
-    <details
-      class="studio-card studio-disclosure"
-      onToggle={(event) => setExpanded(event.currentTarget.open)}
-    >
-      <summary>
-        <Icon name="idea" size={20} />
-        Choose a hook
-      </summary>
+    <Sheet title="Choose a hook" onClose={onClose}>
       <label class="studio-label">
         Niche
         <select
@@ -164,13 +163,14 @@ export function HookPicker({ insert }: { insert: (text: string) => void }) {
             if (hook) {
               insert(`${hook.text}\n`);
               analytics.track('inserted_hook', { niche });
+              onClose();
             }
           }}
         >
           Insert hook
         </button>
       </div>
-    </details>
+    </Sheet>
   );
 }
 

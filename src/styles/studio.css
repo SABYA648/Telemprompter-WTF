@@ -1073,6 +1073,34 @@
   background: var(--studio-accent);
   color: #0a0a0b;
 }
+/* Camera, Restart and Done: a 48px disc with an 11px word under it, like the nav. */
+.studio-practice-row > .studio-captioned {
+  display: grid;
+  width: auto;
+  height: auto;
+  min-width: 48px;
+  border-radius: 0;
+  background: transparent;
+}
+.studio-practice-row .studio-captioned__disc {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.studio-practice-row .studio-captioned__label {
+  color: rgba(244, 241, 234, 0.8);
+}
+.studio-practice-row > .is-on.studio-captioned {
+  background: transparent;
+  color: var(--studio-text);
+}
+.studio-practice-row > .is-on .studio-captioned__disc {
+  background: var(--studio-text);
+  color: #0a0a0b;
+}
+.studio-practice-row__spacer {
+  width: 48px;
+}
 .studio-practice-row > button:disabled,
 .studio-practice .studio-stepper button:disabled {
   opacity: 0.4;
@@ -2044,15 +2072,25 @@ ol.studio-row-list .studio-row__title::before {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.14);
 }
-/* Fit sits right after + as an outline ghost; on, it fills like any pressed ghost button. */
+/* Fit is a pill naming its target, "Fit 0:30", filling the speed row's right side. Off it is a
+   ghost like its neighbours; on it takes the shared selected style, a light fill and dark text. */
 .record-screen .record-tray .record-tray__fit {
-  background: transparent;
-  box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 0 16px;
+  border-radius: 999px;
+  color: #f4f1ea;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .record-screen .record-tray button[aria-pressed='true'] {
-  background: #202024;
+  background: #f4f1ea;
   box-shadow: none;
-  color: #f4f1ea;
+  color: #0a0a0b;
 }
 .record-screen .record-tray .record-sections {
   flex-wrap: wrap;
@@ -3083,29 +3121,54 @@ ol.studio-row-list .studio-row__title::before {
   min-height: 44px;
   border-radius: 50%;
 }
+/* The title uses the h2 token and rests at two lines with an ellipsis; focus shows it all. */
 .studio-editor__title {
+  position: relative;
   flex: 1 1 auto;
   min-width: 0;
   margin: 0;
 }
-.studio-editor__title textarea {
-  display: block;
+.studio-editor__title textarea,
+.studio-editor__title-clamp {
   box-sizing: border-box;
   width: 100%;
-  min-height: 44px;
   padding: 8px 0;
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  overflow-wrap: break-word;
+}
+.studio-editor__title textarea {
+  display: block;
+  min-height: 44px;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--studio-text);
-  font: inherit;
-  font-size: 1.25rem;
-  font-weight: 800;
-  line-height: 1.4rem;
-  letter-spacing: -0.01em;
   overflow: hidden;
   resize: none;
-  overflow-wrap: break-word;
+}
+.studio-editor__title-clamp {
+  position: absolute;
+  inset: 0 0 auto;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  color: var(--studio-text);
+  pointer-events: none;
+  white-space: pre-wrap;
+}
+.studio-editor__title textarea:not(:focus) {
+  max-height: calc(2.75rem + 16px);
+  color: transparent;
+}
+.studio-editor__title textarea:focus + .studio-editor__title-clamp,
+.studio-editor__title:focus-within .studio-editor__title-clamp {
+  visibility: hidden;
 }
 .studio-editor__title textarea::placeholder {
   color: var(--studio-muted);
@@ -3131,18 +3194,65 @@ ol.studio-row-list .studio-row__title::before {
   margin: 0;
 }
 .studio-editor__actions .studio-toolbar .studio-overflow__menu {
-  right: 0;
-  left: auto;
+  right: auto;
+  left: 0;
+  bottom: 64px;
 }
-.studio-editor__actions .studio-overflow summary,
-.studio-editor__practice {
+.studio-editor__actions .studio-overflow summary {
   width: 44px;
   height: 44px;
   min-height: 44px;
   background: var(--studio-raised);
 }
-.studio-editor__practice {
+/* M12 P7: writing tools (Aa, Hook) sit left of the raised record button, Practice and ...
+   right of it, so no control shares its column. Each named glyph has an 11px word under it. */
+.studio-editor__actions {
+  align-items: flex-start;
+}
+.studio-editor__hook {
+  margin-right: auto;
+}
+.studio-captioned,
+.studio-editor__actions .studio-overflow summary.studio-captioned {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 3px;
+  width: auto;
+  min-width: 48px;
+  height: auto;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--studio-text);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.studio-captioned__disc {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--studio-raised);
+}
+.studio-captioned__label {
+  color: var(--studio-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.studio-captioned:focus-visible {
+  outline: none;
+}
+.studio-captioned:focus-visible .studio-captioned__disc {
+  outline: 2px solid var(--studio-text);
+  outline-offset: 2px;
 }
 /* Status: Draft, Recorded, Posted, each a glyph with an 11px label under it, like the nav. */
 .studio-status-field .studio-segmented {
@@ -3193,4 +3303,69 @@ ol.studio-row-list .studio-row__title::before {
 .studio-sheet .studio-counted-field,
 .studio-sheet .studio-counted-field .studio-label {
   margin-top: 0;
+}
+/* M12 P7: the editor's Delete asks first, in place of the action row, like a library row. */
+.studio-editor__confirm {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+.studio-editor__confirm span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* After a delete, one toast above the nav says where it went and offers Undo. */
+.studio-toast.studio-undo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 6px 6px 6px 16px;
+  border-radius: 999px;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  font-size: 0.9375rem;
+  pointer-events: auto;
+}
+/* M12 P7: Aspect and Status share one row of glyph segments. Opening More scrolls them clear
+   of the sticky action row and the nav. */
+.studio-more__fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+  scroll-margin-bottom: calc(var(--studio-nav) + 96px);
+}
+.studio-more__fields .studio-segmented-field {
+  grid-column: auto;
+  flex: none;
+  margin-top: 0;
+}
+.studio-more__fields .studio-segmented {
+  border-radius: 18px;
+}
+.studio-more__fields .studio-segmented button {
+  gap: 2px;
+  min-width: 56px;
+  min-height: 52px;
+  padding: 4px 6px;
+  border-radius: 16px;
+}
+/* M12 P7: while the safe-zone guide peeks, an 11px caption at its bottom names the zone. */
+.record-safe-zone {
+  text-transform: none;
+}
+.record-safe-zone__caption {
+  margin-bottom: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(10, 10, 11, 0.6);
+  color: #f4f1ea;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
 }

@@ -33,7 +33,7 @@ import { isMemoryStorage } from '../domain/studio/db';
 import { moveInQueue, upNext, setUpNext } from '../domain/studio/queue';
 import BatchScreen from './BatchScreen';
 import { limits } from '../content/studio/platformFacts';
-import { TemplatePicker, HookPicker, IdeasInbox, createFromTemplate } from './CreatorTools';
+import { TemplatePicker, HookSheet, IdeasInbox, createFromTemplate } from './CreatorTools';
 import { SendToPhone, ReceiveScreen } from './SendReceive';
 import { isStandaloneDisplay } from '../domain/studio/install';
 import { persistOnFirstStandaloneLaunch } from '../domain/studio/storage';
@@ -76,6 +76,8 @@ function go(path: string): void {
   location.hash = path;
 }
 const editedThisSession = new Set<string>();
+/** A script the editor just deleted, so the library it lands on can offer Undo. */
+let deletedFromEditor: { id: string; title: string } | null = null;
 const wordBucket = (words: number): (typeof SCRIPT_SIZE_BUCKETS)[number] =>
   words <= 100
     ? '1_100'
@@ -489,6 +491,7 @@ function Tabs({ route, scripts }: { route: Route; scripts: StudioScript[] }) {
 }
 function Home({ scripts }: { scripts: StudioScript[] }) {
   const habits = useHabits();
+  const prompter = usePrompterSpeed();
   const firstRun =
     scripts.length === 1 &&
     scripts[0]?.id === 'quick' &&
@@ -525,7 +528,7 @@ function Home({ scripts }: { scripts: StudioScript[] }) {
               <article class="studio-next-row" key={script.id}>
                 <a href={`#/scripts/${script.id}`}>
                   <strong>{script.title || 'Untitled script'}</strong>
-                  <small>{parseMarkup(script.body).spokenWordCount} spoken words</small>
+                  <small>{wordsAndTime(script, prompter)}</small>
                 </a>
                 <a
                   class="studio-round-action"
@@ -545,9 +548,7 @@ function Home({ scripts }: { scripts: StudioScript[] }) {
       <nav class="studio-icon-row" aria-label="Create tools">
         {(
           [
-            ['#/scripts/new', 'plus', 'Script'],
             ['#/inbox', 'idea', 'Idea'],
-            ['#/scripts?templates=1', 'grid', 'Templates'],
             [`#/practice/${quick?.id ?? 'quick'}`, 'play', 'Practice'],
           ] as [string, IconName, string][]
         ).map(([href, icon, label]) => (
@@ -582,6 +583,23 @@ function Scripts({
     new URLSearchParams(location.hash.split('?')[1] ?? '').has('templates') ? 'templates' : null,
   );
   const statusRef = useRef<HTMLParagraphElement>(null);
+  // The last delete, from a row or the editor, stays undoable from a toast above the nav.
+  const [undo, setUndo] = useState<{ id: string; title: string } | null>(null);
+  const deletedNotice = (deleted: { id: string; title: string }) => {
+    setUndo(deleted);
+    setNotice(`${deleted.title} moved to Recently deleted.`);
+    statusRef.current?.focus();
+  };
+  useEffect(() => {
+    if (!deletedFromEditor) return;
+    deletedNotice(deletedFromEditor);
+    deletedFromEditor = null;
+  }, []);
+  useEffect(() => {
+    if (!undo) return;
+    const timer = setTimeout(() => setUndo(null), 8000);
+    return () => clearTimeout(timer);
+  }, [undo]);
   const statusCount = (value: ScriptStage) =>
     scripts.filter((script) => scriptStage(script) === value).length;
   // Only stages that hold a script get a chip; All shows whenever another chip does.
@@ -750,13 +768,31 @@ function Scripts({
             onDelete={async () => {
               await softDelete(script.id);
               await refresh();
-              setNotice(`${script.title || 'Untitled script'} moved to Recently deleted.`);
-              statusRef.current?.focus();
+              deletedNotice({ id: script.id, title: script.title || 'Untitled script' });
             }}
           />
         ))}
       </div>
       {!visible.length && <p>No scripts match.</p>}
+      {undo && (
+        <div class="studio-toast-region">
+          <p class="studio-toast studio-undo">
+            Moved to Recently deleted
+            <button
+              class="studio-chip"
+              aria-label={`Undo delete ${undo.title}`}
+              onClick={async () => {
+                await restoreScript(undo.id);
+                await refresh();
+                setUndo(null);
+                setNotice(`${undo.title} restored.`);
+              }}
+            >
+              Undo
+            </button>
+          </p>
+        </div>
+      )}
       {deleted.length > 0 && (
         <section class="studio-deleted">
           <h2>Recently deleted</h2>
@@ -887,6 +923,12 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
   const [notice, setNotice] = useState('');
   const [customTarget, setCustomTarget] = useState(false);
   const [captionsOpen, setCaptionsOpen] = useState(false);
+  const [presentOpen, setPresentOpen] = useState(false);
+  const [hookOpen, setHookOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+  const moreRef = useRef<HTMLElement>(null);
+  const askedDelete = useRef(false);
   const prompter = usePrompterSpeed();
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
@@ -981,11 +1023,11 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
     return () => observer.disconnect();
   }, [script?.title, Boolean(script)]);
   useEditorBroadcast(script?.body, operatorOn);
-  const importer = useScriptImport(async (imported) => {
-    await flush();
-    await refresh();
-    go(`/scripts/${imported.id}`);
-  });
+  useEffect(() => {
+    if (confirmingDelete) cancelDeleteRef.current?.focus();
+    else if (askedDelete.current) moreRef.current?.focus();
+    askedDelete.current = confirmingDelete;
+  }, [confirmingDelete]);
   const insert = (value: string) => {
     const el = bodyRef.current;
     if (!el || !script) return;
@@ -1024,6 +1066,10 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
         </a>
         <h1 class="studio-editor__title">
           <span class="studio-visually-hidden">Editor</span>
+          {/* At rest a long title shows two lines and an ellipsis; focus shows all of it. */}
+          <span class="studio-editor__title-clamp" aria-hidden="true">
+            {script.title}
+          </span>
           <textarea
             ref={titleRef}
             rows={1}
@@ -1075,7 +1121,6 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
           placeholder="Write your script"
         />
       </div>
-      <HookPicker insert={insert} />
       {/* One quiet line of facts; only the duration row below is tappable. */}
       <p class="studio-stats-line">
         {[
@@ -1135,109 +1180,179 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
           {placeholders} placeholder{placeholders === 1 ? '' : 's'} left
         </p>
       )}
-      <details class="studio-more">
+      {/* Opening More brings Aspect and Status above the sticky action row. */}
+      <details
+        class="studio-more"
+        onToggle={(event) => {
+          const details = event.currentTarget;
+          if (details.open)
+            details.querySelector('.studio-grid-fields')?.scrollIntoView({ block: 'nearest' });
+        }}
+      >
         <summary>
           More
           <Icon name="chevron" size={18} />
         </summary>
-        <div class="studio-grid-fields">
-          <div class="studio-label studio-aspect-field">
-            <span id="studio-aspect-label">Aspect</span>
-            <span class="studio-toggle-group" role="group" aria-labelledby="studio-aspect-label">
-              {(['9:16', '16:9'] as const).map((aspect) => (
-                <button
-                  type="button"
-                  class="studio-toggle"
-                  aria-pressed={script.aspect === aspect}
-                  onClick={() => edit({ ...script, aspect })}
-                >
-                  <Icon name={aspect === '9:16' ? 'portrait' : 'landscape'} size={20} />
-                  {aspect}
-                </button>
-              ))}
-            </span>
-          </div>
-          <StatusToggle
+        <div class="studio-grid-fields studio-more__fields">
+          <SegmentedField
+            id="studio-aspect-label"
+            label="Aspect"
+            class="studio-aspect-field"
+            options={ASPECT_OPTIONS}
+            value={script.aspect}
+            onChange={(aspect) => edit({ ...script, aspect })}
+          />
+          <SegmentedField
+            id="studio-status-label"
+            label="Status"
+            class="studio-status-field"
+            options={STATUS_OPTIONS}
             value={scriptStage(script)}
             onChange={(status) => edit({ ...script, status })}
           />
         </div>
       </details>
+      {/* Sheets render outside the sticky action row, whose stacking sits under the nav. */}
+      {hookOpen && <HookSheet insert={insert} onClose={() => setHookOpen(false)} />}
       {captionsOpen && (
         <CaptionsSheet script={script} edit={edit} onClose={() => setCaptionsOpen(false)} />
       )}
       {showSend && <SendToPhone script={script} />}
-      {(notice || importer.status) && <p role="status">{notice || importer.status}</p>}
-      {importer.element}
+      {notice && <p role="status">{notice}</p>}
+      {presentOpen && (
+        <Sheet title="Present" onClose={() => setPresentOpen(false)}>
+          <div class="studio-create-options">
+            <button
+              onClick={async () => {
+                await flush();
+                sessionStorage.setItem('studio.presentScript', script.body);
+                location.href = '/?studio-present=1';
+              }}
+            >
+              <Icon name="present" /> Present
+            </button>
+            <button
+              onClick={async () => {
+                await flush();
+                setPresentOpen(false);
+                if (openOperatorWindow()) {
+                  setOperatorOn(true);
+                  setNotice('Operator window open. Start Practice or Record here to drive it.');
+                } else setNotice('Allow pop-ups for this site to open the operator window.');
+              }}
+            >
+              <Icon name="monitor" /> Operator window
+            </button>
+            <button
+              onClick={() =>
+                void flush().then(() => {
+                  setPresentOpen(false);
+                  print();
+                })
+              }
+            >
+              <Icon name="print" /> Print or PDF
+            </button>
+          </div>
+        </Sheet>
+      )}
       <PrintableScript script={script} />
       {/* Record is the raised nav button, which records this script while the editor is open. */}
       <div class="studio-editor__actions">
         {/* One Aa menu holds sections, marks and cues, so no markup syntax needs typing. */}
-        <div class="studio-toolbar" role="group" aria-label="Markup tools">
-          <Overflow label="Format" icon="format" up>
-            <button onClick={() => insert('# ')}>Add section</button>
-            <button onClick={() => insert('[pause]')}>Pause</button>
-            <button onClick={() => insert('**text**')}>Emphasis</button>
-            <button onClick={() => insert('==text==')}>Highlight</button>
-            <button onClick={() => insert('// ')}>Note</button>
-            {['breathe', 'smile', 'look up', 'slow', 'cut'].map((cue) => (
-              <button aria-label={`Cue: ${cue}`} onClick={() => insert(`[${cue}]`)}>
-                {cue.charAt(0).toUpperCase() + cue.slice(1)}
-              </button>
-            ))}
+        {!confirmingDelete && (
+          <div class="studio-toolbar" role="group" aria-label="Markup tools">
+            <Overflow label="Format" icon="format" caption="Format" up>
+              <button onClick={() => insert('# ')}>Add section</button>
+              <button onClick={() => insert('[pause]')}>Pause</button>
+              <button onClick={() => insert('**text**')}>Emphasis</button>
+              <button onClick={() => insert('==text==')}>Highlight</button>
+              <button onClick={() => insert('// ')}>Note</button>
+              {['breathe', 'smile', 'look up', 'slow', 'cut'].map((cue) => (
+                <button aria-label={`Cue: ${cue}`} onClick={() => insert(`[${cue}]`)}>
+                  {cue.charAt(0).toUpperCase() + cue.slice(1)}
+                </button>
+              ))}
+            </Overflow>
+          </div>
+        )}
+        {!confirmingDelete && (
+          <button
+            type="button"
+            class="studio-captioned studio-editor__hook"
+            aria-label="Choose a hook"
+            aria-haspopup="dialog"
+            onClick={() => setHookOpen(true)}
+          >
+            <span class="studio-captioned__disc">
+              <Icon name="idea" />
+            </span>
+            <span class="studio-captioned__label" aria-hidden="true">
+              Hook
+            </span>
+          </button>
+        )}
+        {!confirmingDelete && (
+          <a
+            class="studio-captioned studio-editor__practice"
+            href={`#/practice/${script.id}`}
+            aria-label="Practice"
+          >
+            <span class="studio-captioned__disc">
+              <Icon name="play" />
+            </span>
+            <span class="studio-captioned__label" aria-hidden="true">
+              Practice
+            </span>
+          </a>
+        )}
+        {confirmingDelete ? (
+          <div
+            class="studio-script-card__confirm studio-editor__confirm"
+            role="group"
+            aria-label={`Delete ${script.title || 'Untitled script'}?`}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setConfirmingDelete(false);
+            }}
+          >
+            <span>Delete this script?</span>
+            <button
+              ref={cancelDeleteRef}
+              class="studio-chip"
+              onClick={() => setConfirmingDelete(false)}
+            >
+              Cancel
+            </button>
+            <button
+              class="studio-chip studio-chip--danger-solid"
+              aria-label={`Confirm delete ${script.title || 'Untitled script'}`}
+              onClick={async () => {
+                await flush();
+                await softDelete(script.id);
+                await refresh();
+                deletedFromEditor = { id: script.id, title: script.title || 'Untitled script' };
+                go('/scripts');
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        ) : (
+          <Overflow label="More script actions" up summaryRef={moreRef}>
+            <button onClick={() => setCaptionsOpen(true)}>
+              <Icon name="captions" size={18} /> Captions
+            </button>
+            <button onClick={() => void flush().then(() => setShowSend(!showSend))}>
+              <Icon name="phone" size={18} /> Send to phone
+            </button>
+            <button aria-haspopup="dialog" onClick={() => setPresentOpen(true)}>
+              <Icon name="present" size={18} /> Present
+            </button>
+            <button onClick={() => setConfirmingDelete(true)}>
+              <Icon name="trash" size={18} /> Delete
+            </button>
           </Overflow>
-        </div>
-        <a
-          class="studio-round-action studio-editor__practice"
-          href={`#/practice/${script.id}`}
-          aria-label="Practice"
-        >
-          <Icon name="play" />
-        </a>
-        <Overflow label="More script actions" up>
-          <button onClick={() => setCaptionsOpen(true)}>
-            <Icon name="captions" size={18} /> Captions
-          </button>
-          <button onClick={() => void flush().then(() => setShowSend(!showSend))}>
-            <Icon name="phone" size={18} /> Send to phone
-          </button>
-          <button
-            onClick={async () => {
-              await flush();
-              sessionStorage.setItem('studio.presentScript', script.body);
-              location.href = '/?studio-present=1';
-            }}
-          >
-            <Icon name="present" size={18} /> Present
-          </button>
-          <button
-            onClick={async () => {
-              await flush();
-              if (openOperatorWindow()) {
-                setOperatorOn(true);
-                setNotice('Operator window open. Start Practice or Record here to drive it.');
-              } else setNotice('Allow pop-ups for this site to open the operator window.');
-            }}
-          >
-            <Icon name="monitor" size={18} /> Operator window
-          </button>
-          <button onClick={() => void flush().then(() => print())}>
-            <Icon name="print" size={18} /> Print or PDF
-          </button>
-          <button onClick={importer.pick}>
-            <Icon name="import" size={18} /> Import file
-          </button>
-          <button
-            onClick={async () => {
-              await flush();
-              await softDelete(script.id);
-              await refresh();
-              go('/scripts');
-            }}
-          >
-            <Icon name="trash" size={18} /> Delete
-          </button>
-        </Overflow>
+        )}
       </div>
     </section>
   );
@@ -1248,20 +1363,32 @@ const STAGE_ICONS: Record<ScriptStage, IconName> = {
   posted: 'posted',
 };
 const STATUS_OPTIONS = SCRIPT_STAGES.map((stage) => ({ ...stage, icon: STAGE_ICONS[stage.value] }));
-/** Three icon segments, each with a small label, and radio semantics: arrows move the choice. */
-function StatusToggle({
+const ASPECT_OPTIONS: { value: StudioScript['aspect']; label: string; icon: IconName }[] = [
+  { value: '9:16', label: '9:16', icon: 'portrait' },
+  { value: '16:9', label: '16:9', icon: 'landscape' },
+];
+/** Icon segments, each with a small label, and radio semantics: arrows move the choice. */
+function SegmentedField<T extends string>({
+  id,
+  label,
+  class: className,
+  options,
   value,
   onChange,
 }: {
-  value: ScriptStage;
-  onChange: (status: ScriptStage) => void;
+  id: string;
+  label: string;
+  class: string;
+  options: { value: T; label: string; icon: IconName }[];
+  value: T;
+  onChange: (value: T) => void;
 }) {
-  const current = STATUS_OPTIONS.findIndex((option) => option.value === value);
+  const current = options.findIndex((option) => option.value === value);
   return (
-    <div class="studio-label studio-status-field">
-      <span id="studio-status-label">Status</span>
-      <div class="studio-segmented" role="radiogroup" aria-labelledby="studio-status-label">
-        {STATUS_OPTIONS.map((option, index) => (
+    <div class={`studio-label studio-segmented-field ${className}`}>
+      <span id={id}>{label}</span>
+      <div class="studio-segmented" role="radiogroup" aria-labelledby={id}>
+        {options.map((option, index) => (
           <button
             type="button"
             role="radio"
@@ -1272,8 +1399,8 @@ function StatusToggle({
               const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
               if (!step) return;
               event.preventDefault();
-              const next = (index + step + STATUS_OPTIONS.length) % STATUS_OPTIONS.length;
-              onChange(STATUS_OPTIONS[next]!.value);
+              const next = (index + step + options.length) % options.length;
+              onChange(options[next]!.value);
               const group = event.currentTarget.parentElement;
               (group?.children[next] as HTMLElement | undefined)?.focus();
             }}
