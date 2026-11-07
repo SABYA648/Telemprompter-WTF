@@ -37,7 +37,10 @@ export type IconName =
   | 'text-smaller'
   | 'text-larger'
   | 'fit'
-  | 'format';
+  | 'format'
+  | 'sliders'
+  | 'restart'
+  | 'check';
 
 const paths: Record<IconName, preact.JSX.Element> = {
   home: (
@@ -213,6 +216,15 @@ const paths: Record<IconName, preact.JSX.Element> = {
       <circle cx="18" cy="15.5" r="3.5" />
     </>
   ),
+  sliders: (
+    <>
+      <path d="M4 7h9m4 0h3M4 17h3m4 0h9" />
+      <circle cx="15" cy="7" r="2" />
+      <circle cx="9" cy="17" r="2" />
+    </>
+  ),
+  restart: <path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.7M4 4v4.7h4.7" />,
+  check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
 };
 
 export function Icon({ name, size = 24 }: { name: IconName; size?: number }) {

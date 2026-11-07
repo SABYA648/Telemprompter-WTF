@@ -113,32 +113,39 @@ test('the live camera is full-bleed with no tab bar, and the X is the exit, at p
     expect(screen.y + screen.height).toBe(800);
     const controls = (await page.locator('.record-controls').boundingBox())!;
     expect(controls.y + controls.height).toBeLessThanOrEqual(800);
-    // The safe-zone frame stays, with no visible caption, and nothing covers the speed row.
+    // The safe-zone frame peeks with no visible caption, clear of the shutter row, then rests off.
     await page.getByRole('button', { name: 'Quick settings' }).click();
     await page.getByLabel('Safe zones').selectOption('instagram');
     await page
       .getByRole('dialog', { name: 'Quick settings' })
       .getByRole('button', { name: 'Close' })
       .click();
-    await expect(page.locator('.record-safe-zone')).toBeVisible();
-    await expect(page.locator('.record-safe-zone')).toHaveText('');
-    await expect(page.locator('.record-safe-zone')).toHaveAttribute('aria-hidden', 'true');
-    const speed = (await page.locator('.record-speed').last().boundingBox())!;
-    expect(speed.x + speed.width).toBeLessThanOrEqual(width);
-    const covered = await page
-      .locator('.record-speed')
-      .last()
-      .evaluate(
-        (row) =>
-          [...row.querySelectorAll('button')].filter((button) => {
-            const rect = button.getBoundingClientRect();
-            const hit = document.elementFromPoint(
-              rect.x + rect.width / 2,
-              rect.y + rect.height / 2,
-            );
-            return !(hit === button || button.contains(hit));
-          }).length,
-      );
+    const frame = page.locator('.record-safe-zone');
+    await expect(frame).toBeVisible();
+    await expect(frame).toHaveText('');
+    await expect(frame).toHaveAttribute('aria-hidden', 'true');
+    const zone = (await frame.boundingBox())!;
+    const row = (await page.locator('.record-main-controls').boundingBox())!;
+    expect(zone.y + zone.height).toBeLessThanOrEqual(row.y);
+    await expect(frame).toHaveCount(0, { timeout: 8000 });
+    // One shutter row of five slots: close, flip, shutter, Aa, settings. Nothing else at rest.
+    await expect(page.locator('.record-main-controls > *')).toHaveCount(5);
+    await expect(page.getByRole('button', { name: 'Slower' })).toHaveCount(0);
+    const shutter = (await start.boundingBox())!;
+    expect(Math.abs(shutter.x + shutter.width / 2 - width / 2)).toBeLessThanOrEqual(2);
+    // Speed, text size and fit live in the Aa tray, fully on screen and uncovered.
+    await page.getByRole('button', { name: 'Prompter controls' }).click();
+    const tray = page.getByRole('group', { name: 'Prompter controls' });
+    const trayBox = (await tray.boundingBox())!;
+    expect(trayBox.x + trayBox.width).toBeLessThanOrEqual(width);
+    const covered = await tray.evaluate(
+      (element) =>
+        [...element.querySelectorAll('button')].filter((button) => {
+          const rect = button.getBoundingClientRect();
+          const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+          return !(hit === button || button.contains(hit));
+        }).length,
+    );
     expect(covered).toBe(0);
     for (const name of ['Smaller text', 'Larger text', 'Fit speed to target length']) {
       const button = page.getByRole('button', { name });
@@ -148,6 +155,13 @@ test('the live camera is full-bleed with no tab bar, and the X is the exit, at p
       const box = (await button.boundingBox())!;
       expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
     }
+    const before = Number((await tray.textContent())!.match(/(\d+) WPM/)![1]);
+    await page.getByRole('button', { name: 'Faster' }).click();
+    await expect(tray).toContainText(`${before + 5} WPM`);
+    // A hand-picked speed ends the fit, so the fit chip goes too.
+    await expect(page.locator('.record-fit-chip')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Prompter controls' }).click();
+    await expect(tray).toHaveCount(0);
     // The quick script opens on real words, not fill-in blanks.
     await expect(page.locator('.prompter-scroll')).not.toContainText('{');
     await expect(page.locator('.prompter-scroll')).not.toContainText("I'm name");
@@ -282,6 +296,7 @@ test('section recording stops at the section end, groups takes and saves in orde
   await expect(page.getByText('Saved')).toBeVisible();
   await openRecordFromEditor(page);
   await page.getByRole('button', { name: 'Allow camera' }).click();
+  await page.getByRole('button', { name: 'Prompter controls' }).click();
   await page.getByLabel('Record one section').check();
   await page.getByRole('button', { name: 'Quick settings' }).click();
   await page.getByLabel('Countdown').selectOption('0');
@@ -313,6 +328,7 @@ test('section recording saves its section index', async ({ page }) => {
   await expect(page.getByText('Saved')).toBeVisible();
   await openRecordFromEditor(page);
   await page.getByRole('button', { name: 'Allow camera' }).click();
+  await page.getByRole('button', { name: 'Prompter controls' }).click();
   await page.getByLabel('Record one section').check();
   await page.getByLabel('Section', { exact: true }).selectOption('1');
   await page.getByRole('button', { name: 'Quick settings' }).click();

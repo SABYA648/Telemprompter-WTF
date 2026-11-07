@@ -171,6 +171,12 @@ try {
       .getByRole('button', { name: 'Close' })
       .click();
     await shoot(page, 'record-camera', w, { nav: false });
+    // M12 P4: at rest the safe-zone frame has gone; the Aa tray holds speed, text and fit.
+    await page.locator('.record-safe-zone').waitFor({ state: 'detached', timeout: 8000 });
+    await shoot(page, 'record-camera-rest', w, { nav: false });
+    await page.getByRole('button', { name: 'Prompter controls' }).click();
+    await shoot(page, 'record-camera-tray', w, { nav: false });
+    await page.getByRole('button', { name: 'Prompter controls' }).click();
     for (let take = 0; take < 3; take++) {
       if (take) {
         await page.goto(`${base}/studio#/record/quick`);

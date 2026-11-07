@@ -397,7 +397,7 @@
   gap: 10px;
   padding: 0 12px;
 }
-.record-speed,
+.record-tray,
 .record-main-controls {
   display: flex;
   justify-content: center;
@@ -406,13 +406,6 @@
   background: rgba(0, 0, 0, 0.7);
   border-radius: 14px;
   padding: 5px;
-}
-.record-speed {
-  overflow-x: auto;
-  white-space: nowrap;
-}
-.record-speed {
-  justify-content: safe center;
 }
 .record-sections label {
   display: inline-flex;
@@ -635,12 +628,12 @@
     margin: auto;
   }
 }
-.record-screen.controls-dim .record-speed,
+.record-screen.controls-dim .record-tray,
 .record-screen.controls-dim .record-main-controls > :not(.record-button) {
   opacity: 0.3;
 }
-.record-screen.controls-dim .record-speed:focus-within,
-.record-screen.controls-dim .record-speed:hover,
+.record-screen.controls-dim .record-tray:focus-within,
+.record-screen.controls-dim .record-tray:hover,
 .record-screen.controls-dim .record-main-controls > :not(.record-button):focus-visible {
   opacity: 1;
 }
@@ -1976,41 +1969,89 @@ ol.studio-row-list .studio-row__title::before {
   font-size: 0.6875rem;
   font-weight: 700;
 }
-.record-screen .record-speed {
-  gap: 4px;
-  padding: 4px;
-  border-radius: 16px;
-}
-.record-screen .record-speed > span {
-  padding: 0 4px;
-  font-variant-numeric: tabular-nums;
-}
-.record-screen .record-speed button {
-  min-width: 44px;
-  min-height: 44px;
-  border-radius: 12px;
-}
+/* M12 P4: one shutter row of five equal side slots around the shutter, and an Aa tray above it
+   for speed, text size, fit and sections. The tray is the only extra layer, and only on demand. */
 .record-screen .record-main-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 8px;
-  padding: 8px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto minmax(0, 1fr) minmax(0, 1fr);
+  justify-items: center;
+  gap: 4px;
+  padding: 8px 4px;
   border-radius: 22px;
 }
-.record-side {
-  display: flex;
-  justify-content: space-evenly;
-  align-items: center;
-  gap: 8px;
-}
-.record-screen .record-side > * {
+.record-screen .record-main-controls > :not(.record-button) {
   width: 48px;
   height: 48px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.14);
 }
-.record-screen.controls-dim .record-side:focus-within {
+.record-screen .record-main-controls > .is-open {
+  background: var(--studio-text, #f4f1ea);
+  color: #0a0a0b;
+}
+.record-screen .record-tray {
+  display: grid;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 22px;
+  background: rgba(10, 10, 11, 0.86);
+}
+.record-tray__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.record-tray__label {
+  flex: 0 0 40px;
+  color: #8a8a8f;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.record-tray__value {
+  min-width: 64px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.record-screen .record-tray button {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+}
+.record-screen .record-tray button[aria-pressed='true'] {
+  background: var(--studio-text, #f4f1ea);
+  color: #0a0a0b;
+}
+.record-screen .record-tray .record-tray__fit {
+  margin-left: auto;
+}
+.record-screen .record-tray .record-sections {
+  flex-wrap: wrap;
+  padding: 0;
+  background: none;
+}
+.record-screen .record-tray .record-sections label {
+  padding: 0;
+}
+.record-screen .record-tray .record-sections select {
+  flex: 1 1 120px;
+  max-width: none;
+}
+.record-screen.controls-dim .record-main-controls:focus-within > * {
   opacity: 1;
+}
+/* Fit to target changed the speed: one short chip says so, opposite the timer. */
+.record-fit-chip {
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  z-index: 2;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #222;
+  font-size: 0.8rem;
 }
 /* Sheets live inside the full-bleed record screen, so they can use its whole height. */
 .sheet-backdrop {

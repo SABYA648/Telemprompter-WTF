@@ -118,6 +118,10 @@ export default function RecordScreen({
     [micCheckUrl],
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /** The Aa tray: speed, text size, fit and sections, one tap from the shutter row. */
+  const [controlsOpen, setControlsOpen] = useState(false);
+  /** The safe-zone frame peeks after the camera opens or the zone changes, then gets out of the way. */
+  const [guidePeek, setGuidePeek] = useState(true);
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
   const [sectionMode, setSectionMode] = useState(false);
   const sectionEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -181,6 +185,10 @@ export default function RecordScreen({
   const targetSeconds = script ? (sessionTargetSeconds(script.id) ?? script.targetSeconds) : 0;
   const targetMs = targetSeconds * 1000;
   const capabilities = stream?.getVideoTracks()[0]?.getCapabilities?.();
+  /** Fit-to-target moved the speed off the saved one, so the camera says why it differs. */
+  const fitted = Boolean(
+    targetSeconds && settings.prompter.fitToTarget && wpm !== settings.prompter.wpm,
+  );
   const updateSettings = (next: StudioSettings, key: string) => {
     setSettings(next);
     void saveSettings(next);
@@ -460,6 +468,13 @@ export default function RecordScreen({
   ]);
   useEffect(() => setFont(settings.prompter.fontSizePx), [settings.prompter.fontSizePx]);
   useEffect(() => {
+    if (permission !== 'ready' || settings.camera.safeZone === 'off') return;
+    setGuidePeek(true);
+    if (settingsOpen) return;
+    const timer = setTimeout(() => setGuidePeek(false), 4000);
+    return () => clearTimeout(timer);
+  }, [permission, settings.camera.safeZone, settingsOpen]);
+  useEffect(() => {
     if (!recording) return;
     const timer = setInterval(() => {
       const ms = recorder.current?.elapsed() ?? 0;
@@ -734,6 +749,7 @@ export default function RecordScreen({
     }
     starting.current = true;
     dispatchEvent(new Event('studio-take-started'));
+    setControlsOpen(false);
     setNotice('');
     setChips([]);
     timeline.current = [];
@@ -968,6 +984,7 @@ export default function RecordScreen({
       if (e.key === 'Escape') {
         if (settingsOpen) setSettingsOpen(false);
         else if (review) setReview(null);
+        else if (controlsOpen) setControlsOpen(false);
         return;
       }
       if (settingsOpen || review) return;
@@ -989,7 +1006,7 @@ export default function RecordScreen({
       removeEventListener('keydown', onKey);
       stopGamepads();
     };
-  }, [settings, scrolling, recording, settingsOpen, review, stream]);
+  }, [settings, scrolling, recording, settingsOpen, controlsOpen, review, stream]);
   useEffect(() => {
     if (!operatorOn || !hasScript) return;
     const channel = new PrompterBroadcast();
@@ -1187,14 +1204,15 @@ export default function RecordScreen({
         </aside>
       )}
       {settings.camera.grid === 'thirds' && <div class="record-thirds" aria-label="Thirds grid" />}
-      {settings.camera.safeZone !== 'off' && (
-        // A quiet frame only; camera settings explain that safe zones are approximate.
+      {settings.camera.safeZone !== 'off' && (guidePeek || aspectMismatch) && (
+        // A quiet frame only; camera settings explain that safe zones are approximate. It peeks
+        // after open and stays clear of the shutter row.
         <div
           class="record-safe-zone"
           aria-hidden="true"
           style={{
             top: `${SAFE_ZONES[settings.camera.safeZone].top}%`,
-            bottom: `${SAFE_ZONES[settings.camera.safeZone].bottom}%`,
+            bottom: `max(${SAFE_ZONES[settings.camera.safeZone].bottom}%, calc(env(safe-area-inset-bottom) + 152px))`,
             left: `${SAFE_ZONES[settings.camera.safeZone].left}%`,
             right: `${SAFE_ZONES[settings.camera.safeZone].right}%`,
           }}
@@ -1227,6 +1245,7 @@ export default function RecordScreen({
             }
           }}
         >
+          {fitted && <span class="record-fit-chip">Fits {formatTime(targetMs)}</span>}
           {(settings.prompter.showElapsed || settings.prompter.showRemaining) && (
             <span class="record-timer">
               {settings.prompter.showElapsed ? formatTime(elapsed) : ''}
@@ -1236,9 +1255,15 @@ export default function RecordScreen({
             </span>
           )}
           {settings.prompter.cueStyle !== 'off' && (
+            // Exactly one line tall, where line 1 rests, so the band frames text and never cuts it.
             <div
               class={`prompter-cue-band cue-${settings.prompter.cueStyle}`}
-              style={{ top: `${settings.prompter.cuePosition * 100}%` }}
+              style={{
+                top: `${settings.prompter.cuePosition * 100}%`,
+                ...(settings.prompter.cueStyle === 'band'
+                  ? { height: `${font * settings.prompter.lineHeight}px` }
+                  : {}),
+              }}
             />
           )}
           <div
@@ -1334,117 +1359,137 @@ export default function RecordScreen({
           </div>
           {level.peak >= Math.pow(10, -1 / 20) && <span class="record-clip">CLIP</span>}
         </div>
-        {parsed?.sections.length ? (
-          <div class="record-speed record-sections">
-            <label>
-              <input
-                type="checkbox"
-                checked={sectionMode}
-                disabled={recording}
-                onChange={(e) => {
-                  const enabled = e.currentTarget.checked;
-                  setSectionMode(enabled);
-                  if (enabled && selectedSection === null) {
-                    setSelectedSection(0);
-                    moveToSection(0);
-                  }
+        {controlsOpen && (
+          <div id="record-tray" class="record-tray" role="group" aria-label="Prompter controls">
+            <div class="record-tray__row">
+              <span class="record-tray__label">Speed</span>
+              <button onClick={() => setSpeed(wpm - 5)} aria-label="Slower">
+                −
+              </button>
+              <span class="record-tray__value">{wpm} WPM</span>
+              <button onClick={() => setSpeed(wpm + 5)} aria-label="Faster">
+                +
+              </button>
+              <button
+                class="record-tray__fit"
+                aria-label="Fit speed to target length"
+                title="Fit speed to target length"
+                aria-pressed={settings.prompter.fitToTarget}
+                disabled={!targetSeconds}
+                onClick={() => {
+                  const value = fitWpm(parsed?.spokenWordCount ?? 0, targetSeconds);
+                  setWpm(value);
+                  updateSettings(
+                    { ...settings, prompter: { ...settings.prompter, fitToTarget: true } },
+                    'prompter_fit_to_target',
+                  );
                 }}
-              />{' '}
-              Record one section
-            </label>
-            <select
-              aria-label="Section"
-              value={selectedSection ?? ''}
-              disabled={recording}
-              onChange={(e) => {
-                const value = (e.target as HTMLSelectElement).value;
-                setSelectedSection(value === '' ? null : Number(value));
-                if (value !== '') moveToSection(Number(value));
-              }}
-            >
-              <option value="" disabled={sectionMode}>
-                Sections
-              </option>
-              {parsed.sections.map((section, index) => (
-                <option value={index}>{section.title}</option>
-              ))}
-            </select>
+              >
+                <Icon name="fit" />
+              </button>
+            </div>
+            <div class="record-tray__row">
+              <span class="record-tray__label">Text</span>
+              <button onClick={() => setFontSize(font - 2)} aria-label="Smaller text">
+                <Icon name="text-smaller" />
+              </button>
+              <span class="record-tray__value">{font}</span>
+              <button onClick={() => setFontSize(font + 2)} aria-label="Larger text">
+                <Icon name="text-larger" />
+              </button>
+            </div>
+            {parsed?.sections.length ? (
+              <div class="record-tray__row record-sections">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={sectionMode}
+                    disabled={recording}
+                    onChange={(e) => {
+                      const enabled = e.currentTarget.checked;
+                      setSectionMode(enabled);
+                      if (enabled && selectedSection === null) {
+                        setSelectedSection(0);
+                        moveToSection(0);
+                      }
+                    }}
+                  />{' '}
+                  Record one section
+                </label>
+                <select
+                  aria-label="Section"
+                  value={selectedSection ?? ''}
+                  disabled={recording}
+                  onChange={(e) => {
+                    const value = (e.target as HTMLSelectElement).value;
+                    setSelectedSection(value === '' ? null : Number(value));
+                    if (value !== '') moveToSection(Number(value));
+                  }}
+                >
+                  <option value="" disabled={sectionMode}>
+                    Sections
+                  </option>
+                  {parsed.sections.map((section, index) => (
+                    <option value={index}>{section.title}</option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
           </div>
-        ) : null}
-        <div class="record-speed">
-          <button onClick={() => setSpeed(wpm - 5)} aria-label="Slower">
-            −
-          </button>
-          <span>{wpm} WPM</span>
-          <button onClick={() => setSpeed(wpm + 5)} aria-label="Faster">
-            +
-          </button>
-          <button onClick={() => setFontSize(font - 2)} aria-label="Smaller text">
-            <Icon name="text-smaller" />
-          </button>
-          <button onClick={() => setFontSize(font + 2)} aria-label="Larger text">
-            <Icon name="text-larger" />
-          </button>
-          <button
-            aria-label="Fit speed to target length"
-            title="Fit speed to target length"
-            onClick={() => {
-              const value = fitWpm(parsed?.spokenWordCount ?? 0, targetSeconds);
-              setWpm(value);
-              updateSettings(
-                { ...settings, prompter: { ...settings.prompter, fitToTarget: true } },
-                'prompter_fit_to_target',
-              );
-            }}
-          >
-            <Icon name="fit" />
-          </button>
-        </div>
+        )}
+        {/* Five fixed slots, so nothing that appears while recording can shift the shutter. */}
         <div class="record-main-controls">
-          <div class="record-side">
-            <a href={`#/scripts/${id}`} aria-label="Close recording">
-              <Icon name="close" />
-            </a>
+          <a href={`#/scripts/${id}`} aria-label="Close recording">
+            <Icon name="close" />
+          </a>
+          {recording &&
+          settings.recording.pauseButton &&
+          typeof MediaRecorder.prototype.pause === 'function' ? (
+            <button
+              onClick={() => {
+                if (paused) {
+                  recorder.current?.resume();
+                  controller.current?.start();
+                  setPaused(false);
+                } else {
+                  recorder.current?.pause();
+                  controller.current?.pause();
+                  setPaused(true);
+                }
+              }}
+              aria-label={paused ? 'Resume recording' : 'Pause recording'}
+            >
+              <Icon name={paused ? 'play' : 'pause'} />
+            </button>
+          ) : (
             <button onClick={flip} disabled={recording} aria-label="Flip camera">
               <Icon name="flip" />
             </button>
-          </div>
+          )}
           <button
             class={recording ? 'record-button is-recording' : 'record-button'}
             disabled={countdown !== null}
             aria-label={recording ? 'Stop recording' : 'Start recording'}
             onClick={() => (recording ? stop() : void begin())}
           />
-          <div class="record-side">
-            {recording &&
-              settings.recording.pauseButton &&
-              typeof MediaRecorder.prototype.pause === 'function' && (
-                <button
-                  onClick={() => {
-                    if (paused) {
-                      recorder.current?.resume();
-                      controller.current?.start();
-                      setPaused(false);
-                    } else {
-                      recorder.current?.pause();
-                      controller.current?.pause();
-                      setPaused(true);
-                    }
-                  }}
-                  aria-label={paused ? 'Resume recording' : 'Pause recording'}
-                >
-                  <Icon name={paused ? 'play' : 'pause'} />
-                </button>
-              )}
-            {settings.recording.touchLock && recording && (
-              <button onClick={() => setTouchLocked(true)} aria-label="Lock touch">
-                <Icon name="lock" />
-              </button>
-            )}
+          <button
+            class={controlsOpen ? 'is-open' : ''}
+            aria-label="Prompter controls"
+            aria-expanded={controlsOpen}
+            aria-controls="record-tray"
+            onClick={() => setControlsOpen(!controlsOpen)}
+          >
+            <Icon name="sliders" />
+          </button>
+          {settings.recording.touchLock && recording ? (
+            <button onClick={() => setTouchLocked(true)} aria-label="Lock touch">
+              <Icon name="lock" />
+            </button>
+          ) : (
             <button onClick={() => setSettingsOpen(true)} aria-label="Quick settings">
               <Icon name="settings" />
             </button>
-          </div>
+          )}
         </div>
       </div>
       {touchLocked && (
