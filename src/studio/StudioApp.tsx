@@ -7,7 +7,10 @@ import { starterById } from '../content/studio/starterScripts';
 import {
   applySessionPreset,
   applySessionTarget,
+  defaultSettings,
   endSessionTarget,
+  loadSettings,
+  scriptTargetSeconds,
 } from '../domain/studio/settings';
 import type { StudioPreset } from '../content/studio/types';
 import {
@@ -24,7 +27,7 @@ import {
 } from '../domain/studio/scriptsRepo';
 import type { StudioScript } from '../domain/studio/types';
 import { SCRIPT_STAGES, scriptStage, type ScriptStage } from '../domain/studio/status';
-import { durationAtWpm, fitForTarget, sectionDurations } from '../domain/studio/timing';
+import { fitForTarget, scriptSeconds, scriptWpm, sectionDurations } from '../domain/studio/timing';
 import { readabilityWarning } from '../domain/studio/words';
 import { isMemoryStorage } from '../domain/studio/db';
 import { moveInQueue, upNext, setUpNext } from '../domain/studio/queue';
@@ -86,6 +89,25 @@ const wordBucket = (words: number): (typeof SCRIPT_SIZE_BUCKETS)[number] =>
 const TARGET_CHIPS = [15, 30, 60, 90, 180];
 const FORMAT = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+
+type PrompterSpeed = { wpm: number; fitToTarget: boolean };
+/** The saved speed and fit setting, so every duration here matches the camera and Practice. */
+function usePrompterSpeed(): PrompterSpeed {
+  const [prompter, setPrompter] = useState<PrompterSpeed>(() => defaultSettings(false).prompter);
+  useEffect(() => {
+    let active = true;
+    void loadSettings().then((value) => active && setPrompter(value.prompter));
+    return () => {
+      active = false;
+    };
+  }, []);
+  return prompter;
+}
+/** "30 words · 0:13": a script's spoken words and how long it runs at the speed it opens at. */
+function wordsAndTime(script: StudioScript, prompter: PrompterSpeed): string {
+  const words = parseMarkup(script.body).spokenWordCount;
+  return `${words} words · ${FORMAT(scriptSeconds(words, scriptTargetSeconds(script), prompter))}`;
+}
 
 /** Handle `#/scripts/new`, with `?template=<id>` when a template page or picker sent the visitor. */
 async function createRoutedScript(): Promise<StudioScript> {
@@ -551,6 +573,7 @@ function Scripts({
   deleted: StudioScript[];
   refresh: () => Promise<void>;
 }) {
+  const prompter = usePrompterSpeed();
   const [query, setQuery] = useState('');
   const [picked, setStatus] = useState<'all' | ScriptStage>('all');
   const [notice, setNotice] = useState('');
@@ -717,6 +740,7 @@ function Scripts({
           <ScriptCard
             key={script.id}
             script={script}
+            prompter={prompter}
             queued={queueIds.includes(script.id)}
             onQueue={() => void changeQueue([...queueIds, script.id])}
             onDuplicate={async () => {
@@ -773,12 +797,14 @@ const STAGE_LABELS = Object.fromEntries(
 /** Library row: title and details lead; one round record action; the rest sit in a ... menu. */
 function ScriptCard({
   script,
+  prompter,
   queued,
   onQueue,
   onDuplicate,
   onDelete,
 }: {
   script: StudioScript;
+  prompter: PrompterSpeed;
   queued: boolean;
   onQueue: () => void;
   onDuplicate: () => Promise<void>;
@@ -794,10 +820,8 @@ function ScriptCard({
     opened.current = confirming;
   }, [confirming]);
   const title = script.title || 'Untitled script';
-  const words = parseMarkup(script.body).spokenWordCount;
   const details = [
-    `${words} words`,
-    FORMAT(durationAtWpm(words, 140)),
+    wordsAndTime(script, prompter),
     STAGE_LABELS[scriptStage(script)],
     shortDate(script.updatedAt),
   ].join(' · ');
@@ -863,6 +887,7 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
   const [notice, setNotice] = useState('');
   const [customTarget, setCustomTarget] = useState(false);
   const [captionsOpen, setCaptionsOpen] = useState(false);
+  const prompter = usePrompterSpeed();
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const currentRef = useRef<StudioScript | null>(null);
@@ -983,7 +1008,8 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
   if (!script)
     return <Placeholder title="Script not found" text="This script may have been deleted." />;
   const parsed = parseMarkup(script.body);
-  const sections = sectionDurations(parsed.sections, 140);
+  const wpm = scriptWpm(parsed.spokenWordCount, scriptTargetSeconds(script), prompter);
+  const sections = sectionDurations(parsed.sections, wpm);
   const setTarget = (targetSeconds: number) => {
     endSessionTarget(script.id);
     edit({ ...script, targetSeconds });
@@ -1053,8 +1079,7 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
       {/* One quiet line of facts; only the duration row below is tappable. */}
       <p class="studio-stats-line">
         {[
-          `${parsed.spokenWordCount} words`,
-          FORMAT(durationAtWpm(parsed.spokenWordCount, 140)),
+          wordsAndTime(script, prompter),
           ...sections.map((section) => `${section.title} ${FORMAT(section.seconds)}`),
         ].join(' · ')}
       </p>
@@ -1062,7 +1087,11 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
         {TARGET_CHIPS.map((target) => (
           <button
             type="button"
-            class={`studio-toggle fit-${fitForTarget(parsed.spokenWordCount, target, 140)}`}
+            class={`studio-toggle fit-${fitForTarget(
+              parsed.spokenWordCount,
+              target,
+              scriptWpm(parsed.spokenWordCount, target, prompter),
+            )}`}
             aria-pressed={script.targetSeconds === target}
             onClick={() => {
               setCustomTarget(false);

@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { cameraConstraints, cameraErrorReason } from './camera';
 import { containerFor, MIME_ORDER, preferredMime, videoBitrate } from './mime';
-import { crossedMarker, fitWpm, pixelsPerSecond, pixelsPerWord } from './prompterScroll';
+import { crossedMarker, pixelsPerSecond, pixelsPerWord } from './prompterScroll';
 import { minutesLeft } from './storage';
 import { takeFilename } from './exportTake';
 import { orderedChunks } from './takesRepo';
@@ -65,11 +65,9 @@ test('maps camera failures', () => {
   ])
     expect(cameraErrorReason({ name })).toBe(reason);
 });
-test('scroll speed, target fit and consumed pause markers', () => {
+test('scroll speed and consumed pause markers', () => {
   expect(pixelsPerWord(600, 100)).toBe(6);
   expect(pixelsPerSecond(120, 6)).toBe(12);
-  expect(fitWpm(60, 30)).toBe(120);
-  expect(fitWpm(1000, 10)).toBe(240);
   const consumed = new Set<number>();
   expect(crossedMarker(80, 20, [100, 200], consumed)).toBe(0);
   consumed.add(0);

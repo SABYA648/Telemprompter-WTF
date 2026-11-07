@@ -303,6 +303,10 @@ export function sessionTargetSeconds(id: string): number | null {
     return null;
   }
 }
+/** The target a script records against now: this session's preset target, else its own. */
+export function scriptTargetSeconds(script: { id: string; targetSeconds: number }): number {
+  return sessionTargetSeconds(script.id) ?? script.targetSeconds;
+}
 /** An explicit target edit for this script ends the preset's override, as a camera edit does (D-048). */
 export function endSessionTarget(id: string): void {
   if (sessionTargetSeconds(id) !== null) applySessionTarget(null);

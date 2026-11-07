@@ -1108,3 +1108,48 @@ for (const width of [360, 390]) {
     expect(zone.y + zone.height).toBeLessThanOrEqual(row.y);
   });
 }
+
+// M12 P7: one speed function, so a script opens at the same WPM and time on every screen.
+test('the camera, Practice, editor and library agree on a script speed and time', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const speedIn = async (hash: string) => {
+    await page.goto(`/studio${hash}`);
+    if (hash.startsWith('#/record')) {
+      // After the first grant the camera opens straight away, with no Allow step.
+      const allow = page.getByRole('button', { name: 'Allow camera' });
+      const controls = page.getByRole('button', { name: 'Prompter controls' });
+      await expect(allow.or(controls).first()).toBeVisible();
+      if (await allow.isVisible()) await allow.click();
+      await controls.click();
+    }
+    return page
+      .getByRole('group', { name: 'Speed' })
+      .locator('.studio-stepper__value')
+      .first()
+      .textContent();
+  };
+  // The starter is 30 words with a 30 second target. A fit needs 60 WPM, under the 80 floor, so
+  // nothing is fitted: every screen keeps the saved 140 and says 0:13.
+  await page.goto('/studio#/scripts');
+  await expect(page.locator('.studio-script-card__meta').first()).toContainText('30 words · 0:13');
+  await page.goto('/studio#/scripts/quick');
+  await expect(page.locator('.studio-stats-line')).toHaveText(/^30 words · 0:13/);
+  expect(await speedIn('#/practice/quick')).toBe('140 WPM');
+  expect(await speedIn('#/record/quick')).toBe('140 WPM');
+  await expect(page.locator('.record-timer .is-fit')).toHaveCount(0);
+  await expect(page.getByText(/^Speed fits/)).toHaveCount(0);
+  // 150 words over 60 seconds fit at 150 WPM, on every screen.
+  const body = Array.from({ length: 150 }, (_, i) => `word${i + 1}`).join(' ');
+  await page.goto('/studio#/scripts/quick');
+  await page.getByLabel('Script', { exact: true }).fill(body);
+  await page.getByRole('button', { name: '60s' }).click();
+  await expect(page.locator('.studio-stats-line')).toHaveText(/^150 words · 1:00/);
+  await expect(page.locator('.studio-editor__status')).toContainText('Saved');
+  await page.goto('/studio#/scripts');
+  await expect(page.locator('.studio-script-card__meta').first()).toContainText('150 words · 1:00');
+  expect(await speedIn('#/practice/quick')).toBe('150 WPM');
+  expect(await speedIn('#/record/quick')).toBe('150 WPM');
+  await expect(page.locator('.record-timer .is-fit')).toHaveText('/ 1:00');
+});

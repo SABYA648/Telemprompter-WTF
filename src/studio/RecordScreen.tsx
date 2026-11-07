@@ -14,12 +14,8 @@ import { browserHandoffUrl, isInAppBrowser } from '../domain/studio/inAppBrowser
 import { mediaSupport } from '../domain/studio/mediaSupport';
 import { videoBitrate } from '../domain/studio/mime';
 import { parseMarkup } from '../domain/studio/markup';
-import {
-  fitWpm,
-  pixelsPerSecond,
-  pixelsPerWord,
-  crossedMarker,
-} from '../domain/studio/prompterScroll';
+import { pixelsPerSecond, pixelsPerWord, crossedMarker } from '../domain/studio/prompterScroll';
+import { fitWpm, scriptWpm, MAX_WPM, MIN_WPM } from '../domain/studio/timing';
 import { StudioRecorder, type StopReason } from '../domain/studio/recorder';
 import { getScript, listScripts, saveScript } from '../domain/studio/scriptsRepo';
 import { advanceBatch, isBatchScript } from '../domain/studio/batch';
@@ -32,7 +28,7 @@ import {
   defaultSettings,
   loadSettings,
   saveSettings,
-  sessionTargetSeconds,
+  scriptTargetSeconds,
 } from '../domain/studio/settings';
 import { handleMappedKey } from '../domain/studio/keymap';
 import { watchGamepads } from '../domain/studio/gamepad';
@@ -206,13 +202,13 @@ export default function RecordScreen({
   const parsed = script ? parseMarkup(script.body) : null;
   const hasScript = Boolean(parsed?.spokenWordCount);
   // A preset picked for an existing script sets this session's target without saving it (14.6).
-  const targetSeconds = script ? (sessionTargetSeconds(script.id) ?? script.targetSeconds) : 0;
+  const targetSeconds = script ? scriptTargetSeconds(script) : 0;
   const targetMs = targetSeconds * 1000;
   const capabilities = stream?.getVideoTracks()[0]?.getCapabilities?.();
-  /** Fit-to-target moved the speed off the saved one, so the camera says why it differs. */
-  const fitted = Boolean(
-    targetSeconds && settings.prompter.fitToTarget && wpm !== settings.prompter.wpm,
-  );
+  /** The speed that reads this script in its target, or null when that is outside 80 to 240. */
+  const fitSpeed = fitWpm(parsed?.spokenWordCount ?? 0, targetSeconds);
+  /** Fit to target set this speed, so the camera tints the target time it will land on. */
+  const fitted = Boolean(settings.prompter.fitToTarget && fitSpeed !== null && wpm === fitSpeed);
   /** The platform's safe zone over the recorded frame, clipped to the screen and the shutter row. */
   const safeZoneStyle = (zone: { top: number; bottom: number; left: number; right: number }) => {
     const box = video.current?.parentElement;
@@ -262,7 +258,7 @@ export default function RecordScreen({
     }
   };
   const setSpeed = (value: number) => {
-    const next = Math.max(80, Math.min(240, value));
+    const next = Math.max(MIN_WPM, Math.min(MAX_WPM, value));
     setWpm(next);
     updateSettings(
       { ...settings, prompter: { ...settings.prompter, wpm: next, fitToTarget: false } },
@@ -300,10 +296,13 @@ export default function RecordScreen({
       if (!active) return;
       setScript(item ?? null);
       setSettings(saved);
-      const itemTarget = item ? (sessionTargetSeconds(item.id) ?? item.targetSeconds) : 0;
       setWpm(
-        item && itemTarget && saved.prompter.fitToTarget
-          ? fitWpm(parseMarkup(item.body).spokenWordCount, itemTarget)
+        item
+          ? scriptWpm(
+              parseMarkup(item.body).spokenWordCount,
+              scriptTargetSeconds(item),
+              saved.prompter,
+            )
           : saved.prompter.wpm,
       );
       setFont(saved.prompter.fontSizePx);
@@ -545,11 +544,7 @@ export default function RecordScreen({
       );
   }, [wpm, parsed?.spokenWordCount]);
   useEffect(() => {
-    setWpm(
-      targetSeconds && settings.prompter.fitToTarget
-        ? fitWpm(parsed?.spokenWordCount ?? 0, targetSeconds)
-        : settings.prompter.wpm,
-    );
+    setWpm(scriptWpm(parsed?.spokenWordCount ?? 0, targetSeconds, settings.prompter));
   }, [
     settings.prompter.wpm,
     settings.prompter.fitToTarget,
@@ -1476,8 +1471,14 @@ export default function RecordScreen({
                 aria-pressed={settings.prompter.fitToTarget}
                 disabled={!targetSeconds}
                 onClick={() => {
-                  const value = fitWpm(parsed?.spokenWordCount ?? 0, targetSeconds);
-                  setWpm(value);
+                  // A fit outside 80 to 240 WPM would run out early or late, so keep the speed.
+                  if (fitSpeed === null) {
+                    setNotice(
+                      `This script cannot fit ${formatTime(targetMs)} between 80 and 240 WPM.`,
+                    );
+                    return;
+                  }
+                  setWpm(fitSpeed);
                   updateSettings(
                     { ...settings, prompter: { ...settings.prompter, fitToTarget: true } },
                     'prompter_fit_to_target',

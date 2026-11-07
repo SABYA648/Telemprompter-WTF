@@ -7,7 +7,8 @@ import {
   practiceSummary,
   type PracticeFit,
 } from '../domain/studio/practice';
-import { loadSettings, sessionTargetSeconds } from '../domain/studio/settings';
+import { loadSettings, scriptTargetSeconds } from '../domain/studio/settings';
+import { MAX_WPM, MIN_WPM, scriptWpm } from '../domain/studio/timing';
 import { markActiveDay } from '../domain/studio/streak';
 import { refreshBadges } from '../domain/studio/habits';
 import { analytics, progressBucket } from '../domain/analytics';
@@ -41,8 +42,19 @@ export default function PracticeScreen({ id }: { id: string }) {
   const wpmRef = useRef(wpm);
   wpmRef.current = wpm;
   useEffect(() => {
-    void getScript(id).then((value) => setScript(value ?? null));
-    void loadSettings().then((value) => setWpm(value.prompter.wpm));
+    // Practice opens at the camera's speed, fit to target included, so both agree.
+    void Promise.all([getScript(id), loadSettings()]).then(([value, saved]) => {
+      setScript(value ?? null);
+      setWpm(
+        value
+          ? scriptWpm(
+              parseMarkup(value.body).spokenWordCount,
+              scriptTargetSeconds(value),
+              saved.prompter,
+            )
+          : saved.prompter.wpm,
+      );
+    });
   }, [id]);
   useEffect(() => {
     if (!cameraOn) return;
@@ -122,7 +134,7 @@ export default function PracticeScreen({ id }: { id: string }) {
     Math.min(wordsPassed, spokenWords),
     spokenWords,
     activeSeconds,
-    script ? (sessionTargetSeconds(script.id) ?? script.targetSeconds) : 0,
+    script ? scriptTargetSeconds(script) : 0,
   );
   useEffect(() => {
     if (scroller.current)
@@ -163,8 +175,8 @@ export default function PracticeScreen({ id }: { id: string }) {
           Math.max(1, el.scrollHeight)
         : 0;
     if (action === 'toggleScroll') toggle();
-    else if (action === 'faster') setWpm(Math.min(240, wpm + 5));
-    else if (action === 'slower') setWpm(Math.max(80, wpm - 5));
+    else if (action === 'faster') setWpm(Math.min(MAX_WPM, wpm + 5));
+    else if (action === 'slower') setWpm(Math.max(MIN_WPM, wpm - 5));
     else if (action === 'lineForward')
       setWordsPassed((old) => Math.min(spokenWords, old + (lineWords || 6)));
     else if (action === 'lineBack') setWordsPassed((old) => Math.max(0, old - (lineWords || 6)));
