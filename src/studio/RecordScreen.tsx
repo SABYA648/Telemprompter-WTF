@@ -142,6 +142,9 @@ export default function RecordScreen({
   /** Where the camera frame lands on screen. The preview covers the viewport, so the frame can
    * run past its edges; the safe-zone guide is laid over the true frame, not the viewport. */
   const [frame, setFrame] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  /** The bottom edge of a top-docked prompter panel, so the guide never strikes through a line. */
+  const [panelBottom, setPanelBottom] = useState(0);
+  const panel = useRef<HTMLDivElement>(null);
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
   const [sectionMode, setSectionMode] = useState(false);
   const sectionEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -212,15 +215,16 @@ export default function RecordScreen({
   /** The platform's safe zone over the recorded frame, clipped to the screen and the shutter row. */
   const safeZoneStyle = (zone: { top: number; bottom: number; left: number; right: number }) => {
     const box = video.current?.parentElement;
+    const clear = panelBottom ? panelBottom + 8 : 0;
     if (!frame || !box) {
       return {
-        top: `${zone.top}%`,
+        top: `max(${zone.top}%, ${clear}px)`,
         bottom: `max(${zone.bottom}%, calc(env(safe-area-inset-bottom) + 152px))`,
         left: `${zone.left}%`,
         right: `${zone.right}%`,
       };
     }
-    const top = Math.max(0, frame.y + (frame.h * zone.top) / 100);
+    const top = Math.max(clear, frame.y + (frame.h * zone.top) / 100);
     const left = Math.max(0, frame.x + (frame.w * zone.left) / 100);
     const right = Math.max(0, box.clientWidth - (frame.x + frame.w * (1 - zone.right / 100)));
     const bottom = Math.max(0, box.clientHeight - (frame.y + frame.h * (1 - zone.bottom / 100)));
@@ -377,6 +381,23 @@ export default function RecordScreen({
       removeEventListener('resize', measure);
     };
   }, [stream, permission]);
+  useEffect(() => {
+    const el = panel.current;
+    const box = video.current?.parentElement;
+    if (!el || !box) return;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      const outer = box.getBoundingClientRect();
+      // Only a panel across the top counts; a full-height side dock leaves the guide alone.
+      const bottom = rect.bottom - outer.top;
+      setPanelBottom(rect.height && bottom < outer.height * 0.6 ? bottom : 0);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [permission, hasScript]);
   useEffect(() => {
     if (!stream) return;
     const onDevices = () => {
@@ -1283,6 +1304,7 @@ export default function RecordScreen({
       )}
       {hasScript && (
         <div
+          ref={panel}
           class="prompter-window"
           style={{
             '--prompter-width': `${settings.prompter.widthPct}%`,

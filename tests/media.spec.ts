@@ -1065,3 +1065,36 @@ for (const width of [360, 390]) {
     expect(await saturated()).toEqual([]);
   });
 }
+
+for (const width of [360, 390]) {
+  test(`the safe-zone guide peeks below the prompter panel, never across a line, at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('/studio#/record/quick');
+    const allow = page.getByRole('button', { name: 'Allow camera' });
+    const start = page.getByRole('button', { name: 'Start recording' });
+    await expect(allow.or(start)).toBeVisible();
+    if (await allow.isVisible()) await allow.click();
+    await expect(start).toBeVisible();
+    await page.getByRole('button', { name: 'Quick settings' }).click();
+    await page.getByLabel('Safe zones').selectOption('instagram');
+    await page
+      .getByRole('dialog', { name: 'Quick settings' })
+      .getByRole('button', { name: 'Close' })
+      .click();
+    const guide = page.locator('.record-safe-zone');
+    await expect(guide).toBeVisible();
+    const panel = (await page.locator('.prompter-window').boundingBox())!;
+    const zone = (await guide.boundingBox())!;
+    const intersects =
+      zone.x < panel.x + panel.width &&
+      zone.x + zone.width > panel.x &&
+      zone.y < panel.y + panel.height &&
+      zone.y + zone.height > panel.y;
+    expect(intersects).toBe(false);
+    expect(zone.y).toBeGreaterThanOrEqual(panel.y + panel.height + 8 - 1);
+    const row = (await page.locator('.record-main-controls').boundingBox())!;
+    expect(zone.y + zone.height).toBeLessThanOrEqual(row.y);
+  });
+}
