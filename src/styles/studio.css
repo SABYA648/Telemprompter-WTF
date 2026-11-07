@@ -2767,11 +2767,12 @@ ol.studio-row-list .studio-row__title::before {
   }
 }
 
-/* M12 P3: a badge is a toast where it was earned, never a Home card. */
+/* M12 P3: a badge is a toast where it was earned, never a Home card. M12 P4: it sits low,
+   above the nav, the editor's action row and the camera shutter, so it never covers a header. */
 .studio-toast-region {
   position: fixed;
   z-index: 200;
-  top: calc(env(safe-area-inset-top) + 12px);
+  bottom: calc(var(--studio-nav) + 92px);
   right: 12px;
   left: 12px;
   display: flex;

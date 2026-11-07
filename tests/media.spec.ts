@@ -827,6 +827,10 @@ test('a real kept take celebrates the first badge once, as a toast right after K
   await recordAndKeep(page);
   const toast = page.locator('.studio-toast');
   await expect(toast).toContainText('First take badge unlocked');
+  // It sits low, above the shutter and nav, never over a header control, and takes no taps.
+  const box = (await toast.boundingBox())!;
+  expect(box.y).toBeGreaterThan(page.viewportSize()!.height / 2);
+  await expect(page.locator('.studio-toast-region')).toHaveCSS('pointer-events', 'none');
   await expect(toast).toHaveCount(0, { timeout: 8000 });
   await page.goto('/studio#/');
   await expect(page.getByRole('heading', { name: "Today's prompt" })).toBeVisible();
