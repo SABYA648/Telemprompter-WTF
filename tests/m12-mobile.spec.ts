@@ -52,7 +52,22 @@ test('every route marks exactly one tab and shows at most one accent action', as
     'href',
     '#/scripts/quick',
   );
-  expect((await accentActions(page)).length).toBeLessThanOrEqual(1);
+  // Practice speaks the camera's language: play is the one accent, every control is an icon,
+  // and the camera preview is an icon switch, not a native checkbox.
+  expect(await accentActions(page)).toEqual(['Start practice']);
+  for (const name of ['Start practice', 'Restart', 'Finish practice']) {
+    const button = page.getByRole('button', { name });
+    await expect(button.locator('svg')).toHaveCount(1);
+    expect(((await button.textContent()) ?? '').trim()).toBe('');
+  }
+  await expect(page.getByRole('switch', { name: 'Camera preview' })).toHaveAttribute(
+    'aria-checked',
+    'false',
+  );
+  await expect(page.locator('.studio-practice input[type="checkbox"]')).toHaveCount(0);
+  const title = (await page.getByRole('heading', { name: /^Practice:/ }).boundingBox())!;
+  const prompter = (await page.getByTestId('practice-prompter').boundingBox())!;
+  expect(title.y + title.height).toBeLessThanOrEqual(prompter.y);
 });
 
 test('active tab labels meet 4.5:1 contrast on the tab bar', async ({ page }) => {

@@ -184,6 +184,7 @@ export default function PracticeScreen({ id }: { id: string }) {
   return (
     <section class={`studio-screen studio-practice${cameraOn ? ' has-camera' : ''}`}>
       {cameraOn && <video ref={video} autoPlay muted playsInline class="studio-practice-camera" />}
+      <h1 class="studio-practice-title">Practice: {script.title}</h1>
       <div
         class="studio-practice-prompter"
         ref={scroller}
@@ -191,12 +192,6 @@ export default function PracticeScreen({ id }: { id: string }) {
         data-testid="practice-prompter"
       >
         <p class="studio-practice-script">{words?.spokenText}</p>
-      </div>
-      <div class="studio-practice-heading">
-        <a href={`#/scripts/${script.id}`} aria-label="Close practice">
-          <Icon name="close" />
-        </a>
-        <h1>Practice: {script.title}</h1>
       </div>
       <div class="studio-practice-controls">
         {cameraError && <p role="status">{cameraError}</p>}
@@ -216,10 +211,11 @@ export default function PracticeScreen({ id }: { id: string }) {
           </section>
         )}
         <progress value={percent} max="100" aria-label="Practice progress" />
-        <p aria-live="polite">
-          {percent}% complete{percent >= 80 ? '. Practice counted for today.' : ''}
+        <p class="studio-practice-status" aria-live="polite">
+          <span class="studio-visually-hidden">{percent}% complete.</span>
+          {percent >= 80 ? ' Practice counted for today.' : ''}
         </p>
-        <div class="studio-practice-strip">
+        <div class="studio-practice-speed">
           <button
             aria-label="Slower"
             disabled={wpm <= 80}
@@ -235,35 +231,31 @@ export default function PracticeScreen({ id }: { id: string }) {
           >
             +
           </button>
-          <label>
-            <input
-              type="checkbox"
-              checked={cameraOn}
-              onChange={(event) => setCameraOn(event.currentTarget.checked)}
-            />{' '}
-            Camera preview
-          </label>
         </div>
-        <div class="studio-actions">
+        {/* The camera's shutter row: close, camera, play (the one accent), restart, finish. */}
+        <div class="studio-practice-row">
+          <a href={`#/scripts/${script.id}`} aria-label="Close practice">
+            <Icon name="close" />
+          </a>
           <button
-            class={finished ? 'studio-button studio-button--quiet' : 'studio-button'}
+            role="switch"
+            aria-checked={cameraOn}
+            aria-label="Camera preview"
+            class={cameraOn ? 'is-on' : ''}
+            onClick={() => setCameraOn(!cameraOn)}
+          >
+            <Icon name="camera" />
+          </button>
+          <button
+            class={finished ? 'studio-practice-play' : 'studio-practice-play is-primary'}
             disabled={!spokenWords || finished}
             onClick={toggle}
+            aria-label={running ? 'Pause' : activeSeconds ? 'Resume' : 'Start practice'}
           >
-            {running ? 'Pause' : activeSeconds ? 'Resume' : 'Start practice'}
+            <Icon name={running ? 'pause' : 'play'} size={30} />
           </button>
           <button
-            class="studio-button studio-button--quiet"
-            disabled={!activeSeconds || finished}
-            onClick={() => {
-              setRunning(false);
-              setFinished(true);
-            }}
-          >
-            Finish practice
-          </button>
-          <button
-            class="studio-button studio-button--quiet"
+            aria-label="Restart"
             onClick={() => {
               setRunning(false);
               setActiveSeconds(0);
@@ -274,7 +266,17 @@ export default function PracticeScreen({ id }: { id: string }) {
               credited.current = false;
             }}
           >
-            Restart
+            <Icon name="restart" />
+          </button>
+          <button
+            aria-label="Finish practice"
+            disabled={!activeSeconds || finished}
+            onClick={() => {
+              setRunning(false);
+              setFinished(true);
+            }}
+          >
+            <Icon name="check" />
           </button>
         </div>
       </div>

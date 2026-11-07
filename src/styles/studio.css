@@ -1009,58 +1009,90 @@
   font-size: clamp(1.4rem, 4vw, 2.3rem);
   line-height: 1.55;
 }
-.studio-practice-heading {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.studio-practice-heading a {
-  display: inline-flex;
+/* M12 P4: Practice speaks the camera's language. Title pinned at top, the prompter fills the
+   middle, and a shutter-style row sits at the bottom with play as the one accent. */
+.studio-practice .studio-practice-title {
   flex: none;
-  align-items: center;
-  justify-content: center;
-  min-width: 48px;
-  min-height: 48px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  color: var(--studio-text);
-}
-.studio-practice .studio-practice-heading h1 {
   margin: 0;
-  min-width: 0;
+  padding: 12px 4px 4px;
   overflow: hidden;
   font-size: 1rem;
+  font-weight: 700;
   line-height: 1.3;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.studio-practice .studio-practice-prompter {
+  flex: 1 1 auto;
+  min-height: 30dvh;
+}
 .studio-practice-controls {
+  display: grid;
+  gap: 8px;
   margin-top: auto;
 }
 .studio-practice-controls > p {
-  margin: 4px 0;
+  margin: 0;
 }
-.studio-practice-strip {
+.studio-practice-status {
+  color: var(--studio-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+.studio-practice-speed {
   display: flex;
-  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 8px;
+  font-variant-numeric: tabular-nums;
 }
-.studio-practice-strip button {
-  min-width: 48px;
-  min-height: 48px;
+.studio-practice-speed span {
+  min-width: 72px;
+  text-align: center;
+}
+.studio-practice-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto minmax(0, 1fr) minmax(0, 1fr);
+  justify-items: center;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 22px;
+  background: rgba(10, 10, 11, 0.7);
+}
+.studio-practice-speed button,
+.studio-practice-row > a,
+.studio-practice-row > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
   border: 0;
-  border-radius: 10px;
-  background: #292b27;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
   color: var(--studio-text);
   font: inherit;
   cursor: pointer;
 }
-.studio-practice-strip label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 48px;
+.studio-practice-row > .is-on {
+  background: var(--studio-text);
+  color: #0a0a0b;
+}
+.studio-practice-row > .studio-practice-play {
+  width: 72px;
+  height: 72px;
+}
+.studio-practice-row > .studio-practice-play.is-primary {
+  background: var(--studio-accent);
+  color: #0a0a0b;
+}
+.studio-practice-row > button:disabled,
+.studio-practice-speed button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 .studio-practice-summary {
   margin: 8px 0 16px;
@@ -1068,6 +1100,21 @@
 }
 .studio-practice progress {
   width: 100%;
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  appearance: none;
+  overflow: hidden;
+}
+.studio-practice progress::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.14);
+}
+.studio-practice progress::-webkit-progress-value {
+  background: var(--studio-text);
+}
+.studio-practice progress::-moz-progress-bar {
+  background: var(--studio-text);
 }
 .studio-qr {
   display: block;
