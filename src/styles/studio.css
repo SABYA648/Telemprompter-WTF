@@ -1101,6 +1101,11 @@
 .studio-practice-row__spacer {
   width: 48px;
 }
+/* Close and play get the label's height below them, so every disc shares one centre line. */
+.studio-practice-row > a,
+.studio-practice-row > .studio-practice-play {
+  margin-bottom: 14px;
+}
 .studio-practice-row > button:disabled,
 .studio-practice .studio-stepper button:disabled {
   opacity: 0.4;
@@ -3152,7 +3157,9 @@ ol.studio-row-list .studio-row__title::before {
 }
 .studio-editor__title-clamp {
   position: absolute;
-  inset: 0 0 auto;
+  /* Offset, not padding: overflow clips at the padding box, so padding would show line 3. */
+  inset: 8px 0 auto;
+  padding: 0;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
