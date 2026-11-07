@@ -102,7 +102,7 @@ test('Studio markup controls and stats update safely', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Editor' })).toBeVisible();
   const body = page.getByRole('textbox', { name: 'Script', exact: true });
   await body.fill('# Intro\nHello **friend** [pause] {name}');
-  await expect(page.getByText('3 spoken words')).toBeVisible();
+  await expect(page.getByText('3 words · 0:02 · Intro 0:02')).toBeVisible();
   await expect(page.getByText('1 placeholder left')).toBeVisible();
   await page.getByLabel('Format').click();
   await page.getByRole('button', { name: 'Pause' }).click();

@@ -210,6 +210,12 @@ try {
     await shoot(page, 'scripts-editor', w);
     await page.getByText('More', { exact: true }).click();
     await page.screenshot({ path: `${outDir}/scripts-editor-more-${w}.png`, fullPage: true });
+    // M12 P5: caption fields live in a sheet from the ... menu.
+    await page.getByLabel('More script actions').click();
+    await page.getByRole('button', { name: 'Captions' }).click();
+    await page.getByRole('dialog', { name: 'Captions' }).waitFor();
+    await page.screenshot({ path: `${outDir}/scripts-editor-captions-${w}.png` });
+    await page.keyboard.press('Escape');
 
     await page.goto(`${base}/studio#/scripts`);
     await page.locator('article.studio-script-card').first().waitFor();

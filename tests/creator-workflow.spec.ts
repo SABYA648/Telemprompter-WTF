@@ -128,20 +128,43 @@ test('status filter narrows the library with live counts', async ({ page }) => {
   await page.goto('/studio#/scripts/new');
   await page.getByLabel('Title', { exact: true }).fill('Ready to shoot');
   await page.getByText('More', { exact: true }).click();
-  await page.locator('.studio-grid-fields').getByLabel('Status').selectOption('ready');
+  // Status is three icon segments with radio semantics; arrows move the choice.
+  const statusGroup = page.getByRole('radiogroup', { name: 'Status' });
+  await expect(statusGroup.getByRole('radio')).toHaveCount(3);
+  await statusGroup.getByRole('radio', { name: 'Draft' }).click();
+  await page.keyboard.press('ArrowRight');
+  await expect(statusGroup.getByRole('radio', { name: 'Ready' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await expect(statusGroup.getByRole('radio', { name: 'Ready' })).toBeFocused();
+  await expect(page.locator('.studio-more select')).toHaveCount(0);
   await expect(page.getByText('Saved')).toBeVisible();
   await page.goto('/studio#/scripts');
-  const status = page.getByLabel('Status');
-  await expect(status.locator('option[value="ready"]')).toHaveText('Ready (1)');
-  await status.selectOption('ready');
+  // Filter chips, one pressed, replace the native select.
+  const filters = page.getByRole('group', { name: 'Filter scripts' });
+  await expect(filters.getByRole('button')).toHaveCount(3);
+  await expect(filters.locator('[aria-pressed="true"]')).toHaveCount(1);
+  await expect(page.getByRole('combobox')).toHaveCount(0);
+  const ready = filters.getByRole('button', { name: /^Ready/ });
+  await expect(ready).toHaveText('Ready 1');
+  await ready.click();
+  await expect(ready).toHaveAttribute('aria-pressed', 'true');
+  await expect(filters.locator('[aria-pressed="true"]')).toHaveCount(1);
   await expect(page.getByRole('link', { name: /^Ready to shoot/ })).toBeVisible();
-  await status.selectOption('posted');
+  await filters.getByRole('button', { name: /^Posted/ }).click();
   await expect(page.getByRole('link', { name: /^Ready to shoot/ })).toHaveCount(0);
 });
 
 test('caption counters track limits from platform facts', async ({ page }) => {
   await page.goto('/studio#/scripts/new');
+  // Captions live in a sheet from the ... menu, not in the More section.
   await page.getByText('More', { exact: true }).click();
+  await expect(page.getByLabel('Hashtags')).toHaveCount(0);
+  await expect(page.getByText(/Platform facts checked/)).toHaveCount(0);
+  await page.getByLabel('More script actions').click();
+  await page.getByRole('button', { name: 'Captions' }).click();
+  await expect(page.getByRole('dialog', { name: 'Captions' })).toBeVisible();
   await page.getByLabel('Hashtags').fill('#a #b #c #d #e #f');
   await expect(page.getByText('6/5 hashtags. 1 over the limit.')).toBeVisible();
   await page.getByLabel('YouTube title').fill('Short');

@@ -202,33 +202,51 @@ export function HabitSummary({
   );
 }
 
-/**
- * Badge unlock: a short toast right where it happened (after a kept take, or a save), shown
- * once. Badges never sit on Home as a card. Motion is CSS only and off under reduced motion.
- */
-export function BadgeToast() {
+/** The badge on show, kept for its 5 seconds so a screen opened meanwhile can still show it. */
+let shown: { id: BadgeId; until: number } | null = null;
+function useShownBadge(): BadgeId | null {
   const [id, setId] = useState<BadgeId | null>(null);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const show = (event: Event) => {
+    const sync = () => {
+      clearTimeout(timer);
+      const left = shown ? shown.until - Date.now() : 0;
+      setId(left > 0 ? shown!.id : null);
+      if (left > 0) timer = setTimeout(sync, left);
+    };
+    sync();
+    addEventListener('studio-badge-show', sync);
+    return () => {
+      removeEventListener('studio-badge-show', sync);
+      clearTimeout(timer);
+    };
+  }, []);
+  return id;
+}
+
+/**
+ * Badge unlock: a short toast right where it happened (after a kept take, or a save), shown
+ * once. Badges never sit on Home as a card. Motion is CSS only and off under reduced motion.
+ * Where a header has room (the editor), the toast steps aside for a small chip there.
+ */
+export function BadgeToast({ docked = false }: { docked?: boolean }) {
+  useEffect(() => {
+    const unlocked = (event: Event) => {
       const badge = (event as CustomEvent<BadgeId>).detail;
       void loadSettings().then((settings) => {
         if (!settings.habit.badgesEnabled || !BADGES[badge]) return;
         void markBadgeSeen(badge);
-        setId(badge);
-        clearTimeout(timer);
-        timer = setTimeout(() => setId(null), 5000);
+        shown = { id: badge, until: Date.now() + 5000 };
+        dispatchEvent(new Event('studio-badge-show'));
       });
     };
-    addEventListener('studio-badge-unlocked', show);
-    return () => {
-      removeEventListener('studio-badge-unlocked', show);
-      clearTimeout(timer);
-    };
+    addEventListener('studio-badge-unlocked', unlocked);
+    return () => removeEventListener('studio-badge-unlocked', unlocked);
   }, []);
+  const id = useShownBadge();
   return (
     <div class="studio-toast-region" aria-live="polite" aria-atomic="true">
-      {id && (
+      {id && !docked && (
         <p class="studio-toast studio-celebration">
           <span class="studio-celebration__burst" aria-hidden="true">
             <Icon name="star" size={20} />
@@ -239,6 +257,22 @@ export function BadgeToast() {
         </p>
       )}
     </div>
+  );
+}
+
+/** The editor's badge: a small star chip beside "Saved", clear of every control. */
+export function BadgeChip() {
+  const id = useShownBadge();
+  return (
+    <span class="studio-badge-chip-region" aria-live="polite" aria-atomic="true">
+      {id && (
+        <span class="studio-badge-chip" title={`${BADGES[id].label} badge unlocked`}>
+          <Icon name="star" size={14} />
+          {BADGES[id].label}
+          <span class="studio-visually-hidden"> badge unlocked</span>
+        </span>
+      )}
+    </span>
   );
 }
 

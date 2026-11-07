@@ -329,14 +329,14 @@
 }
 .prompter-content h2 {
   font-size: 0.75em;
-  color: #ffe066;
+  color: #8a8a8f;
   margin: 0.3em 0;
 }
 .prompter-chip {
   font-size: 0.55em;
   padding: 2px 6px;
   border-radius: 5px;
-  background: #e4492e;
+  background: rgba(255, 255, 255, 0.2);
   color: #fff;
   white-space: nowrap;
 }
@@ -347,10 +347,8 @@
   right: 0;
   top: 30%;
   height: 1.35em;
-  background: rgba(228, 73, 46, 0.18);
-  border-top: 1px solid #e4492e;
-  border-bottom: 1px solid #e4492e;
-  z-index: 1;
+  background: rgba(255, 255, 255, 0.09);
+  z-index: 0;
 }
 .record-timer {
   position: absolute;
@@ -367,10 +365,10 @@
   bottom: 0;
   left: 0;
   height: 3px;
-  background: #e4492e;
+  background: rgba(244, 241, 234, 0.6);
 }
 .target-progress.over {
-  background: #ffbe45;
+  background: #ff4d4d;
 }
 .record-controls {
   position: absolute;
@@ -775,18 +773,18 @@
 }
 .prompter-cue-band.cue-line {
   height: 2px;
-  background: #ffe066;
+  background: rgba(244, 241, 234, 0.5);
 }
 .prompter-cue-band.cue-arrow {
   height: 0;
-  border-top: 2px solid #ffe066;
+  border-top: 2px solid rgba(244, 241, 234, 0.5);
 }
 .prompter-cue-band.cue-arrow::before {
   content: '▶';
   position: absolute;
   left: 0;
   top: -12px;
-  color: #ffe066;
+  color: #f4f1ea;
 }
 .record-screen-light {
   position: absolute;
@@ -829,7 +827,7 @@
 .record-level-meter span {
   display: block;
   height: 100%;
-  background: #67d283;
+  background: #f4f1ea;
   border-radius: inherit;
 }
 .record-level-meter i {
@@ -839,33 +837,27 @@
   height: 16px;
   background: white;
 }
-.record-clip {
-  position: absolute;
-  z-index: 4;
-  left: 135px;
-  bottom: 150px;
-  color: #fff;
-  background: #b32419;
-  padding: 3px;
-}
+/* Readiness warnings sit in the meter row, under the prompter and over the shutter row, as a
+   glyph and one word each, so they can never cover the line being read. */
 .readiness-chips {
-  position: absolute;
-  z-index: 4;
-  top: 75px;
-  left: 8px;
-  right: 8px;
   display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
   pointer-events: none;
 }
-.readiness-chips span {
-  background: #35291e;
-  color: #fff;
-  border: 1px solid #ffc571;
-  border-radius: 12px;
-  padding: 4px 8px;
-  font-size: 0.75rem;
+.readiness-chips > span {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(10, 10, 11, 0.72);
+  color: #f4f1ea;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 .record-touch-lock {
   position: absolute;
@@ -1979,7 +1971,7 @@ ol.studio-row-list .studio-row__title::before {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 16px;
+  min-height: 22px;
   padding: 0 8px;
 }
 .record-screen .record-level-meter {
@@ -1993,12 +1985,12 @@ ol.studio-row-list .studio-row__title::before {
   top: -3px;
   height: 12px;
 }
-.record-screen .record-clip {
-  position: static;
-  padding: 1px 6px;
-  border-radius: 999px;
-  font-size: 0.6875rem;
-  font-weight: 700;
+/* Clipping turns the meter tip red; there is no separate badge. */
+.record-screen .record-level-meter.is-clipping i {
+  background: #ff4d4d;
+}
+.record-screen .record-level-meter.is-clipping span {
+  background: linear-gradient(to right, #f4f1ea 80%, #ff4d4d);
 }
 /* M12 P4: one shutter row of five equal side slots around the shutter, and an Aa tray above it
    for speed, text size, fit and sections. The tray is the only extra layer, and only on demand. */
@@ -2022,6 +2014,7 @@ ol.studio-row-list .studio-row__title::before {
 }
 .record-screen .record-tray {
   display: grid;
+  justify-content: stretch;
   gap: 4px;
   padding: 8px 12px;
   border-radius: 22px;
@@ -2033,17 +2026,18 @@ ol.studio-row-list .studio-row__title::before {
   gap: 8px;
   min-width: 0;
 }
-.record-tray__label {
-  flex: 0 0 40px;
-  color: #8a8a8f;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
 .record-tray__value {
-  min-width: 64px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 72px;
+  font-size: 1.0625rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+.record-tray__value svg {
+  color: #8a8a8f;
 }
 .record-screen .record-tray button {
   min-width: 44px;
@@ -2051,12 +2045,14 @@ ol.studio-row-list .studio-row__title::before {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.14);
 }
-.record-screen .record-tray button[aria-pressed='true'] {
-  background: var(--studio-text, #f4f1ea);
-  color: #0a0a0b;
-}
+/* Fit is a ghost button; on, it gains a thin ring rather than a solid fill. */
 .record-screen .record-tray .record-tray__fit {
   margin-left: auto;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.3);
+}
+.record-screen .record-tray button[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px #f4f1ea;
 }
 .record-screen .record-tray .record-sections {
   flex-wrap: wrap;
@@ -2073,16 +2069,39 @@ ol.studio-row-list .studio-row__title::before {
 .record-screen.controls-dim .record-main-controls:focus-within > * {
   opacity: 1;
 }
-/* Fit to target changed the speed: one short chip says so, opposite the timer. */
-.record-fit-chip {
-  position: absolute;
-  left: 8px;
-  top: 4px;
-  z-index: 2;
-  padding: 3px 8px;
+/* Fit to target changed the speed: the timer's target lights up instead of a chip. */
+.record-timer__target.is-fit {
+  margin-left: 2px;
+  padding: 0 4px;
   border-radius: 999px;
-  background: #222;
-  font-size: 0.8rem;
+  background: rgba(244, 241, 234, 0.2);
+  font-weight: 700;
+}
+/* The live camera fills the screen like Reels; the safe-zone guide shows the true crop. */
+@media (max-width: 1023px) {
+  .record-preview {
+    object-fit: cover;
+  }
+}
+/* The reading band sits behind the words; line 1 stays full contrast and the rest fade. */
+.prompter-scroll {
+  position: relative;
+  z-index: 1;
+}
+.prompter-scroll.has-cue {
+  --fade: rgba(0, 0, 0, 0.5);
+  mask-image: linear-gradient(
+    to bottom,
+    var(--fade) 0,
+    var(--fade) calc(var(--cue-top) - 4px),
+    #000 var(--cue-top),
+    #000 var(--cue-bottom),
+    var(--fade) calc(var(--cue-bottom) + 6px)
+  );
+}
+.prompter-scroll.has-cue.mirror-vertical,
+.prompter-scroll.has-cue.mirror-both {
+  mask-image: none;
 }
 /* Sheets live inside the full-bleed record screen, so they can use its whole height. */
 .sheet-backdrop {
@@ -2257,6 +2276,9 @@ ol.studio-row-list .studio-row__title::before {
 }
 .studio-editor .studio-label textarea {
   min-height: 40dvh;
+}
+.studio-editor .studio-sheet .studio-label textarea {
+  min-height: 96px;
 }
 /* Markup lives behind one Aa button, so the row never clips at 360px (M12 P3). */
 .studio-editor .studio-toolbar {
@@ -2943,4 +2965,119 @@ ol.studio-row-list .studio-row__title::before {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
+}
+
+/* M12 P5: the editor's facts are one quiet line, and the durations one segmented row that
+   scrolls sideways instead of wrapping. */
+.studio-stats-line {
+  margin: 12px 0 0;
+  color: var(--studio-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.studio-target-row {
+  flex-wrap: nowrap;
+  gap: 2px;
+  width: max-content;
+  max-width: 100%;
+  padding: 2px;
+  overflow-x: auto;
+  border-radius: 999px;
+  background: var(--studio-raised);
+  scrollbar-width: none;
+}
+.studio-target-row::-webkit-scrollbar {
+  display: none;
+}
+.studio-target-row .studio-toggle {
+  flex: none;
+  min-width: 52px;
+  border-color: transparent;
+}
+.studio-target-row .studio-target-custom {
+  flex: none;
+}
+.studio-target-row .studio-toggle:not([aria-pressed='true']) {
+  background: transparent;
+}
+.studio-segmented {
+  display: inline-flex;
+  gap: 2px;
+  width: max-content;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--studio-raised);
+}
+.studio-segmented button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 56px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--studio-muted);
+  cursor: pointer;
+}
+.studio-segmented button[aria-checked='true'] {
+  background: var(--studio-text);
+  color: var(--studio-bg);
+}
+.studio-status-field {
+  grid-column: 1 / -1;
+}
+/* In the editor the raised record button carries a tiny visible word for this script. */
+.studio-tabs .studio-record-link.has-tag {
+  gap: 2px;
+}
+.studio-tabs .studio-record-link.has-tag svg {
+  width: 24px;
+  height: 24px;
+}
+.studio-record-link__tag {
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+/* Library: search on its own line, then a few filter chips, one pressed. Row details stay on
+   one line. */
+.studio-filter-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+.studio-filter-chips {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.studio-filter-count {
+  margin-left: 2px;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+.studio-script-card__meta {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* The editor shows a new badge as a small star chip beside "Saved", not a floating toast. */
+.studio-editor__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.studio-badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.studio-settings-nav + .studio-storage {
+  margin-top: 16px;
 }

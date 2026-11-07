@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useLayoutEffect } from 'preact/hooks';
 import { analytics } from '../domain/analytics';
 import { ReminderCard } from './ReminderCard';
+import { StorageChip } from './StorageChip';
 import { openCamera } from '../domain/studio/camera';
 import ProCameraControls from './ProCameraControls';
 import { assignKey } from '../domain/studio/keymap';
@@ -563,6 +564,7 @@ export default function SettingsScreen({ section }: { section?: string | undefin
             </a>
           ))}
         </nav>
+        <StorageChip />
       </section>
     );
   return (

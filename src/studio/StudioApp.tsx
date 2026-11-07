@@ -28,7 +28,7 @@ import { readabilityWarning } from '../domain/studio/words';
 import { isMemoryStorage } from '../domain/studio/db';
 import { moveInQueue, upNext, setUpNext } from '../domain/studio/queue';
 import BatchScreen from './BatchScreen';
-import { limits, verifiedOn } from '../content/studio/platformFacts';
+import { limits } from '../content/studio/platformFacts';
 import { TemplatePicker, HookPicker, IdeasInbox, createFromTemplate } from './CreatorTools';
 import { SendToPhone, ReceiveScreen } from './SendReceive';
 import { isStandaloneDisplay } from '../domain/studio/install';
@@ -40,6 +40,7 @@ import OperatorWindow from './OperatorWindow';
 import { PrintableScript, useEditorBroadcast, useScriptImport } from './ScriptTools';
 import { openOperatorWindow } from '../domain/studio/operator';
 import { Icon, type IconName } from './Icons';
+import { Sheet } from './Sheet';
 import RecordScreen from './RecordScreen';
 import PracticeScreen from './PracticeScreen';
 import SettingsScreen from './SettingsScreen';
@@ -49,6 +50,7 @@ import { readHabits } from '../domain/studio/habits';
 import { readStreak } from '../domain/studio/streak';
 import InstallSheet from './InstallSheet';
 import {
+  BadgeChip,
   BadgeToast,
   ChallengeScreen,
   HabitProgress,
@@ -303,7 +305,7 @@ function StudioApp(): preact.JSX.Element {
   return (
     <div class={showsTabs(route, cameraLive) ? 'studio-shell' : 'studio-shell is-full-bleed'}>
       <ServiceWorkerUpdate hidden={route.screen === 'record'} />
-      <BadgeToast />
+      <BadgeToast docked={route.screen === 'editor'} />
       <InstallSheet recording={route.screen === 'record' || !!presetChoice} />
       {presetChoice && (
         <div class="studio-preset-backdrop" role="presentation">
@@ -438,14 +440,25 @@ function Tabs({ route, scripts }: { route: Route; scripts: StudioScript[] }) {
     <nav class="studio-tabs" aria-label="Studio navigation">
       {tabItems(route, scripts).map((tab) => (
         <a
-          class={[tab.id === 'record' ? 'studio-record-link' : '', tab.current ? 'is-active' : '']
+          class={[
+            tab.id === 'record' ? 'studio-record-link' : '',
+            tab.label === 'Record this script' ? 'has-tag' : '',
+            tab.current ? 'is-active' : '',
+          ]
             .filter(Boolean)
             .join(' ')}
           href={tab.href}
+          aria-label={tab.id === 'record' ? tab.label : undefined}
           aria-current={tab.current ? 'page' : undefined}
         >
           <Icon name={TAB_ICONS[tab.id]} />
           <span class={tab.id === 'record' ? 'studio-visually-hidden' : ''}>{tab.label}</span>
+          {/* In the editor, a tiny visible word ties the button to this script. */}
+          {tab.id === 'record' && tab.label === 'Record this script' && (
+            <span class="studio-record-link__tag" aria-hidden="true">
+              Record
+            </span>
+          )}
         </a>
       ))}
     </nav>
@@ -644,20 +657,21 @@ function Scripts({
           onInput={(event) => setQuery((event.target as HTMLInputElement).value)}
           placeholder="Search scripts"
         />
-        <select
-          aria-label="Status"
-          value={status}
-          onChange={(event) =>
-            setStatus((event.target as HTMLSelectElement).value as typeof status)
-          }
-        >
-          <option value="all">All ({scripts.length})</option>
-          <option value="idea">Idea ({statusCount('idea')})</option>
-          <option value="draft">Draft ({statusCount('draft')})</option>
-          <option value="ready">Ready ({statusCount('ready')})</option>
-          <option value="recorded">Recorded ({statusCount('recorded')})</option>
-          <option value="posted">Posted ({statusCount('posted')})</option>
-        </select>
+      </div>
+      <div class="studio-filter-chips" role="group" aria-label="Filter scripts">
+        {LIBRARY_FILTERS.map(([value, label]) => (
+          <button
+            type="button"
+            class="studio-toggle"
+            aria-pressed={status === value}
+            onClick={() => setStatus(value)}
+          >
+            {label}{' '}
+            <span class="studio-filter-count">
+              {value === 'all' ? scripts.length : statusCount(value)}
+            </span>
+          </button>
+        ))}
       </div>
       <p
         class="studio-visually-hidden"
@@ -715,6 +729,20 @@ function Scripts({
     </section>
   );
 }
+/** Two or three chips cover the library: everything, ready to shoot, and already posted. */
+const LIBRARY_FILTERS: Array<['all' | ScriptStatus, string]> = [
+  ['all', 'All'],
+  ['ready', 'Ready'],
+  ['posted', 'Posted'],
+];
+/** "Today", "Yesterday", or a short date such as "Nov 4", so a row's details stay on one line. */
+function shortDate(time: number): string {
+  const day = (value: number) => new Date(value).setHours(0, 0, 0, 0);
+  const days = Math.round((day(Date.now()) - day(time)) / 86_400_000);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  return new Date(time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 const STATUS_LABELS: Record<ScriptStatus, string> = {
   idea: 'Idea',
   draft: 'Draft',
@@ -747,13 +775,12 @@ function ScriptCard({
   }, [confirming]);
   const title = script.title || 'Untitled script';
   const words = parseMarkup(script.body).spokenWordCount;
-  // Non-breaking spaces keep each detail whole, so lines only break between details.
   const details = [
-    `${words}\u00a0words`,
+    `${words} words`,
     FORMAT(durationAtWpm(words, 140)),
     STATUS_LABELS[script.status],
-    `Updated\u00a0${new Date(script.updatedAt).toLocaleDateString()}`,
-  ].join('\u00a0· ');
+    shortDate(script.updatedAt),
+  ].join(' · ');
   return (
     <article class="studio-script-card">
       <a class="studio-script-card__main" href={`#/scripts/${script.id}`}>
@@ -815,6 +842,7 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
   const [operatorOn, setOperatorOn] = useState(false);
   const [notice, setNotice] = useState('');
   const [customTarget, setCustomTarget] = useState(false);
+  const [captionsOpen, setCaptionsOpen] = useState(false);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const currentRef = useRef<StudioScript | null>(null);
   const pendingRef = useRef(false);
@@ -925,7 +953,10 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
       </a>
       <div class="studio-screen-heading">
         <h1>Editor</h1>
-        <span aria-live="polite">{saved}</span>
+        <span class="studio-editor__status">
+          <BadgeChip />
+          <span aria-live="polite">{saved}</span>
+        </span>
       </div>
       <label class="studio-label">
         Title
@@ -983,10 +1014,14 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
         </div>
       </div>
       <HookPicker insert={insert} />
-      <div class="studio-stats">
-        <span>{parsed.spokenWordCount} spoken words</span>
-        <span>{FORMAT(durationAtWpm(parsed.spokenWordCount, 140))} at 140 WPM</span>
-      </div>
+      {/* One quiet line of facts; only the duration row below is tappable. */}
+      <p class="studio-stats-line">
+        {[
+          `${parsed.spokenWordCount} words`,
+          FORMAT(durationAtWpm(parsed.spokenWordCount, 140)),
+          ...sections.map((section) => `${section.title} ${FORMAT(section.seconds)}`),
+        ].join(' · ')}
+      </p>
       <div class="studio-target-row" role="group" aria-label="Target length">
         {TARGET_CHIPS.map((target) => (
           <button
@@ -1027,15 +1062,6 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
           </button>
         )}
       </div>
-      {sections.length > 0 && (
-        <div class="studio-section-durations">
-          {sections.map((section) => (
-            <span>
-              {section.title}: {FORMAT(section.seconds)}
-            </span>
-          ))}
-        </div>
-      )}
       {readabilityWarning(parsed.spokenText) && (
         <p class="studio-warning">One or more sentences are longer than 25 words.</p>
       )}
@@ -1066,27 +1092,11 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
               ))}
             </span>
           </div>
-          <label class="studio-label">
-            Status
-            <select
-              value={script.status}
-              onChange={(event) =>
-                edit({
-                  ...script,
-                  status: (event.target as HTMLSelectElement).value as ScriptStatus,
-                })
-              }
-            >
-              <option value="idea">Idea</option>
-              <option value="draft">Draft</option>
-              <option value="ready">Ready</option>
-              <option value="recorded">Recorded</option>
-              <option value="posted">Posted</option>
-            </select>
-          </label>
+          <StatusToggle value={script.status} onChange={(status) => edit({ ...script, status })} />
         </div>
-        <section class="studio-card">
-          <h2>Captions and title</h2>
+      </details>
+      {captionsOpen && (
+        <Sheet title="Captions" onClose={() => setCaptionsOpen(false)}>
           <CountedField
             label="Instagram caption"
             multiline
@@ -1122,9 +1132,8 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
             unit="characters"
             onInput={(youtubeDescription) => edit({ ...script, youtubeDescription })}
           />
-          <p>Platform facts checked {verifiedOn}. Limits can change.</p>
-        </section>
-      </details>
+        </Sheet>
+      )}
       {showSend && <SendToPhone script={script} />}
       {(notice || importer.status) && <p role="status">{notice || importer.status}</p>}
       {importer.element}
@@ -1135,6 +1144,9 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
           <Icon name="play" size={20} /> Practice
         </a>
         <Overflow label="More script actions" up>
+          <button onClick={() => setCaptionsOpen(true)}>
+            <Icon name="captions" size={18} /> Captions
+          </button>
           <button onClick={() => void flush().then(() => setShowSend(!showSend))}>
             <Icon name="phone" size={18} /> Send to phone
           </button>
@@ -1179,6 +1191,50 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
     </section>
   );
 }
+const STATUS_OPTIONS: Array<{ value: ScriptStatus; label: string; icon: IconName }> = [
+  { value: 'draft', label: 'Draft', icon: 'pencil' },
+  { value: 'ready', label: 'Ready', icon: 'check' },
+  { value: 'posted', label: 'Posted', icon: 'share' },
+];
+/** Three icon segments with radio semantics: arrows move the choice, one tab stop. */
+function StatusToggle({
+  value,
+  onChange,
+}: {
+  value: ScriptStatus;
+  onChange: (status: ScriptStatus) => void;
+}) {
+  const current = STATUS_OPTIONS.findIndex((option) => option.value === value);
+  return (
+    <div class="studio-label studio-status-field">
+      <span id="studio-status-label">Status</span>
+      <div class="studio-segmented" role="radiogroup" aria-labelledby="studio-status-label">
+        {STATUS_OPTIONS.map((option, index) => (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={value === option.value}
+            aria-label={option.label}
+            title={option.label}
+            tabIndex={index === Math.max(0, current) ? 0 : -1}
+            onClick={() => onChange(option.value)}
+            onKeyDown={(event) => {
+              const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+              if (!step) return;
+              event.preventDefault();
+              const next = (index + step + STATUS_OPTIONS.length) % STATUS_OPTIONS.length;
+              onChange(STATUS_OPTIONS[next]!.value);
+              const group = event.currentTarget.parentElement;
+              (group?.children[next] as HTMLElement | undefined)?.focus();
+            }}
+          >
+            <Icon name={option.icon} size={20} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 function CountedField({
   label,
   value,
@@ -1213,7 +1269,7 @@ function CountedField({
       </label>
       <p id={hintId} class={over ? 'studio-count is-over' : 'studio-count'}>
         {count}/{limit} {unit}
-        {over ? `. ${count - limit} over the limit.` : ''} {note}
+        {over ? `. ${count - limit} over the limit.` : note ? '.' : ''} {note}
       </p>
     </div>
   );

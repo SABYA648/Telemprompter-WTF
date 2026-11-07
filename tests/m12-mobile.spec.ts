@@ -253,7 +253,7 @@ for (const viewport of [
   });
 }
 
-test('Takes leads with a storage chip and a one-line tip that stays dismissed', async ({
+test('Takes leads with a one-line Save to Photos tip; the storage chip lives in Settings', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 360, height: 780 });
@@ -281,12 +281,15 @@ test('Takes leads with a storage chip and a one-line tip that stays dismissed', 
   });
   await page.reload();
   const chip = page.getByRole('img', { name: /used · about \d+ min left at 1080p/ });
-  await expect(chip).toBeVisible();
-  await expect(chip).toHaveText(/^\S+ \S?B · ~\d+ min$/);
+  await expect(chip).toHaveCount(0);
   await expect(page.locator('meter')).toHaveCount(0);
-  const tip = page.getByRole('note', { name: 'Save to Photos — browser storage can clear' });
+  const tip = page.getByRole('note', { name: 'Save to Photos. Browser storage can clear.' });
   await expect(tip).toBeVisible();
+  await expect(tip.locator('svg').first()).toBeVisible();
   const text = tip.locator('.studio-tip__text');
+  // Short and whole: no dash, nothing cut off.
+  await expect(text).toHaveText('Save to Photos');
+  expect(await text.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
   // One line, never wrapped: shorter than two lines of its own font size.
   const fontSize = await text.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
   expect((await text.boundingBox())!.height).toBeLessThan(fontSize * 2.2);
@@ -296,6 +299,72 @@ test('Takes leads with a storage chip and a one-line tip that stays dismissed', 
   await close.click();
   await expect(tip).toHaveCount(0);
   await page.reload();
-  await expect(chip).toBeVisible();
+  await expect(page.locator('h1')).toHaveText('Takes');
   await expect(page.getByRole('note')).toHaveCount(0);
+  await page.goto('/studio#/settings');
+  await expect(chip).toBeVisible();
+  await expect(chip).toHaveText(/^\S+ \S?B · ~\d+ min$/);
+});
+
+for (const width of [360, 390]) {
+  test(`the editor's durations are one row, its facts one quiet line, its badge a chip at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('/studio#/scripts/new');
+    await page.getByLabel('Title', { exact: true }).fill('Durations');
+    await page
+      .getByLabel('Script', { exact: true })
+      .fill('# Hook\nI film seven videos in two hours.\n# Body\nHere is the system.');
+    await expect(page.getByText('Saved')).toBeVisible();
+    // Five durations and the custom timer share one line that never wraps.
+    const row = page.getByRole('group', { name: 'Target length' });
+    const tops = await row
+      .locator(':scope > *')
+      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+    expect(tops).toHaveLength(6);
+    expect(new Set(tops).size).toBe(1);
+    const box = (await row.boundingBox())!;
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
+    // Facts read as one muted line with no pill backgrounds.
+    const stats = page.locator('.studio-stats-line');
+    await expect(stats).toHaveText('11 words · 0:05 · Hook 0:03 · Body 0:02');
+    expect(await stats.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+      'rgba(0, 0, 0, 0)',
+    );
+    await expect(stats.locator('span')).toHaveCount(0);
+    // While editing, the nav record button shows a tiny visible word.
+    const record = page
+      .getByRole('navigation', { name: 'Studio navigation' })
+      .getByRole('link', { name: 'Record this script' });
+    await expect(record.locator('.studio-record-link__tag')).toHaveText('Record');
+    await expect(record.locator('.studio-record-link__tag')).toBeVisible();
+    // A badge earned here is a star chip by "Saved", never a toast over the form.
+    await page.evaluate(() =>
+      dispatchEvent(new CustomEvent('studio-badge-unlocked', { detail: 'first_take' })),
+    );
+    const chip = page.locator('.studio-screen-heading .studio-badge-chip');
+    await expect(chip).toContainText('First take');
+    await expect(chip.locator('svg')).toHaveCount(1);
+    await expect(page.locator('.studio-toast')).toHaveCount(0);
+    // Leaving the editor while it shows hands it back to the low toast.
+    await page.goto('/studio#/takes');
+    await expect(page.locator('.studio-toast')).toContainText('First take badge unlocked');
+  });
+}
+
+test('library rows keep their details on one line with a short date', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto('/studio#/scripts/new');
+  await page
+    .getByLabel('Title', { exact: true })
+    .fill('How I film a whole week of short videos in one Sunday afternoon');
+  await page.getByLabel('Script', { exact: true }).fill('One two three four five.');
+  await expect(page.getByText('Saved')).toBeVisible();
+  await page.goto('/studio#/scripts');
+  const meta = page.locator('.studio-script-card__meta').first();
+  await expect(meta).toHaveText(/ · Today$/);
+  const fontSize = await meta.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  expect((await meta.boundingBox())!.height).toBeLessThan(fontSize * 2.2);
+  expect(await meta.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
 });

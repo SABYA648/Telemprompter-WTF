@@ -4,36 +4,13 @@ import { exportTake, exportTakes, sizeBucket } from '../domain/studio/exportTake
 import { parseMarkup } from '../domain/studio/markup';
 import { getScript } from '../domain/studio/scriptsRepo';
 import { deleteTake, getTake, listTakes, saveTake, takeBlob } from '../domain/studio/takesRepo';
-import { formatBytes, minutesLeft, storageEstimate } from '../domain/studio/storage';
 import type { StudioScript, StudioTake } from '../domain/studio/types';
-import { videoBitrate } from '../domain/studio/mime';
 import { Icon } from './Icons';
 import { Overflow } from './Overflow';
 import { TakeToolSheet, type TakeTool } from './TakeTools';
+import { useStorageEstimate } from './StorageChip';
+import { formatBytes } from '../domain/studio/storage';
 
-function StorageChip() {
-  const [estimate, setEstimate] = useState({ usage: 0, quota: 0 });
-  useEffect(() => {
-    void storageEstimate().then((value) => {
-      setEstimate(value);
-      if (value.quota > 0) {
-        const usage = value.usage / value.quota;
-        if (usage >= 0.95) analytics.track('storage_warning', { level: 95 });
-        else if (usage >= 0.8) analytics.track('storage_warning', { level: 80 });
-      }
-    });
-  }, []);
-  if (!estimate.quota) return null;
-  const used = formatBytes(estimate.usage);
-  const minutes = minutesLeft(estimate.quota - estimate.usage, videoBitrate('1080p', 30, 'high'));
-  const detail = `${used} used · about ${minutes} min left at 1080p`;
-  return (
-    <p class="studio-storage" role="img" aria-label={detail} title={detail}>
-      <Icon name="storage" size={16} />
-      {used} · ~{minutes} min
-    </p>
-  );
-}
 const SAVE_TIP_KEY = 'studio.saveTipDismissed';
 /** One line, dismissed for good: unsaved takes live only in browser storage. */
 function SaveTip() {
@@ -45,13 +22,10 @@ function SaveTip() {
     }
   });
   if (hidden) return null;
-  const text = 'Save to Photos — browser storage can clear';
   return (
-    <div class="studio-tip" role="note" aria-label={text}>
+    <div class="studio-tip" role="note" aria-label="Save to Photos. Browser storage can clear.">
       <Icon name="share" size={18} />
-      <span class="studio-tip__text" title={text}>
-        {text}
-      </span>
+      <span class="studio-tip__text">Save to Photos</span>
       <button
         class="studio-tip__close"
         aria-label="Dismiss tip"
@@ -220,6 +194,8 @@ export function TakesScreen() {
   const [titles, setTitles] = useState<Record<string, string>>({});
   const [sectionTitles, setSectionTitles] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState('');
+  // The storage chip lives in Settings; Takes still reports a nearly full device.
+  useStorageEstimate(true);
   const refresh = async () => {
     const rows = (await listTakes()).filter((t) => t.kept || t.status === 'recovered');
     setTakes(rows);
@@ -263,7 +239,6 @@ export function TakesScreen() {
   return (
     <section class="studio-screen">
       <h1>Takes</h1>
-      <StorageChip />
       {takes.some((take) => !take.exportedAt) && <SaveTip />}
       {!takes.length && <p class="studio-muted">No takes yet. Tap the camera to record one.</p>}
       {message && <p role="status">{message}</p>}

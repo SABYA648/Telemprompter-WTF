@@ -237,7 +237,7 @@ test('an editor target edit ends the preset target in Record and Practice', asyn
   // The YouTube preset has an open duration, so Record uses the saved speed, not a fit.
   await page.getByRole('button', { name: 'Prompter controls' }).click();
   await expect(page.getByText('140 WPM')).toBeVisible();
-  await expect(page.locator('.record-fit-chip')).toHaveCount(0);
+  await expect(page.locator('.record-timer .is-fit')).toHaveCount(0);
   // Practice reads the same target as Record. At 140 WPM, 150 words project to 64 seconds.
   const practiceFit = async (fit: string) => {
     await page.goto('/studio#/practice/quick');
@@ -264,7 +264,8 @@ test('an editor target edit ends the preset target in Record and Practice', asyn
   expect(await page.evaluate(() => sessionStorage.getItem('studio.sessionTarget'))).toBeNull();
   await page.goto('/studio#/record/quick');
   // 150 spoken words over a 60 second target, and the camera says why it is not 140.
-  await expect(page.getByText('Fits 1:00')).toBeVisible();
+  await expect(page.locator('.record-timer .is-fit')).toHaveText('/ 1:00');
+  await expect(page.getByText('Speed fits 1:00')).toHaveCount(1);
   await page.getByRole('button', { name: 'Prompter controls' }).click();
   await expect(page.getByText('150 WPM')).toBeVisible();
   await practiceFit('On target');

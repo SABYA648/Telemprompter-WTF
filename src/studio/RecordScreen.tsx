@@ -49,7 +49,7 @@ import {
   orientationReadiness,
 } from '../domain/studio/readiness';
 import ProCameraControls from './ProCameraControls';
-import { Icon } from './Icons';
+import { Icon, type IconName } from './Icons';
 import { TakeRating } from './HabitUI';
 import { SAFE_ZONES } from '../content/studio/platformFacts';
 import { SettingsFields } from './SettingsScreen';
@@ -71,6 +71,23 @@ const lengthBucket = (ms: number) =>
             : ms < 600000
               ? '3_10m'
               : '10m_plus';
+/** Readiness warnings show as a glyph and one word in the meter row; the sentence stays for
+ * screen readers, so a warning never sits over the line being read. */
+const CHIP_GLYPHS: [prefix: string, icon: IconName, word: string][] = [
+  ['Too loud', 'mic', 'Too loud'],
+  ['Room sounds noisy', 'mic', 'Noisy'],
+  ['Mic is very quiet', 'mic', 'Quiet'],
+  ['Add light', 'sun', 'Dark'],
+  ['Bright light', 'sun', 'Backlit'],
+  ['Rotate to', 'rotate', 'Rotate'],
+  ['Battery low', 'battery', 'Battery'],
+  ['Not enough space', 'storage', 'Full'],
+  ['Less than 10 minutes', 'storage', 'Space'],
+];
+const chipGlyph = (message: string): [IconName, string] => {
+  const found = CHIP_GLYPHS.find(([prefix]) => message.startsWith(prefix));
+  return found ? [found[1], found[2]] : ['check', message];
+};
 const numberBucket = (n: number) => (n === 1 ? '1' : n === 2 ? '2' : n <= 5 ? '3_5' : '6_plus');
 const progressBucket = (n: number) =>
   n < 0.25 ? '0_25' : n < 0.5 ? '25_50' : n < 0.75 ? '50_75' : n < 0.95 ? '75_95' : '95_100';
@@ -122,6 +139,9 @@ export default function RecordScreen({
   const [controlsOpen, setControlsOpen] = useState(false);
   /** The safe-zone frame peeks after the camera opens or the zone changes, then gets out of the way. */
   const [guidePeek, setGuidePeek] = useState(true);
+  /** Where the camera frame lands on screen. The preview covers the viewport, so the frame can
+   * run past its edges; the safe-zone guide is laid over the true frame, not the viewport. */
+  const [frame, setFrame] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
   const [sectionMode, setSectionMode] = useState(false);
   const sectionEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -189,6 +209,28 @@ export default function RecordScreen({
   const fitted = Boolean(
     targetSeconds && settings.prompter.fitToTarget && wpm !== settings.prompter.wpm,
   );
+  /** The platform's safe zone over the recorded frame, clipped to the screen and the shutter row. */
+  const safeZoneStyle = (zone: { top: number; bottom: number; left: number; right: number }) => {
+    const box = video.current?.parentElement;
+    if (!frame || !box) {
+      return {
+        top: `${zone.top}%`,
+        bottom: `max(${zone.bottom}%, calc(env(safe-area-inset-bottom) + 152px))`,
+        left: `${zone.left}%`,
+        right: `${zone.right}%`,
+      };
+    }
+    const top = Math.max(0, frame.y + (frame.h * zone.top) / 100);
+    const left = Math.max(0, frame.x + (frame.w * zone.left) / 100);
+    const right = Math.max(0, box.clientWidth - (frame.x + frame.w * (1 - zone.right / 100)));
+    const bottom = Math.max(0, box.clientHeight - (frame.y + frame.h * (1 - zone.bottom / 100)));
+    return {
+      top: `${top}px`,
+      bottom: `max(${bottom}px, calc(env(safe-area-inset-bottom) + 152px))`,
+      left: `${left}px`,
+      right: `${right}px`,
+    };
+  };
   const updateSettings = (next: StudioSettings, key: string) => {
     setSettings(next);
     void saveSettings(next);
@@ -308,6 +350,32 @@ export default function RecordScreen({
       video.current.srcObject = stream;
       void video.current.play().catch(() => undefined);
     }
+  }, [stream, permission]);
+  useEffect(() => {
+    const el = video.current;
+    if (!stream || !el) return;
+    const measure = () => {
+      if (!el.videoWidth || !el.videoHeight) return;
+      const pick = getComputedStyle(el).objectFit === 'cover' ? Math.max : Math.min;
+      const scale = pick(el.clientWidth / el.videoWidth, el.clientHeight / el.videoHeight);
+      const w = el.videoWidth * scale;
+      const h = el.videoHeight * scale;
+      setFrame({
+        x: el.offsetLeft + (el.clientWidth - w) / 2,
+        y: el.offsetTop + (el.clientHeight - h) / 2,
+        w,
+        h,
+      });
+    };
+    measure();
+    el.addEventListener('loadedmetadata', measure);
+    el.addEventListener('resize', measure);
+    addEventListener('resize', measure);
+    return () => {
+      el.removeEventListener('loadedmetadata', measure);
+      el.removeEventListener('resize', measure);
+      removeEventListener('resize', measure);
+    };
   }, [stream, permission]);
   useEffect(() => {
     if (!stream) return;
@@ -1210,12 +1278,7 @@ export default function RecordScreen({
         <div
           class="record-safe-zone"
           aria-hidden="true"
-          style={{
-            top: `${SAFE_ZONES[settings.camera.safeZone].top}%`,
-            bottom: `max(${SAFE_ZONES[settings.camera.safeZone].bottom}%, calc(env(safe-area-inset-bottom) + 152px))`,
-            left: `${SAFE_ZONES[settings.camera.safeZone].left}%`,
-            right: `${SAFE_ZONES[settings.camera.safeZone].right}%`,
-          }}
+          style={safeZoneStyle(SAFE_ZONES[settings.camera.safeZone])}
         />
       )}
       {hasScript && (
@@ -1226,6 +1289,9 @@ export default function RecordScreen({
             background: `rgba(0,0,0,${settings.prompter.scrimOpacity})`,
             color: settings.prompter.textColor,
             height: `${font * settings.prompter.lineHeight * windowLines}px`,
+            // The reading line: full contrast inside it, the lines around it fade.
+            '--cue-top': `${font * settings.prompter.lineHeight * windowLines * settings.prompter.cuePosition}px`,
+            '--cue-bottom': `${font * settings.prompter.lineHeight * (windowLines * settings.prompter.cuePosition + 1)}px`,
           }}
           onPointerDown={(e) => {
             dragY.current = e.clientY;
@@ -1245,13 +1311,19 @@ export default function RecordScreen({
             }
           }}
         >
-          {fitted && <span class="record-fit-chip">Fits {formatTime(targetMs)}</span>}
+          {fitted && <span class="studio-visually-hidden">Speed fits {formatTime(targetMs)}</span>}
           {(settings.prompter.showElapsed || settings.prompter.showRemaining) && (
             <span class="record-timer">
               {settings.prompter.showElapsed ? formatTime(elapsed) : ''}
-              {targetMs && settings.prompter.showRemaining
-                ? ` / ${formatTime(Math.max(0, targetMs - elapsed))}`
-                : ''}
+              {targetMs && settings.prompter.showRemaining ? (
+                // Fit to target tints the target, so no separate chip repeats it.
+                <span class={fitted ? 'record-timer__target is-fit' : 'record-timer__target'}>
+                  {' / '}
+                  {formatTime(Math.max(0, targetMs - elapsed))}
+                </span>
+              ) : (
+                ''
+              )}
             </span>
           )}
           {settings.prompter.cueStyle !== 'off' && (
@@ -1268,7 +1340,7 @@ export default function RecordScreen({
           )}
           <div
             ref={scroller}
-            class={`prompter-scroll mirror-${settings.prompter.mirrorText}`}
+            class={`prompter-scroll mirror-${settings.prompter.mirrorText} ${settings.prompter.cueStyle !== 'off' ? 'has-cue' : ''}`}
             style={{
               textAlign: settings.prompter.align,
               fontFamily:
@@ -1324,13 +1396,6 @@ export default function RecordScreen({
         />
       )}
       {settings.camera.level && <LevelOverlay />}
-      {!!chips.length && (
-        <div class="readiness-chips" aria-live="polite">
-          {chips.map((message) => (
-            <span>{message}</span>
-          ))}
-        </div>
-      )}
       {countdown !== null && (
         <div class="record-countdown" aria-live="assertive">
           {countdown}
@@ -1339,7 +1404,11 @@ export default function RecordScreen({
       <div class="record-controls">
         <div class="record-meter-row">
           <div
-            class="record-level-meter"
+            class={
+              level.peak >= Math.pow(10, -1 / 20)
+                ? 'record-level-meter is-clipping'
+                : 'record-level-meter'
+            }
             role="meter"
             aria-label="Microphone level"
             aria-valuemin={-60}
@@ -1357,16 +1426,32 @@ export default function RecordScreen({
               }}
             />
           </div>
-          {level.peak >= Math.pow(10, -1 / 20) && <span class="record-clip">CLIP</span>}
+          {!!chips.length && (
+            <div class="readiness-chips" aria-live="polite">
+              {chips.map((message) => {
+                const [icon, word] = chipGlyph(message);
+                return (
+                  <span title={message}>
+                    <Icon name={icon} size={14} />
+                    <span aria-hidden="true">{word}</span>
+                    <span class="studio-visually-hidden">{message}</span>
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
         {controlsOpen && (
           <div id="record-tray" class="record-tray" role="group" aria-label="Prompter controls">
-            <div class="record-tray__row">
-              <span class="record-tray__label">Speed</span>
+            <div class="record-tray__row" role="group" aria-label="Speed">
               <button onClick={() => setSpeed(wpm - 5)} aria-label="Slower">
                 −
               </button>
-              <span class="record-tray__value">{wpm} WPM</span>
+              <span class="record-tray__value">
+                <Icon name="gauge" size={16} />
+                {wpm}
+                <span class="studio-visually-hidden"> WPM</span>
+              </span>
               <button onClick={() => setSpeed(wpm + 5)} aria-label="Faster">
                 +
               </button>
@@ -1385,15 +1470,17 @@ export default function RecordScreen({
                   );
                 }}
               >
-                <Icon name="fit" />
+                <Icon name="timer-check" />
               </button>
             </div>
-            <div class="record-tray__row">
-              <span class="record-tray__label">Text</span>
+            <div class="record-tray__row" role="group" aria-label="Text size">
               <button onClick={() => setFontSize(font - 2)} aria-label="Smaller text">
                 <Icon name="text-smaller" />
               </button>
-              <span class="record-tray__value">{font}</span>
+              <span class="record-tray__value">
+                <Icon name="format" size={16} />
+                {font}
+              </span>
               <button onClick={() => setFontSize(font + 2)} aria-label="Larger text">
                 <Icon name="text-larger" />
               </button>

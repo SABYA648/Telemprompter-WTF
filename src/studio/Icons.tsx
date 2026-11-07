@@ -40,7 +40,14 @@ export type IconName =
   | 'format'
   | 'sliders'
   | 'restart'
-  | 'check';
+  | 'check'
+  | 'mic'
+  | 'sun'
+  | 'battery'
+  | 'rotate'
+  | 'gauge'
+  | 'timer-check'
+  | 'pencil';
 
 const paths: Record<IconName, preact.JSX.Element> = {
   home: (
@@ -225,6 +232,44 @@ const paths: Record<IconName, preact.JSX.Element> = {
   ),
   restart: <path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.7M4 4v4.7h4.7" />,
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
+  mic: (
+    <>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+    </>
+  ),
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </>
+  ),
+  battery: (
+    <>
+      <rect x="2" y="7" width="17" height="10" rx="2" />
+      <path d="M22 11v2M6 10v4" />
+    </>
+  ),
+  rotate: (
+    <>
+      <rect x="8" y="3" width="8" height="13" rx="1.5" />
+      <path d="M4 14a8 8 0 0 0 12.5 6.6M17 21h-1v-1" />
+    </>
+  ),
+  gauge: (
+    <>
+      <path d="M4 18a9 9 0 1 1 16 0" />
+      <path d="m12 14 4-5" />
+      <circle cx="12" cy="14" r="1" />
+    </>
+  ),
+  'timer-check': (
+    <>
+      <circle cx="12" cy="13" r="8" />
+      <path d="M9 2h6m-6.5 11 2.5 2.5 4.5-5" />
+    </>
+  ),
+  pencil: <path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" />,
 };
 
 export function Icon({ name, size = 24 }: { name: IconName; size?: number }) {

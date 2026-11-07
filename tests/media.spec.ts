@@ -158,8 +158,8 @@ test('the live camera is full-bleed with no tab bar, and the X is the exit, at p
     const before = Number((await tray.textContent())!.match(/(\d+) WPM/)![1]);
     await page.getByRole('button', { name: 'Faster' }).click();
     await expect(tray).toContainText(`${before + 5} WPM`);
-    // A hand-picked speed ends the fit, so the fit chip goes too.
-    await expect(page.locator('.record-fit-chip')).toHaveCount(0);
+    // A hand-picked speed ends the fit, so the timer's target loses its fit tint.
+    await expect(page.locator('.record-timer .is-fit')).toHaveCount(0);
     await page.getByRole('button', { name: 'Prompter controls' }).click();
     await expect(tray).toHaveCount(0);
     // The quick script opens on real words, not fill-in blanks.
@@ -976,3 +976,92 @@ test('a real kept take exports scroll-timed captions and offers MP4 only when en
   if (supported) await expect(sheet.getByRole('button', { name: 'Convert to MP4' })).toBeVisible();
   else await expect(sheet).toContainText("This browser can't make MP4 files on the device.");
 });
+
+for (const width of [360, 390]) {
+  test(`the live camera fills the screen, warns under the prompter and has one accent at ${width}px`, async ({
+    page,
+  }) => {
+    // A low battery is a readiness warning the test can raise on demand.
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'getBattery', {
+        configurable: true,
+        value: async () => ({ level: 0.1, charging: false }),
+      });
+    });
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('/studio#/record/quick');
+    const allow = page.getByRole('button', { name: 'Allow camera' });
+    const start = page.getByRole('button', { name: 'Start recording' });
+    await expect(allow.or(start)).toBeVisible();
+    if (await allow.isVisible()) await allow.click();
+    await expect(start).toBeVisible();
+    // Full-bleed like Reels: the preview covers the whole screen.
+    const preview = page.locator('.record-preview');
+    expect(await preview.evaluate((el) => getComputedStyle(el).objectFit)).toBe('cover');
+    const video = (await preview.boundingBox())!;
+    expect(video.width).toBe(width);
+    expect(video.height).toBe(800);
+    // The warning is a glyph and one word in the meter row, never over a prompter line.
+    const chip = page.locator('.readiness-chips > span[title="Battery low"]');
+    await expect(chip).toBeVisible();
+    await expect(chip).toContainText('Battery');
+    await expect(chip.locator('svg')).toHaveCount(1);
+    const prompter = (await page.locator('.prompter-window').boundingBox())!;
+    for (const box of await page
+      .locator('.readiness-chips > span')
+      .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as DOMRect))) {
+      const apart =
+        box.y >= prompter.y + prompter.height ||
+        box.y + box.height <= prompter.y ||
+        box.x >= prompter.x + prompter.width ||
+        box.x + box.width <= prompter.x;
+      expect(apart).toBe(true);
+    }
+    await expect(page.getByText('CLIP', { exact: true })).toHaveCount(0);
+    await expect(page.getByText(/^Fits /)).toHaveCount(0);
+    /** Saturated colors on the camera, apart from the shutter and the danger red. */
+    const saturated = () =>
+      page.evaluate(() => {
+        const hits: string[] = [];
+        const check = (el: Element, style: CSSStyleDeclaration, where: string) => {
+          for (const prop of ['backgroundColor', 'color', 'borderTopColor'] as const) {
+            const m = style[prop].match(/[\d.]+/g)?.map(Number);
+            if (!m || (m[3] ?? 1) < 0.05) continue;
+            if (prop === 'borderTopColor' && style.borderTopWidth === '0px') continue;
+            const [r, g, b] = m.map((v) => v / 255) as [number, number, number];
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            const l = (max + min) / 2;
+            const s = max === min ? 0 : (max - min) / (1 - Math.abs(2 * l - 1));
+            if (s < 0.35 || l < 0.12) continue;
+            if (style[prop] === 'rgb(255, 77, 77)') continue;
+            hits.push(`${el.className || el.tagName}${where} ${prop} ${style[prop]}`);
+          }
+        };
+        for (const el of document.querySelectorAll('.record-screen *')) {
+          if (!el.checkVisibility({ visibilityProperty: true }) || el.closest('.record-button'))
+            continue;
+          check(el, getComputedStyle(el), '');
+          for (const pseudo of ['::before', '::after']) {
+            const style = getComputedStyle(el, pseudo);
+            if (style.content !== 'none' && style.content !== 'normal') check(el, style, pseudo);
+          }
+        }
+        return hits;
+      });
+    expect(await saturated()).toEqual([]);
+    // The tray speaks in glyphs: a gauge for speed and Aa for text, no word labels.
+    await page.getByRole('button', { name: 'Prompter controls' }).click();
+    const tray = page.getByRole('group', { name: 'Prompter controls' });
+    await expect(tray.getByText('Speed', { exact: true })).toHaveCount(0);
+    await expect(tray.getByText('Text', { exact: true })).toHaveCount(0);
+    await expect(tray.getByRole('group', { name: 'Speed' }).locator('svg')).not.toHaveCount(0);
+    await expect(tray.getByRole('group', { name: 'Text size' }).locator('svg')).not.toHaveCount(0);
+    await expect(tray.locator('.record-tray__value').first()).toHaveText(/^\d+ WPM$/);
+    const fit = tray.getByRole('button', { name: 'Fit speed to target length' });
+    expect(await fit.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+      'rgba(0, 0, 0, 0)',
+    );
+    expect(await saturated()).toEqual([]);
+  });
+}
