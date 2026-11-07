@@ -1,13 +1,29 @@
+import noindexRoutes from '../src/content/noindexRoutes.json' with { type: 'json' };
 const base = process.env.SEO_CRAWL_BASE_URL ?? 'http://127.0.0.1:8080';
 const sm = await (await fetch(`${base}/sitemap-0.xml`)).text();
 const urls = [...sm.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) =>
   m[1].replace('https://www.teleprompter.wtf', base),
 );
 console.log(`sitemap URLs: ${urls.length}`);
+let noindexFailures = 0;
+for (const route of noindexRoutes) {
+  if (urls.some((url) => new URL(url).pathname === route)) {
+    console.log(`FAIL ${route}: in sitemap`);
+    noindexFailures++;
+  }
+  const response = await fetch(`${base}${route}`);
+  if (response.status === 404 && route === '/offline') continue; // M6 route
+  const html = await response.text();
+  if (response.status !== 200 || !/<meta name="robots" content="noindex,follow"/i.test(html)) {
+    console.log(`FAIL ${route}: missing noindex,follow or status 200`);
+    noindexFailures++;
+  }
+}
+
 const titles = new Map(),
   descs = new Map(),
   canonicals = new Set();
-let fail = 0;
+let fail = noindexFailures;
 for (const url of urls) {
   const res = await fetch(url);
   const html = await res.text();

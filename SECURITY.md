@@ -12,6 +12,6 @@ Include reproduction steps, affected browsers or deployments, impact, and a mini
 
 ## Security model
 
-The application is static and has no authentication, script-upload endpoint, recording endpoint, transcription endpoint, or database. Scripts render as text and can persist only in origin-scoped browser storage. Voice audio and temporary recognition fragments are ephemeral. Optional model weights are same-origin, pinned, checksummed, and cached only after explicit download. Optional product analytics are consent gated. Self-hosted Umami is the default tracker. Optional GA4 uses a fixed event vocabulary that excludes user content.
+The application is static and has no authentication, script-upload endpoint, recording endpoint, or database. Scripts and preferences stay in browser storage, and recordings are saved locally. Self-hosted Umami collects page views and bounded product events with a browser-local anonymous device ID; events exclude user content.
 
 Operators remain responsible for TLS, timely container updates, access logging and retention at their hosting edge, and setting HSTS only on domains that are fully HTTPS-ready.

@@ -1,65 +1,40 @@
-# SEO research
+# SEO research and page ownership
 
-Research date: 9 August 2026.
-
-> Refresh note (2026-08-09, final pre-launch pass): live results were rechecked for the generic and voice-follow clusters on this date. Voice-following and on-device privacy claims are now standard across competitors (VoicePrompter claims on-device processing in 34 languages and PWA offline use; VoxCue claims fully local processing; Speakflow pairs voice scrolling with accounts). The defensible differentiators remain: genuinely free with no login, open source, an on-device Whisper model rather than a vague "voice activated" label, and honest Beta labeling. No content changes resulted from this refresh; the existing query-cluster mapping below still holds.
-
-This review used live search results and primary product pages. It is a snapshot, not a permanent claim about another product. Named pricing and feature claims should be rechecked before publishing a comparison page.
+Updated 6 November 2026 from the approved Studio build brief, section 2.5. This is a page ownership plan, not a claim about current rankings or search volumes. Search Console will supply observed queries after publication. No comparison page is planned without owner verification of competitor facts.
 
 ## Query clusters
 
-| Cluster      | Representative queries                                                                            | Dominant intent                        | teleprompter.wtf owner                                                            |
-| ------------ | ------------------------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------- |
-| Generic tool | free online teleprompter, online teleprompter, browser teleprompter                               | Use a tool immediately                 | `/`                                                                               |
-| Voice follow | voice activated teleprompter, voice controlled teleprompter, teleprompter that follows your voice | Understand and use voice follow        | `/private-voice-tracking` and `/guides/voice-activated-teleprompters`             |
-| Video        | teleprompter for YouTube, video recording teleprompter                                            | Record while maintaining eye contact   | `/guides/teleprompter-for-youtube` and `/guides/teleprompter-for-video-recording` |
-| Presenting   | presentation teleprompter, teleprompter for Zoom                                                  | Set up a prompt around a call or stage | Dedicated presentation and Zoom guides                                            |
-| Technique    | how to use a teleprompter, read naturally, maintain eye contact, format a script                  | Improve delivery                       | Distinct technique guides                                                         |
-| Timing       | teleprompter speed, words to minutes, script speaking time                                        | Calculate pace or duration             | Two non-duplicative tools plus the speed guide                                    |
-| Fundamentals | what is a teleprompter, how a teleprompter works                                                  | Learn the concept                      | `/guides/what-is-a-teleprompter`                                                  |
+| Cluster and representative intent                             | Owning page                                   | Role                                       |
+| ------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------ |
+| Free online teleprompter                                      | `/`                                           | Immediate classic tool and path to Studio  |
+| Teleprompter video recorder, teleprompter with camera         | `/record`                                     | Choose a recording workflow                |
+| Teleprompter for Instagram Reels                              | `/record/instagram-reels`                     | Record a Reel                              |
+| Teleprompter for YouTube Shorts                               | `/record/youtube-shorts`                      | Record a Short                             |
+| Teleprompter for TikTok                                       | `/record/tiktok`                              | Record a TikTok video                      |
+| YouTube teleprompter, landscape recorder                      | `/record/youtube`                             | Record a landscape video                   |
+| How to use a teleprompter for YouTube                         | `/guides/teleprompter-for-youtube`            | Instruction, separate from the recorder    |
+| Teleprompter for LinkedIn video                               | `/record/linkedin-video`                      | Record a work video                        |
+| How Instagram's own teleprompter works                        | `/guides/instagram-teleprompter`              | Built-in workflow and its limits           |
+| How CapCut's teleprompter works                               | `/guides/capcut-teleprompter`                 | Editor workflow and desktop option         |
+| Reel, Shorts, UGC and YouTube script templates                | `/templates` and matching `/templates/[slug]` | Browse and fill timed structures           |
+| Hooks for Reels by niche                                      | `/hooks` and matching `/hooks/[niche]`        | Browse authored opening lines              |
+| Will a script fit a time target, and where to cut             | `/tools/script-length-checker`                | Calculate fit at 15, 30, 60 and 90 seconds |
+| Instagram caption and hashtag limits, YouTube title limit     | `/tools/caption-counter`                      | Count characters and preview the first 125 |
+| Generate a hook from a niche and topic                        | `/tools/hook-generator`                       | Fill authored templates locally            |
+| Film a talking-head video, batch record, write a short script | Matching creator technique guide              | Explain the craft and link to the recorder |
+| Teleprompter remote or clicker                                | `/guides/teleprompter-remote-control`         | Explain input setup                        |
+| Camera settings for Reels                                     | `/guides/best-camera-settings-for-reels`      | Explain setup and dated facts              |
+| Voice-activated teleprompter                                  | `/guides/voice-activated-teleprompters`       | Neutral explanation of the category        |
+| Named product alternatives                                    | None in this phase                            | Requires owner-verified comparisons        |
 
-## Current search-result patterns
+## Cannibalization rules
 
-Generic searches contain a crowded mix of immediately usable tools, product homepages, app-store products, and broad how-to articles. Voice searches increasingly surface purpose-built browser tools that advertise volume detection, browser speech recognition, or AI voice sync. Recording searches also surface video-editing suites where the teleprompter is part of a larger recorder.
+- `/` owns the broad head term. `/record` owns recording with a camera. The platform pages own platform-specific recording tasks.
+- `/guides/teleprompter-for-short-form-video` remains the technique hub and links to the Reels, Shorts and TikTok recording pages. Recording pages use action phrasing; how-to guides teach workflows.
+- `/tools/words-to-minutes` compares durations across multiple speaking rates. `/tools/script-length-checker` answers whether a script fits a chosen short-video target and marks its cut point.
+- `/hooks/[niche]` provides browseable authored lines. `/tools/hook-generator` fills those lines with a topic in the browser.
+- Every new indexable page has three contextual inbound source pages plus its hub. Record pages link to three templates, one niche hook page and two guides.
 
-The important result pattern is utility first. A useful editor in the first viewport is more competitive than a long landing page. Explanations of local processing, recovery after a skipped section, model download cost, and the difference between rhythm tracking and speech recognition remain less common.
+## Measurement
 
-## Verified competitor matrix
-
-| Product          | Verified current facts                                                                                                                                                                            | Source checked                                                                                                                                                                           |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CuePrompter      | Free browser tool, no signup or download, adjustable speed, mirror mode, and themes                                                                                                               | [CuePrompter product page](https://www.cueprompter.com/)                                                                                                                                 |
-| VoxPrompt        | Free browser tool with microphone scrolling based on volume detection rather than speech-to-text; exposes manual threshold and calibration controls                                               | [VoxPrompt product page](https://voxprompt.co/)                                                                                                                                          |
-| Teleprompter.com | Promotes VoiceGlide voice-activated scrolling, script sharing, mirror playback, and multiple plans with platform-specific availability                                                            | [Teleprompter.com product page](https://www.teleprompter.com/), [pricing page](https://www.teleprompter.com/pricing)                                                                     |
-| PromptSmart      | Promotes VoiceTrack and a paid web-app plan system with a customer portal and remote control-room features                                                                                        | [PromptSmart web pricing](https://www.promptsmart.com/webapp/pricing)                                                                                                                    |
-| BIGVU            | Product and pricing pages list teleprompter recording, cloud recording, script-generation, and editing capabilities; mobile help documents camera, microphone, and speech-recognition permissions | [BIGVU pricing](https://bigvu.tv/pricing), [recording help](https://faq.bigvu.tv/en/article/record-with-the-teleprompter-iphone-ipad-or-android-c166bb/)                                 |
-| VEED             | The browser recorder supports screen, camera, audio, and a movable teleprompter; its help page says the teleprompter is available within the recorder                                             | [VEED recorder help](https://support.veed.io/en/articles/11099678-how-to-use-our-recorder), [teleprompter help](https://support.veed.io/en/articles/7010717-how-to-use-the-teleprompter) |
-
-The sources above do not consistently document where voice processing happens or how scripts are stored. This matrix therefore makes no unverified privacy claim about those products.
-
-## Content gaps
-
-- A plain explanation of volume-based pace tracking versus speech recognition.
-- A technically precise account of local model assets, temporary recognition, and network boundaries.
-- Honest failure behavior for pauses, ad-libs, repeated sentences, and skipped paragraphs.
-- Browser recording guidance that states the actual output format instead of promising MP4 everywhere.
-- Practical eye-contact geometry and script-formatting advice without generic creator-marketing copy.
-- One useful calculator for each distinct job, rather than many keyword variants of identical arithmetic.
-
-## Page ownership map
-
-| URL                                     | Primary intent                                | Must not compete with                                      |
-| --------------------------------------- | --------------------------------------------- | ---------------------------------------------------------- |
-| `/`                                     | Use a free online teleprompter                | No duplicate free-online or online-teleprompter route      |
-| `/features`                             | Review shipped product capabilities           | Voice page owns implementation detail                      |
-| `/private-voice-tracking`               | Understand and try private local voice follow | Voice guide owns category education                        |
-| `/privacy`                              | Understand data handling and consent          | Feature pages should link here, not repeat the full policy |
-| `/guides`                               | Browse educational content                    | Individual guides own query-specific answers               |
-| `/guides/voice-activated-teleprompters` | Compare voice-follow methods                  | Private voice page owns this product's implementation      |
-| `/guides/teleprompter-speed`            | Learn pacing principles                       | Calculators own arithmetic tasks                           |
-| `/tools/teleprompter-speed-calculator`  | Solve words, time, and WPM                    | Words-to-minutes owns reference-rate comparison            |
-| `/tools/words-to-minutes`               | Compare duration across common WPM rates      | Speed calculator owns target-time calculations             |
-
-## Publishing decision
-
-No named comparison routes were created. Current product facts can be verified, but privacy boundaries and plan details change frequently. A maintained generic educational guide is more useful than a brittle claim that teleprompter.wtf is better at every dimension.
+Review impressions, clicks and queries by cluster weekly in Search Console. Look for the same query landing on two pages, then sharpen their task distinction and links. At weeks 4, 8 and 12, use observed impressions and clicks to prioritize revisions and future templates, hooks and guides. Do not infer search volume from page counts or tool usage.

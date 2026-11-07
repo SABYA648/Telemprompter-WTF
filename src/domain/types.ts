@@ -1,6 +1,5 @@
 export type TextAlignment = 'left' | 'center';
 export type AnalyticsConsent = 'unknown' | 'allowed' | 'denied';
-export type VoiceMode = 'manual' | 'smart' | 'precision';
 
 export interface PrivacyConsent {
   decided: boolean;
@@ -18,7 +17,6 @@ export interface PresenterPreferences {
   focusLine: boolean;
   focusPosition: number;
   speakingWpm: number;
-  voiceMode: VoiceMode;
   /** Planned length of the delivery in seconds. Zero means the speaking rate sets the plan. */
   targetDurationSeconds: number;
   /** Show the live speed-up and slow-down signal at the focus line. */
@@ -73,27 +71,9 @@ export interface BrowserCapabilities {
   clipboard: boolean;
   pictureInPicture: boolean;
   displayCapture: boolean;
-  webAudio: boolean;
-  audioWorklet: boolean;
-  microphone: boolean;
-  speechRecognition: boolean;
-  worker: boolean;
-  webAssembly: boolean;
-  webGpu: boolean;
   documentPictureInPicture: boolean;
   videoPictureInPicture: boolean;
   canvasCapture: boolean;
   mediaRecorder: boolean;
   camera: boolean;
-  cacheStorage: boolean;
-  deviceMemory: number | null;
-  hardwareConcurrency: number;
-}
-
-export interface VoiceTrackingProvider {
-  readonly id: string;
-  readonly available: boolean;
-  start(): Promise<void>;
-  stop(): Promise<void>;
-  dispose(): void;
 }

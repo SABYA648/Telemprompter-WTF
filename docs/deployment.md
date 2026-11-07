@@ -2,7 +2,7 @@
 
 ## Static hosting
 
-Run `npm ci`, `npm run models:fetch`, and `npm run build`, then publish `dist/` at `https://www.teleprompter.wtf`. The site uses clean extensionless canonical URLs. Configure the host to serve generated `index.html` files for those routes and return `404.html` with status 404 for missing routes.
+Run `npm ci` and `npm run build`, then publish `dist/` at `https://www.teleprompter.wtf`. The site uses clean extensionless canonical URLs. Configure the host to serve generated `index.html` files for those routes and return `404.html` with status 404 for missing routes.
 
 `public/_headers` is copied into the build for compatible hosts. Equivalent Nginx behavior is included in `nginx.conf`.
 
@@ -20,21 +20,20 @@ curl --fail http://127.0.0.1:8080/health
 
 Or use `docker compose up --build -d`.
 
-The multi-stage build uses clean npm installation, fetches and checks all pinned model files, runs the static build, and copies only generated output into an unprivileged Nginx image. There is no Node runtime, database, or inference server in the final stage.
-
-The full model adds 45,233,651 bytes of weights and tokenizer/configuration files. ONNX Runtime WASM adds 21,596,019 bytes, plus a 44,484-byte loader. These assets are present in the image but do not download during a normal page visit.
+The multi-stage build uses clean npm installation, runs the static build, and copies only generated output into an unprivileged Nginx image. There is no Node runtime, database, or inference server in the final stage.
 
 ## Optional build variables
 
 ```text
-PUBLIC_GA_MEASUREMENT_ID=
 PUBLIC_UMAMI_WEBSITE_ID=c5952a2b-b192-46fe-8a3d-04ad673ffd6d
 PUBLIC_UMAMI_SCRIPT_URL=https://analytics.sabya.pm/script.js
+PUBLIC_UMAMI_DOMAINS=www.teleprompter.wtf
+PUBLIC_UMAMI_PROXY=false
 PUBLIC_GOOGLE_SITE_VERIFICATION=
 PUBLIC_BING_SITE_VERIFICATION=
 ```
 
-All are public identifiers compiled into the static output. None is a secret. An empty Umami website ID and an invalid or absent GA measurement ID fail closed: that build then contains no analytics code at all.
+All are public identifiers compiled into the static output. None is a secret. The domain setting limits where Umami sends data. The optional proxy remains disabled until the owner configures it.
 
 ## Canonical redirects
 
@@ -54,10 +53,9 @@ Do not enable HSTS on local HTTP deployments. Consider browser preload only afte
 ## Caching and ranges
 
 - Fingerprinted `/_astro/` assets use one-year immutable caching.
-- Versioned `/models/` files use one-year immutable caching and advertise byte ranges.
 - HTML uses immediate revalidation.
 - robots, sitemap, and llms files use a short one-hour cache.
-- Text assets are compressed. Model binaries are excluded from gzip.
+- Text assets are compressed.
 
 ## Permissions Policy
 
@@ -65,10 +63,10 @@ The policy allows same-origin microphone, camera, display capture, Picture in Pi
 
 ## Content Security Policy
 
-The CSP limits application, worker, model, media Blob, Umami, and GA4 destinations. Analytics domains are permitted by policy but scripts are not injected before consent. The site does not enable cross-origin isolation, which avoids unnecessary conflicts with analytics and compact-window behavior.
+The CSP limits application, worker, media Blob and Umami destinations. Umami loads on each page. The site does not enable cross-origin isolation, which avoids unnecessary conflicts with analytics and compact-window behavior.
 
 Astro currently emits inline bootstrap code and styles, so `unsafe-inline` remains limited to script and style directives. A deployment that adds hashes or nonces can tighten those directives further.
 
 ## Operator checks
 
-After deployment, verify health, homepage, one guide, one tool, privacy, robots, sitemap, llms, model byte ranges, cache headers, CSP, and 404 status. Then run Playwright and Lighthouse against the container-served origin. External Search Console, Bing, and GA4 dashboard steps are listed in `docs/seo-launch-checklist.md`, and the full owner runbook is in `docs/release-checklist.md`.
+After deployment, verify health, homepage, one guide, one tool, privacy, robots, sitemap, llms, cache headers, CSP, and 404 status. Then run Playwright and Lighthouse against the container-served origin. External Search Console, Bing, and Umami dashboard steps are listed in `docs/seo-launch-checklist.md`, and the full owner runbook is in `docs/release-checklist.md`.

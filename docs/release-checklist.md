@@ -19,15 +19,13 @@ The latest local production-equivalent evidence is recorded in
 
 ## Manual production-owner steps
 
-- Set the real `PUBLIC_GA_MEASUREMENT_ID` at build time (absent means no GA code at all).
+- Verify the Umami website ID and domain settings at build time.
 - Build and deploy the production Docker image.
 - Configure the domain and TLS at the deployment edge; add HSTS only once HTTPS is permanent.
 - Verify the HTTP-to-HTTPS and apex-to-`www` permanent redirects (301 or 308).
 - Verify live `/robots.txt`, `/sitemap-index.xml`, and `/llms.txt`.
 - Verify the Google Search Console property and submit the sitemap.
 - Verify Bing Webmaster Tools and submit the sitemap.
-- Check GA4 Realtime with one real opted-in session.
-- Run one real microphone session with Smart Pace.
-- Run one real Private Precision Beta session (download, enable, present, observe fallback behavior).
+- Verify a real page view and product event in Umami.
 - Run one real mobile session (manual presenter at minimum).
 - Inspect PageSpeed Insights on production after deploy.

@@ -176,6 +176,53 @@ button {
 .site-footer nav a:hover {
   color: var(--ink);
 }
+.site-header nav .site-header__studio {
+  background: var(--accent-dark);
+  color: white;
+  padding: 0.65rem 1rem;
+  border-radius: 0.7rem;
+}
+.site-header__studio-mobile {
+  display: none;
+}
+@media (max-width: 850px) {
+  .site-header nav a:not(.site-header__studio) {
+    display: none;
+  }
+}
+.site-footer nav {
+  flex-wrap: wrap;
+}
+.home-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.home-hero__actions .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.launch-block {
+  padding-block: 2rem;
+  border-bottom: 1px solid var(--line);
+}
+.launch-block ol {
+  display: grid;
+  gap: 1rem;
+  padding: 0;
+  list-style: none;
+}
+.launch-block li {
+  font-weight: 650;
+}
+.studio-return[hidden] {
+  display: none;
+}
+.studio-return {
+  display: none;
+}
 
 .eyebrow {
   margin: 0 0 0.75rem;
@@ -2029,6 +2076,26 @@ kbd {
 }
 
 @media (max-width: 600px) {
+  .site-header__studio-desktop {
+    display: none;
+  }
+  .site-header__studio-mobile {
+    display: inline;
+  }
+  .studio-return {
+    position: fixed;
+    z-index: 20;
+    inset: auto 0.75rem max(0.75rem, env(safe-area-inset-bottom));
+    display: block;
+    padding: 0.85rem;
+    border-radius: 0.75rem;
+    background: var(--accent-dark);
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 700;
+    box-shadow: 0 4px 20px #0004;
+  }
   .site-header__inner,
   .site-footer__inner,
   .section-wrap,
@@ -2050,6 +2117,9 @@ kbd {
 
   .site-header nav a:first-child,
   .site-header nav a:last-child {
+    display: inline-flex;
+  }
+  .site-header nav a:not(.site-header__studio) {
     display: none;
   }
 
@@ -2802,4 +2872,143 @@ kbd {
 
 .tool-page .related-guides a {
   min-height: 0;
+}
+/* Creator content pages share the existing site type and spacing scale. */
+.creator-content {
+  max-width: 960px;
+  padding-bottom: 4rem;
+}
+.creator-content > section,
+.creator-content > h2,
+.creator-content > p,
+.creator-content > ul,
+.creator-content > ol {
+  margin-top: 1.5rem;
+}
+.creator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+.creator-card {
+  border: 1px solid #d8d0c4;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: #fffdf8;
+}
+.creator-card h2 {
+  margin-top: 0;
+}
+.creator-script {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f4efe5;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  font: inherit;
+  line-height: 1.55;
+}
+.creator-hook {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #d8d0c4;
+}
+.creator-hook p {
+  margin: 0.25rem 0;
+}
+.creator-hook button {
+  margin: 0.25rem 0.5rem 0.25rem 0;
+  padding: 0.5rem 0.75rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+.creator-content > ul li + li {
+  margin-top: 0.5rem;
+}
+.creator-content > ul a {
+  display: inline-block;
+  padding: 0.35rem 0;
+}
+.record-hero .button {
+  margin-top: 1rem;
+}
+.record-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  margin: 1rem 0;
+  list-style: none;
+}
+.record-trust li {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+.record-page section,
+.tool-page section {
+  max-width: 76ch;
+}
+.record-page pre,
+.creator-tool__cut {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.tool-page astro-island[client='visible'] {
+  display: block;
+}
+.creator-tool {
+  max-width: 76ch;
+  padding: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 1rem;
+}
+.creator-tool label {
+  display: block;
+  margin: 0.75rem 0 0.25rem;
+  font-weight: 700;
+}
+.creator-tool textarea,
+.creator-tool input[type='text'],
+.creator-tool select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  font: inherit;
+}
+.creator-tool input[type='range'] {
+  display: block;
+  width: 100%;
+}
+.creator-tool button {
+  min-height: 44px;
+  margin: 0.3rem 0.3rem 0.3rem 0;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  cursor: pointer;
+}
+.creator-tool__results {
+  display: grid;
+  gap: 0.6rem;
+  padding-left: 1.3rem;
+}
+.creator-tool__results section,
+.creator-tool__results li {
+  padding: 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+}
+.creator-tool__results h3 {
+  margin-top: 0;
+}
+.creator-tool__cut mark {
+  background: #f9d885;
+}
+.creator-related a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }

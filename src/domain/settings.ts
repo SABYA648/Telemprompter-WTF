@@ -21,8 +21,6 @@ export const DEFAULT_PREFERENCES: PresenterPreferences = {
   focusLine: true,
   focusPosition: 42,
   speakingWpm: 130,
-  // Smart Pace is the default presenting experience: listen locally and follow rhythm.
-  voiceMode: 'smart',
   // No target by default, so the plan comes from the speaking rate until the speaker sets one.
   targetDurationSeconds: 0,
   paceCues: true,
@@ -80,12 +78,6 @@ export function sanitizePreferences(
     mirror: source.mirror === true,
     verticalFlip: source.verticalFlip === true,
     focusLine: source.focusLine !== false,
-    voiceMode:
-      source.voiceMode === 'manual'
-        ? 'manual'
-        : source.voiceMode === 'precision'
-          ? 'precision'
-          : 'smart',
   };
 }
 

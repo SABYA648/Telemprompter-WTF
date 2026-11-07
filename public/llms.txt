@@ -1,27 +1,50 @@
 # teleprompter.wtf
 
-> Free online teleprompter: paste your script and present. No login, no ads, no cloud script storage.
+> Free online teleprompter with camera: record Reels, Shorts and YouTube videos in Studio, or use the classic presenter. No login or upload.
 
-teleprompter.wtf is a free, open-source teleprompter that runs in the browser. Paste a script and present with manual scrolling; no account is required. Smart Pace follows your place in the script using the speech recognition built into the browser, which on some browsers is processed on the browser vendor's servers, and falls back to local microphone signal analysis that transcribes nothing when recognition is unavailable. Private Precision Beta optionally downloads a local on-device speech model (about 67 MB with its runtime, downloaded once and kept in the browser) to follow your place in the known script. Recording is local as well. Scripts and recordings never leave the device. Private Precision keeps microphone audio and recognition fragments on the device as well. Optional Google Analytics usage measurement is consent-gated and never receives script or voice content.
+teleprompter.wtf is a free, open-source browser teleprompter and local video recorder. Studio records with the script beside the camera lens, stores takes on the device and exports through the browser. The classic presenter offers manual scrolling and mirroring. Product analytics use self-hosted Umami without user content.
 
 ## Product
 
-- [Open the teleprompter](https://www.teleprompter.wtf/)
+- [Homepage and classic teleprompter](https://www.teleprompter.wtf/)
+- [Studio camera recorder](https://www.teleprompter.wtf/studio)
 - [Features](https://www.teleprompter.wtf/features)
 - [Browser & device compatibility](https://www.teleprompter.wtf/compatibility)
-- [Private voice tracking](https://www.teleprompter.wtf/private-voice-tracking)
 - [Privacy](https://www.teleprompter.wtf/privacy)
 - [About the project](https://www.teleprompter.wtf/about)
+
+## Creator pages
+
+- [Studio video recording](https://www.teleprompter.wtf/studio)
+- [Recording preset hub](https://www.teleprompter.wtf/record)
+- [Instagram Reels recorder](https://www.teleprompter.wtf/record/instagram-reels)
+- [YouTube Shorts recorder](https://www.teleprompter.wtf/record/youtube-shorts)
+- [TikTok recorder](https://www.teleprompter.wtf/record/tiktok)
+- [Landscape YouTube recorder](https://www.teleprompter.wtf/record/youtube)
+- [LinkedIn video recorder](https://www.teleprompter.wtf/record/linkedin-video)
+- [Video script templates](https://www.teleprompter.wtf/templates)
+- [Niche hooks](https://www.teleprompter.wtf/hooks)
 
 ## Tools
 
 - [Teleprompter tools hub](https://www.teleprompter.wtf/tools)
 - [Teleprompter speed calculator](https://www.teleprompter.wtf/tools/teleprompter-speed-calculator)
 - [Words to minutes calculator](https://www.teleprompter.wtf/tools/words-to-minutes)
+- [Script length checker](https://www.teleprompter.wtf/tools/script-length-checker)
+- [Caption and hashtag counter](https://www.teleprompter.wtf/tools/caption-counter)
+- [Template-based hook generator](https://www.teleprompter.wtf/tools/hook-generator)
 
 ## Guides
 
 - [Teleprompter guide hub](https://www.teleprompter.wtf/guides)
+- [Instagram teleprompter](https://www.teleprompter.wtf/guides/instagram-teleprompter)
+- [CapCut teleprompter](https://www.teleprompter.wtf/guides/capcut-teleprompter)
+- [Film a talking-head Reel](https://www.teleprompter.wtf/guides/how-to-film-talking-head-reels)
+- [Batch record a week of videos](https://www.teleprompter.wtf/guides/how-to-batch-record-videos)
+- [Write a 30-second script](https://www.teleprompter.wtf/guides/how-to-write-a-30-second-video-script)
+- [Teleprompter remote control](https://www.teleprompter.wtf/guides/teleprompter-remote-control)
+- [Camera settings for Reels](https://www.teleprompter.wtf/guides/best-camera-settings-for-reels)
+- [External microphone for phone video](https://www.teleprompter.wtf/guides/external-microphone-for-phone-video)
 - [How to use a teleprompter](https://www.teleprompter.wtf/guides/how-to-use-a-teleprompter)
 - [Teleprompter for YouTube videos](https://www.teleprompter.wtf/guides/teleprompter-for-youtube)
 - [Teleprompter setup for video recording](https://www.teleprompter.wtf/guides/teleprompter-for-video-recording)

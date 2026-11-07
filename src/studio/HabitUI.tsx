@@ -1,0 +1,747 @@
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { analytics } from '../domain/analytics';
+import {
+  BADGES,
+  dailyPromptIndex,
+  joinChallenge,
+  mondayOf,
+  promptScriptBody,
+  readHabits,
+  markBadgeSeen,
+  type BadgeId,
+  type HabitSnapshot,
+} from '../domain/studio/habits';
+import { createScript } from '../domain/studio/scriptsRepo';
+import {
+  bestStreakInPreviousWeek,
+  localDay,
+  readStreak,
+  type Streak,
+} from '../domain/studio/streak';
+import { loadSettings } from '../domain/studio/settings';
+import { listTakes } from '../domain/studio/takesRepo';
+import { getDb } from '../domain/studio/db';
+import { isStandaloneDisplay } from '../domain/studio/install';
+import { shareProgressCard, type CardKind, type CardLabel } from '../domain/studio/shareCard';
+import { challenge30 } from '../content/studio/challenge30';
+import type { DailyPrompt } from '../content/studio/types';
+import type { StudioSettings } from '../domain/studio/types';
+import {
+  claimSessionAsk,
+  inlineAsk,
+  markMilestoneOffered,
+  nextAsk,
+  offeredMilestones,
+  claimTakeRating,
+  ratingDone,
+  saveRating,
+  sessionAsk,
+  shareMilestone,
+  type SessionAsk,
+} from '../domain/studio/asks';
+import { ReminderCard } from './ReminderCard';
+import { Icon } from './Icons';
+
+export interface HabitData {
+  streak: Streak | null;
+  snap: HabitSnapshot | null;
+  settings: StudioSettings | null;
+}
+/** Streak, habit stats and settings for Home, refreshed whenever a take or badge changes them. */
+export function useHabits(): HabitData {
+  const [streak, setStreak] = useState<Streak | null>(null);
+  const [snap, setSnap] = useState<HabitSnapshot | null>(null);
+  const [settings, setSettings] = useState<StudioSettings | null>(null);
+  useEffect(() => {
+    const refresh = () => {
+      void readStreak().then(setStreak);
+      void readHabits().then(setSnap);
+    };
+    refresh();
+    void loadSettings().then(setSettings);
+    // A tab left open overnight shows the new day's streak and week when it comes back.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    addEventListener('studio-streak-changed', refresh);
+    addEventListener('studio-habits-changed', refresh);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      removeEventListener('studio-streak-changed', refresh);
+      removeEventListener('studio-habits-changed', refresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
+  return { streak, snap, settings };
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+async function scriptFromPrompt(
+  prompt: { title: string; templateId: string; hook: string; note: string },
+  source: 'daily_prompt' | 'challenge',
+) {
+  const { templates } = await import('../content/studio/templates');
+  const template = templates.find((t) => t.id === prompt.templateId);
+  const script = await createScript({
+    title: prompt.title,
+    body: promptScriptBody(template?.body ?? '', prompt.hook, prompt.note),
+    templateId: prompt.templateId,
+    targetSeconds: template?.targetSeconds ?? 30,
+    aspect: template?.aspect ?? '9:16',
+  });
+  analytics.track('created_script', { source });
+  return script;
+}
+
+export function CardShare({
+  kind,
+  number,
+  label,
+  text = 'Share card',
+  icon = false,
+}: {
+  kind: CardKind;
+  number: number;
+  label: CardLabel;
+  text?: string;
+  icon?: boolean;
+}) {
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  return (
+    <>
+      <button
+        class="studio-button studio-button--quiet"
+        disabled={busy}
+        onClick={() => {
+          setBusy(true);
+          setError('');
+          void shareProgressCard(kind, number, label)
+            .catch(() => setError('Could not make the share card.'))
+            .finally(() => setBusy(false));
+        }}
+      >
+        {icon && <Icon name="share" size={20} />}
+        {text}
+      </button>
+      {error && <p role="alert">{error}</p>}
+    </>
+  );
+}
+
+const yesterday = () => {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return localDay(date);
+};
+
+/** The 9.2 top row as one glanceable chip; tap it for the streak and weekly goal details. */
+export function HabitSummary({
+  streak,
+  snap,
+  settings,
+  firstRun,
+}: HabitData & { firstRun: boolean }) {
+  if (!settings) return null;
+  const showStreak = settings.habit.streaksEnabled && streak && streak.activeDates.length > 0;
+  const showGoal = settings.habit.goalsEnabled && snap && !firstRun;
+  if (!showStreak && !showGoal) return null;
+  const pct = snap ? Math.min(100, (snap.weeklyVideos / snap.weeklyGoal) * 100) : 0;
+  // A freeze that saved the streak is news, so the details start open that day.
+  const froze = Boolean(
+    showStreak && streak.current > 0 && streak.freezeUsedDates.at(-1) === yesterday(),
+  );
+  return (
+    <details class="studio-streak" open={froze}>
+      <summary>
+        {showGoal && (
+          <span
+            class="studio-goal-ring"
+            role="progressbar"
+            aria-label="Weekly goal progress"
+            aria-valuemin={0}
+            aria-valuemax={snap.weeklyGoal}
+            aria-valuenow={Math.min(snap.weeklyVideos, snap.weeklyGoal)}
+            style={{ '--goal': `${pct}%` }}
+          />
+        )}
+        <strong>
+          {showStreak
+            ? streak.current > 0
+              ? `${streak.current}-day streak`
+              : 'Fresh start today'
+            : `${snap?.weeklyVideos ?? 0}/${snap?.weeklyGoal ?? 0} this week`}
+        </strong>
+        <Icon name="chevron" size={16} />
+      </summary>
+      <div class="studio-streak__details" role="group" aria-label="Recording streak">
+        {showStreak && (
+          <p>
+            {streak.lastActiveDate === localDay(new Date())
+              ? 'Recorded today. See you tomorrow.'
+              : froze
+                ? `A streak freeze kept your ${streak.current}-day streak alive.`
+                : streak.current > 0
+                  ? 'Record today to keep your streak.'
+                  : `Your best streak is ${plural(streak.best, 'day')}.`}
+          </p>
+        )}
+        {showStreak && (
+          <p class="studio-muted">
+            Best {plural(streak.best, 'day')} · {plural(streak.freezes, 'freeze')} ready
+          </p>
+        )}
+        {showGoal && (
+          <p class="studio-muted">
+            {snap.weeklyVideos} of {snap.weeklyGoal} videos this week
+          </p>
+        )}
+      </div>
+    </details>
+  );
+}
+
+/** The badge on show, kept for its 5 seconds so a screen opened meanwhile can still show it. */
+let shown: { id: BadgeId; until: number } | null = null;
+function useShownBadge(): BadgeId | null {
+  const [id, setId] = useState<BadgeId | null>(null);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const sync = () => {
+      clearTimeout(timer);
+      const left = shown ? shown.until - Date.now() : 0;
+      setId(left > 0 ? shown!.id : null);
+      if (left > 0) timer = setTimeout(sync, left);
+    };
+    sync();
+    addEventListener('studio-badge-show', sync);
+    return () => {
+      removeEventListener('studio-badge-show', sync);
+      clearTimeout(timer);
+    };
+  }, []);
+  return id;
+}
+
+/**
+ * Badge unlock: a short toast right where it happened (after a kept take, or a save), shown
+ * once. Badges never sit on Home as a card. Motion is CSS only and off under reduced motion.
+ * Where a header has room (the editor), the toast steps aside for a small chip there.
+ */
+export function BadgeToast({ docked = false }: { docked?: boolean }) {
+  useEffect(() => {
+    const unlocked = (event: Event) => {
+      const badge = (event as CustomEvent<BadgeId>).detail;
+      void loadSettings().then((settings) => {
+        if (!settings.habit.badgesEnabled || !BADGES[badge]) return;
+        void markBadgeSeen(badge);
+        shown = { id: badge, until: Date.now() + 5000 };
+        dispatchEvent(new Event('studio-badge-show'));
+      });
+    };
+    addEventListener('studio-badge-unlocked', unlocked);
+    return () => removeEventListener('studio-badge-unlocked', unlocked);
+  }, []);
+  const id = useShownBadge();
+  return (
+    <div class="studio-toast-region" aria-live="polite" aria-atomic="true">
+      {id && !docked && (
+        <p class="studio-toast studio-celebration">
+          <span class="studio-celebration__burst" aria-hidden="true">
+            <Icon name="star" size={20} />
+          </span>
+          <span>
+            <strong>{BADGES[id].label}</strong> badge unlocked
+          </span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** The editor's badge: a small star chip beside "Saved", clear of every control. */
+export function BadgeChip() {
+  const id = useShownBadge();
+  return (
+    <span class="studio-badge-chip-region" aria-live="polite" aria-atomic="true">
+      {id && (
+        <span class="studio-badge-chip" title={`${BADGES[id].label} badge unlocked`}>
+          <Icon name="star" size={14} />
+          {BADGES[id].label}
+          <span class="studio-visually-hidden"> badge unlocked</span>
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Right after a kept take: how did recording feel? From the third kept take, at most once a
+ * day, until it is answered. The X dismisses it for today.
+ */
+export function TakeRating() {
+  const [state, setState] = useState<'hidden' | 'asking' | 'thanks'>('hidden');
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const settings = await loadSettings();
+      if (!settings.habit.ratingEnabled) return;
+      const snap = await readHabits();
+      if (active && (await claimTakeRating(snap.takes, localDay(new Date())))) setState('asking');
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+  const rate = async (score: 1 | 2 | 3 | 4 | 5) => {
+    if (await saveRating(score)) analytics.track('rated_recording', { score });
+    setState('thanks');
+  };
+  if (state === 'thanks') return <p role="status">Thanks for sharing.</p>;
+  if (state !== 'asking') return null;
+  return (
+    <section class="studio-take-rating" aria-label="Rate recording">
+      <div class="studio-take-rating__head">
+        <h3>How did recording feel today?</h3>
+        <button
+          class="studio-take-rating__dismiss"
+          aria-label="Not now"
+          onClick={() => setState('hidden')}
+        >
+          <Icon name="close" size={20} />
+        </button>
+      </div>
+      <div class="studio-rating">
+        {([1, 2, 3, 4, 5] as const).map((score) => (
+          <button
+            key={score}
+            class="studio-button studio-button--quiet"
+            aria-label={`Rate ${score} out of 5`}
+            onClick={() => void rate(score)}
+          >
+            {score}
+          </button>
+        ))}
+      </div>
+      <p class="studio-muted">1 is hard, 5 is easy.</p>
+    </section>
+  );
+}
+
+const MILESTONE_KEY = 'studio.ask.milestone';
+const REMINDER_SNOOZE = 'asks.reminderSnoozedAt';
+type Milestone = { key: string; kind: 'streak' | 'weekly' | 'challenge' };
+function sessionMilestone(): Milestone | null {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(MILESTONE_KEY) ?? 'null') as Milestone | null;
+    return value && typeof value.key === 'string' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The one Home ask this session may show (4.3), plus the storage guardrail, which always shows.
+ * The rating is not a Home ask any more: TakeRating asks it in the take review sheet. */
+export function HomeAsk({ streak, snap, settings }: HabitData) {
+  const [ask, setAsk] = useState<SessionAsk | null>(null);
+  const [milestone, setMilestone] = useState<Milestone | null>(null);
+  const [storage, setStorage] = useState(0);
+  const decided = useRef(false);
+  useEffect(() => {
+    if (!streak || !snap || !settings || decided.current) return;
+    decided.current = true;
+    void (async () => {
+      const db = await getDb();
+      const [done, offered, snoozedAt] = await Promise.all([
+        ratingDone(),
+        offeredMilestones(),
+        db.get('kv', REMINDER_SNOOZE),
+      ]);
+      const held = sessionAsk() === 'share_card' ? sessionMilestone() : null;
+      const found =
+        held ??
+        shareMilestone({
+          streak: settings.habit.streaksEnabled ? streak.best : 0,
+          weeklyGoalReached: settings.habit.goalsEnabled && snap.weeklyVideos >= snap.weeklyGoal,
+          challengeComplete: settings.habit.challengeEnabled && snap.challengeDays >= 30,
+          week: mondayOf(new Date()),
+          offered,
+        });
+      const snoozed = typeof snoozedAt === 'number' && Date.now() - snoozedAt < 7 * 86400000;
+      const kind = nextAsk(
+        { sessionAsk: sessionAsk(), installShown: 0, installDismissedAt: 0, ratingDone: done },
+        {
+          recording: false,
+          exported: 0,
+          sessions: 0,
+          activeDays: streak.activeDates.length,
+          installed: isStandaloneDisplay(),
+          keptTakes: snap.takes,
+          now: Date.now(),
+          milestone: Boolean(found),
+        },
+        {
+          install: false,
+          reminder: settings.reminders.askEnabled && !settings.reminders.fileDownloaded && !snoozed,
+          share_card: settings.habit.shareCardsEnabled && Boolean(found),
+          // The rating moved to the take review sheet (TakeRating), right after a kept take.
+          rating: false,
+        },
+      );
+      if (!kind || !claimSessionAsk(kind)) return;
+      if (kind === 'share_card' && found) {
+        await markMilestoneOffered(found.key);
+        try {
+          sessionStorage.setItem(MILESTONE_KEY, JSON.stringify(found));
+        } catch {
+          /* Private mode. */
+        }
+        setMilestone(found);
+      }
+      setAsk(kind);
+    })();
+  }, [streak, snap, settings]);
+  useEffect(() => {
+    void Promise.all([listTakes(), navigator.storage?.estimate?.() ?? Promise.resolve({})]).then(
+      ([takes, estimate]: [Awaited<ReturnType<typeof listTakes>>, StorageEstimate]) => {
+        const quotaUsedPct = estimate.quota ? ((estimate.usage ?? 0) / estimate.quota) * 100 : 0;
+        const unexportedTakes = takes.filter((t) => t.kept && !t.exportedAt).length;
+        if (!inlineAsk('storage_cleanup', { quotaUsedPct, unexportedTakes })) return;
+        setStorage(Math.max(1, unexportedTakes));
+        try {
+          if (sessionStorage.getItem('studio.storage.warned')) return;
+          sessionStorage.setItem('studio.storage.warned', '1');
+        } catch {
+          /* Storage unavailable: report once per page load instead. */
+        }
+        analytics.track('storage_warning', { level: quotaUsedPct > 95 ? 95 : 80 });
+      },
+    );
+  }, []);
+  const snooze = async () => {
+    await (await getDb()).put('kv', Date.now(), REMINDER_SNOOZE);
+    setAsk(null);
+  };
+  const shareNumber =
+    milestone?.kind === 'streak'
+      ? Number(milestone.key.slice('streak_'.length))
+      : milestone?.kind === 'weekly'
+        ? (snap?.weeklyVideos ?? 0)
+        : (snap?.challengeDays ?? 0);
+  return (
+    <>
+      {storage > 0 && (
+        <section class="studio-card" aria-label="Storage cleanup">
+          <h2>Make room for your next take</h2>
+          <p>
+            {plural(storage, 'kept take is', 'kept takes are')} only in this browser. Save the ones
+            you want, then delete the rest.
+          </p>
+          <div class="studio-actions">
+            <a class="studio-button studio-button--quiet" href="#/takes">
+              Review takes
+            </a>
+          </div>
+        </section>
+      )}
+      {ask === 'reminder' && (
+        <ReminderCard activeDays={streak?.activeDates.length ?? 0} onNotNow={() => void snooze()} />
+      )}
+      {ask === 'share_card' && milestone && (
+        <section class="studio-card" aria-label="Share your progress">
+          <h2>
+            {milestone.kind === 'streak'
+              ? 'Streak milestone'
+              : milestone.kind === 'weekly'
+                ? 'Weekly goal reached'
+                : 'Challenge complete'}
+          </h2>
+          <p>Make a progress card for your story. It shows the number, never your script.</p>
+          <div class="studio-actions">
+            <CardShare
+              kind={milestone.kind}
+              number={shareNumber}
+              label={
+                milestone.kind === 'streak'
+                  ? 'Day streak'
+                  : milestone.kind === 'weekly'
+                    ? 'Videos this week'
+                    : 'Challenge days'
+              }
+            />
+            <button class="studio-button studio-button--quiet" onClick={() => setAsk(null)}>
+              Not now
+            </button>
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
+/** H3: the same prompt for everyone on a local date. */
+export function TodayCard({ settings }: Pick<HabitData, 'settings'>) {
+  const enabled = Boolean(settings?.habit.dailyPromptEnabled);
+  const [prompts, setPrompts] = useState<DailyPrompt[]>([]);
+  const [offset, setOffset] = useState(0);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!enabled) return;
+    void import('../content/studio/dailyPrompts').then(({ dailyPrompts }) => {
+      setPrompts(dailyPrompts);
+      const key = `studio.today.viewed.${localDay(new Date())}`;
+      try {
+        if (sessionStorage.getItem(key)) return;
+        sessionStorage.setItem(key, '1');
+      } catch {
+        /* Count once per page load. */
+      }
+      analytics.track('viewed_today_prompt');
+    });
+  }, [enabled]);
+  if (!enabled || !prompts.length) return null;
+  const index = dailyPromptIndex(new Date(), prompts.length);
+  const today = prompts[index]!;
+  const hook = prompts[(index + offset) % prompts.length]!.hook;
+  const shuffle = () => {
+    // Any other prompt's hook, never the one on screen.
+    const step = 1 + (crypto.getRandomValues(new Uint32Array(1))[0]! % (prompts.length - 1));
+    setOffset((offset + step) % prompts.length);
+  };
+  const create = async (record: boolean) => {
+    setBusy(true);
+    analytics.track('started_today_prompt');
+    const script = await scriptFromPrompt(
+      { title: today.title, templateId: today.templateId, hook, note: today.angle },
+      'daily_prompt',
+    );
+    location.hash = record ? `#/record/${script.id}` : `#/scripts/${script.id}`;
+  };
+  return (
+    <section class="studio-card studio-today" aria-label="Today's prompt">
+      <div class="studio-section-head">
+        <h2>Today's prompt</h2>
+        <button class="studio-pill" onClick={shuffle}>
+          <Icon name="flip" size={18} />
+          Another hook
+        </button>
+      </div>
+      <p class="studio-today__title">{today.title}</p>
+      <p class="studio-today__hook">{hook}</p>
+      <p class="studio-muted">{today.angle}</p>
+      <div class="studio-today__actions">
+        <button class="studio-button" disabled={busy} onClick={() => void create(true)}>
+          <Icon name="camera" size={20} />
+          Record this
+        </button>
+        <button
+          class="studio-button studio-button--quiet"
+          disabled={busy}
+          onClick={() => void create(false)}
+        >
+          <Icon name="script" size={20} />
+          Write
+        </button>
+      </div>
+    </section>
+  );
+}
+
+/** H10: shown on Mondays, about the week that just ended. */
+export function WeeklyRecap({ streak, snap, settings }: HabitData) {
+  if (!snap || !settings?.habit.recapEnabled || new Date().getDay() !== 1) return null;
+  if (!snap.takes) return null;
+  return (
+    <section class="studio-card" aria-label="Weekly recap">
+      <h2>Last week</h2>
+      <dl class="studio-stat-grid">
+        <div>
+          <dt>Videos</dt>
+          <dd>{snap.previousWeekVideos}</dd>
+        </div>
+        <div>
+          <dt>Minutes recorded</dt>
+          <dd>{snap.previousWeekMinutes}</dd>
+        </div>
+        <div>
+          <dt>Best streak</dt>
+          <dd>{plural(bestStreakInPreviousWeek(streak, new Date()), 'day')}</dd>
+        </div>
+        <div>
+          <dt>Goal</dt>
+          <dd>{snap.previousWeekGoalMet ? 'Reached' : `${snap.weeklyGoal} next`}</dd>
+        </div>
+      </dl>
+      <p>{snap.previousWeekGoalMet ? 'Goal reached. Nice work.' : 'A new week starts today.'}</p>
+    </section>
+  );
+}
+
+/** Progress is one line, at most one ghost Share and a quiet challenge link (M12 P3). */
+export function HabitProgress({ streak, snap, settings }: HabitData) {
+  if (!snap || !settings) return null;
+  const { statsEnabled, badgesEnabled, challengeEnabled, shareCardsEnabled, streaksEnabled } =
+    settings.habit;
+  if (!statsEnabled && !badgesEnabled && !challengeEnabled) return null;
+  const line =
+    snap.takes === 0
+      ? statsEnabled
+        ? 'Your first take starts your progress.'
+        : ''
+      : [
+          statsEnabled && snap.videos > 0 && plural(snap.videos, 'video'),
+          statsEnabled && plural(snap.takes, 'take'),
+          statsEnabled && snap.minutes > 0 && `${snap.minutes} min recorded`,
+          badgesEnabled && snap.badges.length > 0 && plural(snap.badges.length, 'badge'),
+        ]
+          .filter(Boolean)
+          .join(' · ');
+  // One share: the running streak if there is one, else this week's videos.
+  const share = !shareCardsEnabled
+    ? null
+    : streaksEnabled && streak && streak.current > 0
+      ? (['streak', streak.current, 'Day streak', 'Share streak'] as const)
+      : settings.habit.goalsEnabled && snap.weeklyVideos > 0
+        ? (['weekly', snap.weeklyVideos, 'Videos this week', 'Share week'] as const)
+        : null;
+  return (
+    <section class="studio-progress" aria-label="Your progress">
+      {line && <p class="studio-progress__line">{line}</p>}
+      {(share || challengeEnabled) && (
+        <div class="studio-progress__actions">
+          {share && (
+            <CardShare kind={share[0]} number={share[1]} label={share[2]} text={share[3]} icon />
+          )}
+          {challengeEnabled && (
+            <a class="studio-text-link" href="#/challenge">
+              {snap.challengeJoined
+                ? `30-day challenge: ${snap.challengeDays} of 30`
+                : 'See the challenge'}
+            </a>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** H9: `#/challenge`. Days count kept takes on different local dates since joining. */
+export function ChallengeScreen() {
+  const [snap, setSnap] = useState<HabitSnapshot | null>(null);
+  const [settings, setSettings] = useState<StudioSettings | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const refresh = () => void readHabits().then(setSnap);
+    refresh();
+    void loadSettings().then(setSettings);
+    addEventListener('studio-habits-changed', refresh);
+    return () => removeEventListener('studio-habits-changed', refresh);
+  }, []);
+  if (!snap || !settings) return <section class="studio-screen" aria-busy="true" />;
+  if (!settings.habit.challengeEnabled)
+    return (
+      <section class="studio-screen">
+        <h1>30-day challenge</h1>
+        <p>The challenge is turned off. Turn it on in Habit settings.</p>
+        <a class="studio-button studio-button--quiet" href="#/settings/habit">
+          Habit settings
+        </a>
+      </section>
+    );
+  const complete = snap.challengeDays >= 30;
+  const day = Math.min(30, snap.challengeDays + 1);
+  const task = challenge30[day - 1];
+  const start = async (record: boolean) => {
+    if (!task) return;
+    setBusy(true);
+    const script = await scriptFromPrompt(
+      {
+        title: `Day ${task.day}: ${task.title}`,
+        templateId: task.templateId,
+        hook: '',
+        note: `Day ${task.day}: ${task.prompt}`,
+      },
+      'challenge',
+    );
+    location.hash = record ? `#/record/${script.id}` : `#/scripts/${script.id}`;
+  };
+  return (
+    <section class="studio-screen studio-challenge">
+      <p class="studio-kicker">30-day challenge</p>
+      <h1>30 videos in 30 days</h1>
+      <p>
+        Keep a take on 30 different days. There is no deadline, so a missed day never resets it.
+      </p>
+      {!snap.challengeJoined ? (
+        <div class="studio-actions">
+          <button class="studio-button" onClick={() => void joinChallenge()}>
+            Join challenge
+          </button>
+        </div>
+      ) : (
+        <>
+          <div
+            class="studio-challenge__meter"
+            role="progressbar"
+            aria-label="Challenge progress"
+            aria-valuemin={0}
+            aria-valuemax={30}
+            aria-valuenow={snap.challengeDays}
+          >
+            <span style={{ width: `${(snap.challengeDays / 30) * 100}%` }} />
+          </div>
+          <p role="status">{snap.challengeDays} of 30 days complete.</p>
+          {complete ? (
+            <section class="studio-card studio-celebration" aria-label="Challenge complete">
+              <h2>Challenge complete</h2>
+              <p>You showed up on 30 different days.</p>
+            </section>
+          ) : (
+            task && (
+              <article class="studio-card">
+                <h2>
+                  Day {day}: {task.title}
+                </h2>
+                <p>{task.prompt}</p>
+                <div class="studio-actions studio-actions--grid">
+                  <button
+                    class="studio-button studio-button--quiet"
+                    disabled={busy}
+                    onClick={() => void start(false)}
+                  >
+                    Write it
+                  </button>
+                  <button class="studio-button" disabled={busy} onClick={() => void start(true)}>
+                    Record
+                  </button>
+                </div>
+              </article>
+            )
+          )}
+          {settings.habit.shareCardsEnabled && snap.challengeDays > 0 && (
+            <div class="studio-actions">
+              <CardShare kind="challenge" number={snap.challengeDays} label="Challenge days" />
+            </div>
+          )}
+          <h2>All 30 days</h2>
+          <ol class="studio-challenge__days">
+            {challenge30.map((item) => (
+              <li key={item.day} aria-current={item.day === day && !complete ? 'step' : undefined}>
+                <span>Day {item.day}</span> {item.title}
+                {item.day <= snap.challengeDays && (
+                  <span class="studio-visually-hidden"> (done)</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+      <div class="studio-actions">
+        <a class="studio-button studio-button--quiet" href="#/">
+          Back to Home
+        </a>
+      </div>
+    </section>
+  );
+}

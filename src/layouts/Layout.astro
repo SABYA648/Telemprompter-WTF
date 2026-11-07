@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import '../styles/author-card.css';
+import UmamiScript from '../components/UmamiScript.astro';
 
 interface Props {
   title: string;
@@ -33,10 +34,10 @@ const personSchema = {
   name: 'Sabyasachi Mishra',
   url: 'https://sabya.pm',
   image: 'https://sabya.pm/embed/author-card/avatar-192.webp',
-  jobTitle: 'AI Product Manager',
+  jobTitle: 'Product Manager',
   description:
-    'AI product manager who builds production AI systems and independently operates Shiproom, teleprompter.wtf, and compressimage.fun.',
-  knowsAbout: ['AI product management', 'AI systems', 'autonomous agents', 'product strategy'],
+    'Product manager and independent builder of Shiproom, teleprompter.wtf, and compressimage.fun.',
+  knowsAbout: ['product management', 'software', 'product strategy'],
   sameAs: [
     'https://x.com/SabyaShips',
     'https://www.linkedin.com/in/sabya007/',
@@ -57,6 +58,8 @@ const personSchema = {
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Teleprompter" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="alternate" type="text/plain" title="LLM-readable site summary" href="/llms.txt" />
     <meta property="og:type" content={ogType} />
@@ -88,14 +91,10 @@ const personSchema = {
     {noindex && <meta name="robots" content="noindex,follow" />}
     {schema && <script is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />}
     <script is:inline type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+    <UmamiScript />
     <script>
       import { analytics, bindOpenTeleprompterCtas } from '../domain/analytics';
-      import { loadLocalState } from '../domain/localState';
-      // Apply a previously stored consent choice on every page, so Umami page views,
-      // GA page views, and content-to-product events work site-wide. Undecided or denied
-      // means nothing loads.
-      const consent = loadLocalState().privacyConsent;
-      if (consent.decided && consent.usageAnalytics) analytics.allow();
+      analytics.initialize();
       bindOpenTeleprompterCtas();
     </script>
   </head>
@@ -107,10 +106,15 @@ const personSchema = {
           teleprompter<span>.wtf</span>
         </a>
         <nav aria-label="Primary navigation">
-          <a href="/features">Features</a>
+          <a class="site-header__studio" href="/studio"
+            ><span class="site-header__studio-desktop">Studio</span><span
+              class="site-header__studio-mobile">Open Studio</span
+            ></a
+          >
+          <a href="/record">Record</a><a href="/templates">Templates</a>
           <a href="/guides">Guides</a>
           <a href="/tools">Tools</a>
-          <a href="/about">About</a>
+          <a href="/features">Features</a>
         </nav>
       </div>
     </header>
@@ -122,9 +126,13 @@ const personSchema = {
           <p>Paste. Present. Done. No account required.</p>
         </div>
         <nav aria-label="Footer navigation">
-          <a href="/features">Features</a>
+          <a href="/studio">Studio</a>
+          <a href="/record">Record</a><a href="/templates">Templates</a>
+          <a href="/hooks">Hooks</a>
           <a href="/guides">Guides</a>
           <a href="/tools">Tools</a>
+          <a href="/features">Features</a>
+          <a href="/compatibility">Compatibility</a>
           <a href="/privacy">Privacy</a>
           <a href="/about">About</a>
           <a href="https://github.com/SABYA648/Telemprompter-WTF" rel="noopener noreferrer"
@@ -216,5 +224,14 @@ const personSchema = {
         />
       </aside>
     </footer>
+    <a id="studio-return" class="studio-return" href="/studio" hidden>Continue in Studio</a>
+    <script is:inline>
+      try {
+        if (localStorage.getItem('studio.hasData'))
+          document.getElementById('studio-return').hidden = false;
+      } catch {
+        /* Storage unavailable. */
+      }
+    </script>
   </body>
 </html>

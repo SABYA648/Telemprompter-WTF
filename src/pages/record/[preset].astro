@@ -1,0 +1,164 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { recordPages, templates, hookNiches, presets } from '../../content/studio';
+import { factById, verifiedOn } from '../../content/studio/platformFacts';
+import { guideBySlug } from '../../content/guides';
+export function getStaticPaths() {
+  return recordPages.map((page) => ({ params: { preset: page.slug }, props: { page } }));
+}
+const { page } = Astro.props;
+// 12.4 content clusters for the five preset landings.
+const clusterByPreset = {
+  'instagram-reels': 'reels',
+  'youtube-shorts': 'shorts',
+  tiktok: 'tiktok',
+  youtube: 'youtube_landscape',
+  'linkedin-video': 'linkedin',
+} as const;
+const base = 'https://www.teleprompter.wtf';
+const canonical = `${base}/record/${page.slug}`;
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: page.seo.h1,
+    description: page.seo.description,
+    applicationCategory: 'MultimediaApplication',
+    operatingSystem: 'Any',
+    url: canonical,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${base}/` },
+      { '@type': 'ListItem', position: 2, name: 'Record', item: `${base}/record` },
+      { '@type': 'ListItem', position: 3, name: page.seo.h1, item: canonical },
+    ],
+  },
+];
+---
+
+<Layout title={page.seo.title} description={page.seo.description} schema={schema}>
+  <div class="guide-page section-wrap creator-content record-page">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span>/</span><a href="/record">Record</a><span>/</span><span
+        aria-current="page">{page.seo.h1}</span
+      >
+    </nav>
+    <header class="guide-header record-hero">
+      <p class="eyebrow">Browser video recorder</p><h1>{page.seo.h1}</h1><p>
+        {page.directAnswer}
+      </p><a
+        class="button button--primary"
+        href={page.ctaHref}
+        data-analytics-cta="hero"
+        data-page-type="record_preset"
+        data-content-cluster={clusterByPreset[page.presetId]}>{page.ctaLabel}</a
+      ><ul class="record-trust">{page.trustChips.map((chip) => <li>{chip}</li>)}</ul>
+    </header>
+    <section>
+      <h2>How it works</h2><ol>
+        {
+          page.howItWorks.map((step) => (
+            <li>
+              <strong>{step.title}.</strong> {step.text}
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+    <section>
+      <h2>Best settings for {presets.find((preset) => preset.id === page.presetId)?.name}</h2><p>
+        {page.settingsIntro}
+      </p><p class="updated">Platform facts checked {verifiedOn}.</p><ul>
+        {page.factIds.map((id) => <li>{factById.get(id)?.text}</li>)}
+      </ul><h3>Recording setup</h3><ul>{page.settingsTips.map((tip) => <li>{tip}</li>)}</ul>
+    </section>
+    <section>
+      <h2>Three scripts to start with</h2>{
+        page.starterScripts.map((script) => (
+          <article>
+            <>
+              <h3>{script.title}</h3>
+              <pre class="creator-script">{script.body}</pre>
+              <a
+                href={`/studio#/record/quick?handoff=${encodeURIComponent(JSON.stringify({ title: script.title, body: script.body, targetSeconds: script.targetSeconds, aspect: presets.find((preset) => preset.id === page.presetId)?.aspect }))}`}
+              >
+                Use this script
+              </a>
+            </>
+          </article>
+        ))
+      }
+    </section>
+    <section>
+      <h2>{page.builtInApp.heading}</h2>{
+        page.builtInApp.paragraphs.map((paragraph) => <p>{paragraph}</p>)
+      }
+    </section>
+    <section>
+      <h2>Questions about recording</h2>{
+        page.faq.map((item) => (
+          <div>
+            <>
+              <h3>{item.question}</h3>
+              <p>{item.answer}</p>
+            </>
+          </div>
+        ))
+      }
+    </section>
+    <section class="creator-related">
+      <h2>Keep making videos</h2><ul>
+        {
+          page.related.templates.map((id) => (
+            <li>
+              <a href={`/templates/${id}`}>
+                {templates.find((template) => template.id === id)?.name} template
+              </a>
+            </li>
+          ))
+        }<li>
+          <a href={`/hooks/${page.related.hooksNiche}`}
+            >{hookNiches.find((niche) => niche.id === page.related.hooksNiche)?.name} opening hooks</a
+          >
+        </li>{
+          page.related.guides.map((slug) => (
+            <li>
+              <a href={`/guides/${slug}`}>{guideBySlug.get(slug)?.title}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+    {
+      page.slug === 'instagram-reels' && (
+        <p>
+          For a finishing workflow, read the{' '}
+          <a href="/guides/capcut-teleprompter">CapCut teleprompter and editor guide</a>. Before
+          posting, <a href="/tools/caption-counter">check your Instagram caption and hashtags</a>.
+        </p>
+      )
+    }
+    {
+      page.slug === 'youtube-shorts' && (
+        <p>
+          If you finish the video in an editor, see the{' '}
+          <a href="/guides/capcut-teleprompter">CapCut teleprompter guide</a>. To check sound before
+          filming, read the{' '}
+          <a href="/guides/external-microphone-for-phone-video">phone microphone setup guide</a>.
+        </p>
+      )
+    }
+    {
+      page.slug === 'linkedin-video' && (
+        <p>
+          For hands-free control, see the{' '}
+          <a href="/guides/teleprompter-remote-control">clicker and keyboard guide</a>.
+        </p>
+      )
+    }
+  </div>
+</Layout>

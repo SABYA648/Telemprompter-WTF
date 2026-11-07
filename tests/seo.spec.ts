@@ -4,7 +4,6 @@ const indexableRoutes = [
   '/',
   '/features',
   '/compatibility',
-  '/private-voice-tracking',
   '/privacy',
   '/about',
   '/guides',
@@ -62,13 +61,15 @@ test('homepage ships exactly one high-priority hero image', async ({ page }) => 
   await expect(hero).toHaveAttribute('height', '683');
 });
 
+test('Studio is noindex and absent from the sitemap', async ({ page, request }) => {
+  await page.goto('/studio');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
+  const sitemap = await request.get('/sitemap-0.xml');
+  expect(await sitemap.text()).not.toContain('/studio');
+});
+
 test('JSON-LD blocks parse as valid JSON', async ({ page }) => {
-  for (const path of [
-    '/',
-    '/compatibility',
-    '/private-voice-tracking',
-    '/guides/how-to-use-a-teleprompter',
-  ]) {
+  for (const path of ['/', '/compatibility', '/guides/how-to-use-a-teleprompter']) {
     await page.goto(path);
     const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();
     expect(blocks.length, path).toBeGreaterThan(0);
@@ -88,7 +89,7 @@ test('robots, sitemap, llms, health, and custom 404 are served', async ({ reques
   const llms = await request.get('/llms.txt');
   expect(llms.status()).toBe(200);
   const llmsText = await llms.text();
-  expect(llmsText).toContain('Private Precision');
+  expect(llmsText).toContain('manual');
   expect(llmsText).toContain('https://www.teleprompter.wtf/compatibility');
   expect(llmsText).toContain('https://www.teleprompter.wtf/guides');
 
@@ -111,7 +112,7 @@ test('robots, sitemap, llms, health, and custom 404 are served', async ({ reques
 
 test('crawlable internal links on representative pages resolve', async ({ page, request }) => {
   const links = new Set<string>();
-  for (const path of ['/', '/guides', '/compatibility', '/private-voice-tracking']) {
+  for (const path of ['/', '/guides', '/compatibility', '/guides/voice-activated-teleprompters']) {
     await page.goto(path);
     for (const href of await page
       .locator('a[href^="/"]')

@@ -1,206 +1,52 @@
 ---
-import PrivacyActions from '../components/PrivacyActions';
 import Layout from '../layouts/Layout.astro';
-const title = 'Privacy Policy & Local Data Boundary | teleprompter.wtf';
+const title = 'Privacy and Local Data | teleprompter.wtf';
 const description =
-  'A plain-language account of how teleprompter.wtf handles scripts, microphone audio, local voice models, recordings, storage, and optional usage analytics.';
-const schema = [
-  {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.teleprompter.wtf/' },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: 'Privacy',
-        item: 'https://www.teleprompter.wtf/privacy',
-      },
-    ],
-  },
-];
+  'Studio keeps scripts, ideas, settings and recordings in your browser on this device. Learn how local storage and self-hosted Umami analytics work.';
 ---
 
-<Layout title={title} description={description} schema={schema}>
+<Layout title={title} description={description}>
   <article class="prose-page section-wrap">
     <nav class="breadcrumbs" aria-label="Breadcrumb">
       <a href="/">Home</a><span>/</span><span aria-current="page">Privacy</span>
     </nav>
     <header class="page-intro">
-      <p class="eyebrow">Plain-language privacy</p>
-      <h1>Your script, voice, and recordings stay on your device.</h1>
-      <p>
-        The teleprompter processes and displays your words on your device. We designed the core tool
-        so it does not need to receive them. Optional site measurement is separate and off until you
-        choose it.
-      </p>
-      <p class="updated">Last updated: 23 August 2026</p>
+      <p class="eyebrow">Privacy</p><h1>Your work stays on your device.</h1>
     </header>
-    <div class="prose-grid">
-      <aside class="privacy-summary" aria-label="Privacy summary">
-        <strong>In one minute</strong>
-        <ul>
-          <li>No account or login</li>
-          <li>No script upload</li>
-          <li>No speech or audio upload</li>
-          <li>No recording upload</li>
-          <li>Optional measurement only after explicit consent</li>
-        </ul>
-      </aside>
-      <div class="prose-body">
-        <h2>The short version</h2>
-        <div
-          class="privacy-table-wrap"
-          role="region"
-          aria-label="Privacy data handling table"
-          tabindex="0"
-        >
-          <table class="privacy-table">
-            <thead
-              ><tr
-                ><th>Data</th><th>Used for</th><th>Processed where</th><th>Persisted where</th><th
-                  >Sent externally</th
-                ></tr
-              ></thead
-            >
-            <tbody>
-              <tr
-                ><th scope="row">Script</th><td>Editing and presenting</td><td>Browser</td><td
-                  >Local storage when autosave is available</td
-                ><td>No</td></tr
-              >
-              <tr
-                ><th scope="row">Preferences</th><td>Presenter setup</td><td>Browser</td><td
-                  >Local storage</td
-                ><td>No</td></tr
-              >
-              <tr
-                ><th scope="row">Manual Mode</th><td>Elapsed-time scroll</td><td>Browser</td><td
-                  >Nowhere</td
-                ><td>No</td></tr
-              >
-              <tr
-                ><th scope="row">Smart Pace microphone</th><td>Script position & rhythm</td><td
-                  >Browser speech recognition, or Web Audio when unavailable</td
-                ><td>Nowhere by us. Your browser's recognition service may receive audio</td><td
-                  >No</td
-                ></tr
-              >
-              <tr
-                ><th scope="row">Private Precision microphone</th><td>Local speech alignment</td><td
-                  >Browser Web Worker</td
-                ><td>Nowhere (in-memory PCM only)</td><td>No</td></tr
-              >
-              <tr
-                ><th scope="row">Recognition fragments</th><td>Local script alignment</td><td
-                  >Browser Web Worker</td
-                ><td>Nowhere (transient in-memory text)</td><td>No</td></tr
-              >
-              <tr
-                ><th scope="row">Voice model</th><td>Local recognition</td><td>Browser</td><td
-                  >Versioned Cache Storage</td
-                ><td>Downloaded from teleprompter.wtf on user opt-in only</td></tr
-              >
-              <tr
-                ><th scope="row">Recordings</th><td>Local capture and preview</td><td
-                  >Browser MediaRecorder</td
-                ><td>In-memory Blob; saved only when you download the file</td><td>No</td></tr
-              >
-              <tr
-                ><th scope="row">Umami events</th><td>Aggregate product usage</td><td
-                  >Self-hosted Umami at analytics.sabya.pm, only after opt-in</td
-                ><td>According to operator settings</td><td>Yes, after analytics consent</td></tr
-              >
-              <tr
-                ><th scope="row">GA4 events</th><td>Aggregate product usage</td><td
-                  >Google Analytics, only after opt-in when configured</td
-                ><td>According to operator and Google settings</td><td
-                  >Yes, after analytics consent</td
-                ></tr
-              >
-            </tbody>
-          </table>
-        </div>
-        <h2>Script processing</h2>
-        <p>
-          Your script stays in your browser. Script contents are not added to the page URL, sent to
-          teleprompter.wtf, included in analytics events, or intentionally written to application
-          logs.
-        </p>
-        <h2>Local browser storage</h2>
-        <p>
-          To restore your work after a refresh, the tool may save your script and preferences in
-          your browser’s local storage. That data remains associated with this browser profile on
-          this device. It is not synchronization and will not appear on another device.
-        </p>
-        <p>
-          Anyone with access to your unlocked browser profile may be able to access locally stored
-          data. Clear the script after working with sensitive material, use a private browsing
-          window, or use the control below to remove all data owned by teleprompter.wtf.
-        </p>
-        <PrivacyActions client:load />
-        <h2>Microphone and local voice tracking</h2>
-        <p>
-          The microphone is requested only after you start presenting with a voice mode selected.
-          Smart Pace uses the speech recognition built into your browser to find your place in the
-          script. That recognition belongs to your browser, not to us, and some browsers process the
-          audio on their own servers. When recognition is unavailable it falls back to analyzing
-          signal energy and cadence locally with Web Audio, which transcribes nothing. Private
-          Precision Beta runs a Whisper speech model on your device instead, using temporary
-          recognition fragments that never leave the device. Your script is never transmitted in any
-          mode. Stopping voice tracking or leaving the presenter stops media tracks, closes the
-          audio context, and disposes of local recognition state.
-        </p>
-        <p>
-          The Private Precision model is downloaded once, on your explicit request, and kept in this
-          browser for future visits. The first download transfers about 67 MB in total: 45 MB of
-          model files served from teleprompter.wtf, plus the ONNX WASM runtime fetched at first use.
-          The model is stored in versioned browser Cache Storage and is removable without deleting
-          your script.
-        </p>
-        <h2>Local recording</h2>
-        <p>
-          Screen and camera capture use browser media APIs (getDisplayMedia and getUserMedia).
-          Recordings are created locally and are not uploaded: recorded chunks become a local Blob
-          for preview and direct file saving. The application has no recording endpoint and does not
-          persist a recording unless you choose to save the file.
-        </p>
-        <h2>Optional usage analytics</h2>
-        <p>
-          Optional usage analytics measure product usage with your consent. It is a single,
-          unchecked choice: no analytics script is loaded before you allow it, No thanks is given
-          equal prominence, and the teleprompter works identically either way. You can reopen
-          Privacy choices on the homepage and withdraw consent at any time.
-        </p>
-        <p>
-          Self-hosted Umami (analytics.sabya.pm) records page views and a fixed vocabulary of
-          low-cardinality product events. Google Analytics 4 is included only when the operator
-          configures a measurement ID. Neither receives your script or voice content. When GA4 is
-          present, advertising storage, ad user data, ad personalization, and Google signals stay
-          denied. Events never include script text, recognition fragments, filenames, microphone
-          labels, clipboard contents, or raw error messages.
-        </p>
-        <h2>Network requests</h2>
-        <p>
-          Loading the website necessarily reveals ordinary request information to the hosting
-          provider, such as an IP address, user agent, and requested page. The core teleprompter
-          requires no network request containing your script.
-        </p>
-        <h2>Your choices</h2>
-        <p>
-          You can decline optional analytics, clear the current script, clear saved preferences,
-          remove the local voice model, or configure the browser to block storage. Clearing all site
-          data through browser settings removes both local app data and model caches.
-        </p>
-        <h2>Questions and changes</h2>
-        <p>
-          This policy will be updated when the product’s data practices change. Questions or privacy
-          issues can be raised in the project’s <a
-            href="https://github.com/SABYA648/Telemprompter-WTF/issues"
-            rel="noopener noreferrer">public issue tracker</a
-          >; do not include private script content.
-        </p>
-      </div>
+    <div class="prose-body">
+      <h2>Studio storage</h2><p>
+        Studio stores scripts, ideas, settings, reminders, streak dates and take chunks in IndexedDB
+        on this device. The classic editor uses browser-local storage. A transfer code contains
+        scripts, ideas, settings, streak history and the analytics device identifier when you choose
+        to copy it; it never contains takes. Anyone with a shared code or link can read that data,
+        which may be sensitive, so share it only with someone you trust.
+      </p>
+      <h2>Recordings and exports</h2><p>
+        The camera and microphone stream is recorded in your browser. Takes remain in browser
+        storage until you share or download them. Nothing is uploaded by the app. Browser storage
+        can be cleared by the browser or by you, so save important takes to Photos or Files
+        promptly. Private browsing may lose takes when the tab closes.
+      </p>
+      <h2>Offline use and reminders</h2><p>
+        The Home Screen app caches pages and assets for offline use. Calendar reminders are
+        generated as a file on your device; there is no reminder server. You can remove a reminder
+        in your calendar.
+      </p>
+      <h2>Usage measurement</h2><p>
+        We use self-hosted Umami to measure page views and product actions with a random device
+        identifier stored in your browser. Events never contain script text, titles, idea text, file
+        names or recording content. Each visit also carries coarse labels: display mode, device
+        class, the week of your first visit, a take count range, a streak range and which version of
+        two small Studio experiments you see. Badges, goals, challenge days and quick ratings are
+        stored on this device; only the event that one happened, with a fixed label, is measured.
+        Share cards are made on your device and show a number, never your script.
+      </p>
+      <h2>Remove data</h2><p>
+        Delete scripts and takes in Studio, or remove all site data in your browser settings. To ask
+        a question, use the <a href="https://github.com/SABYA648/Telemprompter-WTF/issues"
+          >project issue tracker</a
+        > without private content.
+      </p>
     </div>
   </article>
 </Layout>

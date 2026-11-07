@@ -1,0 +1,3378 @@
+:root {
+  --studio-bg: #090a09;
+  --studio-text: #f6f0e4;
+  --studio-muted: #aaa89f;
+  --studio-accent: #e4492e;
+  --studio-card: #151714;
+}
+* {
+  box-sizing: border-box;
+}
+.studio-body {
+  margin: 0;
+  min-width: 0;
+  background: var(--studio-bg);
+  color: var(--studio-text);
+  font-family: system-ui, sans-serif;
+}
+.studio-shell {
+  min-height: 100dvh;
+  padding: calc(24px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+    calc(84px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+}
+.studio-screen {
+  max-width: 760px;
+  margin: 0 auto;
+  overflow-wrap: anywhere;
+}
+.studio-loading {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+.studio-kicker {
+  color: var(--studio-accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+}
+.studio-screen h1 {
+  margin: 0.2rem 0 0.6rem;
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  line-height: 1;
+}
+.studio-card,
+.studio-list-item,
+.studio-deleted {
+  background: var(--studio-card);
+  border: 1px solid #292b27;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 20px;
+}
+.studio-actions,
+.studio-toolbar,
+.studio-stats,
+.studio-section-durations {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.studio-button,
+.studio-toolbar button,
+.studio-list-item button {
+  min-height: 48px;
+  border-radius: 10px;
+  border: 0;
+  padding: 0 14px;
+  background: var(--studio-accent);
+  color: var(--studio-bg);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.studio-button--quiet,
+.studio-toolbar button,
+.studio-list-item button {
+  background: #292b27;
+  color: var(--studio-text);
+}
+.studio-button--danger {
+  background: #8e3126;
+  color: #fff;
+}
+.studio-tabs {
+  position: fixed;
+  z-index: 5;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(56px + env(safe-area-inset-bottom));
+  padding: 6px 8px env(safe-area-inset-bottom);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  background: #11120f;
+  border-top: 1px solid #292b27;
+}
+.studio-tabs a {
+  color: var(--studio-muted);
+  font-size: 0.76rem;
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+  border-radius: 10px;
+}
+.studio-tabs .is-active {
+  color: var(--studio-text);
+  background: #2c2e28;
+  font-weight: 700;
+}
+/* The dot identifies Record; only the current route gets the active fill. */
+.studio-tabs .studio-record-link {
+  grid-template-columns: auto auto;
+  align-content: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.84rem;
+}
+.studio-tabs .studio-record-link::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--studio-accent);
+}
+.studio-screen-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.studio-label {
+  display: grid;
+  gap: 7px;
+  color: var(--studio-muted);
+  margin-top: 16px;
+  font-weight: 700;
+}
+.studio-label input,
+.studio-label textarea,
+.studio-label select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px;
+  border-radius: 9px;
+  border: 1px solid #3a3c37;
+  background: #10110f;
+  color: var(--studio-text);
+  font: inherit;
+}
+.studio-label textarea {
+  min-height: 260px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.studio-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 16px;
+}
+.studio-list-item {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--studio-text);
+  text-align: left;
+}
+.studio-list-item a {
+  color: inherit;
+  text-decoration: none;
+  display: grid;
+  gap: 4px;
+}
+.studio-list-item span {
+  color: var(--studio-muted);
+  font-size: 0.88rem;
+}
+.studio-list-item button {
+  min-height: 40px;
+  flex: none;
+}
+.studio-deleted h2 {
+  margin-top: 0;
+}
+.studio-back {
+  color: var(--studio-text);
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+}
+.studio-stats span,
+.studio-section-durations span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #252620;
+  font-size: 0.82rem;
+}
+.fit-on_target {
+  color: #a7e1b2;
+}
+.fit-over {
+  color: #ffb7a9;
+}
+.studio-warning {
+  color: #ffd47b;
+}
+.studio-grid-fields {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+@media (min-width: 1024px) {
+  .studio-shell {
+    padding: 32px 48px 32px 150px;
+  }
+  .studio-tabs {
+    top: 0;
+    bottom: 0;
+    right: auto;
+    width: 124px;
+    height: 100dvh;
+    padding: 20px 10px;
+    display: flex;
+    flex-direction: column;
+    border-top: 0;
+    border-right: 1px solid #292b27;
+  }
+  .studio-tabs a {
+    min-height: 48px;
+  }
+  .studio-tabs .studio-record-link {
+    min-height: 48px;
+  }
+}
+.studio-body {
+  overflow-x: hidden;
+}
+.studio-body button,
+.studio-body select,
+.studio-body a {
+  touch-action: manipulation;
+}
+.studio-body :focus-visible {
+  outline: 3px solid #ffd47b;
+  outline-offset: 3px;
+}
+.studio-list-item button {
+  min-height: 48px;
+}
+.studio-storage-warning {
+  margin: 0 auto 20px;
+  max-width: 760px;
+  padding: 12px;
+  border: 1px solid #ffd47b;
+  border-radius: 10px;
+  color: #ffd47b;
+}
+.studio-recovery-notice {
+  position: fixed;
+  z-index: 6;
+  right: 12px;
+  bottom: calc(140px + env(safe-area-inset-bottom));
+  left: 12px;
+  background: #1a1c18;
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-body *,
+  .studio-body *::before,
+  .studio-body *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+.record-screen {
+  position: fixed;
+  inset: 0 0 calc(56px + env(safe-area-inset-bottom));
+  background: #000;
+  color: #fff;
+  overflow: hidden;
+  z-index: 4;
+}
+@media (min-width: 1024px) {
+  .record-screen {
+    inset: 0 0 0 124px;
+  }
+}
+.record-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+.record-preview.mirrored {
+  transform: scaleX(-1);
+}
+.prompter-window {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 4px);
+  left: 4%;
+  width: 92%;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 14px;
+  touch-action: none;
+}
+.prompter-scroll {
+  height: 100%;
+  overflow: auto;
+  scrollbar-width: none;
+  text-align: left;
+  color: #fff;
+}
+.prompter-scroll::-webkit-scrollbar {
+  display: none;
+}
+.prompter-content {
+  padding-inline: 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.prompter-content h2 {
+  font-size: 0.75em;
+  color: #8a8a8f;
+  margin: 0.3em 0;
+}
+.prompter-chip {
+  font-size: 0.55em;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  white-space: nowrap;
+}
+.prompter-cue-band {
+  position: absolute;
+  pointer-events: none;
+  left: 0;
+  right: 0;
+  top: 30%;
+  height: 1.35em;
+  background: rgba(255, 255, 255, 0.09);
+  z-index: 0;
+}
+.record-timer {
+  position: absolute;
+  right: 8px;
+  top: 4px;
+  z-index: 2;
+  font-size: 0.8rem;
+  background: #222;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.target-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: rgba(244, 241, 234, 0.6);
+}
+.target-progress.over {
+  background: #ff4d4d;
+}
+.record-controls {
+  position: absolute;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  display: grid;
+  gap: 10px;
+  padding: 0 12px;
+}
+.record-tray,
+.record-main-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 14px;
+  padding: 5px;
+}
+.record-sections label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 0 6px;
+  color: #fff;
+}
+.record-sections select {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45vw;
+}
+.record-screen button,
+.record-screen select,
+.record-screen a {
+  min-width: 48px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: #272923;
+  color: #fff;
+  padding: 6px;
+  font: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.record-main-controls {
+  justify-content: space-around;
+}
+.record-main-controls .record-button {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  border: 5px solid #fff;
+  background: #e4492e;
+  border-radius: 50%;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+.record-screen button:disabled {
+  opacity: 0.4;
+}
+.record-countdown {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 8rem;
+  font-weight: 800;
+}
+.record-notice,
+.record-memory {
+  position: absolute;
+  top: 35%;
+  left: 5%;
+  right: 5%;
+  padding: 10px;
+  background: #222;
+  border-radius: 9px;
+  text-align: center;
+}
+.record-memory {
+  top: auto;
+  bottom: 180px;
+}
+.record-thirds {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to right,
+      transparent 33.2%,
+      #ffffff66 33.3%,
+      transparent 33.5%,
+      transparent 66.5%,
+      #ffffff66 66.6%,
+      transparent 66.8%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 33.2%,
+      #ffffff66 33.3%,
+      transparent 33.5%,
+      transparent 66.5%,
+      #ffffff66 66.6%,
+      transparent 66.8%
+    );
+}
+.record-safe-zone {
+  position: absolute;
+  inset: 18% 7% 23%;
+  border: 2px dashed #ffffff99;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  font-size: 0.7rem;
+  text-transform: capitalize;
+}
+.sheet-backdrop {
+  position: fixed;
+  inset: 0 0 calc(56px + env(safe-area-inset-bottom));
+  background: #000a;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+@media (min-width: 1024px) {
+  .sheet-backdrop {
+    bottom: 0;
+  }
+}
+.record-sheet {
+  background: #1a1c18;
+  color: #fff;
+  border-radius: 18px 18px 0 0;
+  width: min(100%, 640px);
+  max-height: min(85dvh, calc(100dvh - 56px - env(safe-area-inset-bottom)));
+  overflow: auto;
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+}
+.record-sheet label {
+  display: grid;
+  gap: 5px;
+}
+.record-sheet select {
+  width: 100%;
+}
+.record-sheet video,
+.take-player {
+  width: 100%;
+  max-height: 45dvh;
+  background: #000;
+}
+.review-sheet {
+  min-height: 75dvh;
+}
+.review-sheet .studio-actions {
+  margin-top: 0;
+}
+.studio-interstitial {
+  display: grid;
+  gap: 14px;
+  align-content: center;
+  min-height: 70dvh;
+}
+.studio-interstitial .studio-button {
+  width: max-content;
+}
+.take-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  align-items: center;
+  color: #fff;
+  border-top: 1px solid #555;
+  text-decoration: none;
+}
+.take-row span:last-child {
+  color: #ffd47b;
+}
+.studio-card meter {
+  width: 100%;
+}
+@media (orientation: landscape) and (max-width: 1023px) {
+  .dock-auto .prompter-window,
+  .dock-left .prompter-window,
+  .dock-right .prompter-window {
+    top: 0;
+    left: 0;
+    height: 100dvh !important;
+    width: 40%;
+    border-radius: 0;
+  }
+  .dock-right .prompter-window {
+    left: auto;
+    right: 0;
+  }
+  .dock-auto .record-controls,
+  .dock-left .record-controls {
+    left: 42%;
+  }
+  .dock-right .record-controls {
+    left: 0;
+    right: 42%;
+  }
+}
+@media (min-width: 1024px) {
+  .dock-auto .prompter-window,
+  .dock-top .prompter-window {
+    width: 46%;
+    left: 27%;
+  }
+  .dock-left .prompter-window,
+  .dock-right .prompter-window {
+    top: 0;
+    width: 40%;
+    height: 100dvh !important;
+    border-radius: 0;
+  }
+  .dock-left .prompter-window {
+    left: 0;
+  }
+  .dock-right .prompter-window {
+    left: 60%;
+  }
+  .record-controls {
+    max-width: 720px;
+    margin: auto;
+  }
+}
+.record-screen.controls-dim .record-tray,
+.record-screen.controls-dim .record-main-controls > :not(.record-button) {
+  opacity: 0.3;
+}
+.record-screen.controls-dim .record-tray:focus-within,
+.record-screen.controls-dim .record-tray:hover,
+.record-screen.controls-dim .record-main-controls > :not(.record-button):focus-visible {
+  opacity: 1;
+}
+.record-aspect-warning {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 190px);
+  left: 5%;
+  right: 5%;
+  padding: 8px;
+  border-radius: 8px;
+  background: #553400;
+  color: #fff;
+  font-size: 0.8rem;
+  text-align: center;
+}
+.record-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.record-desktop-editor {
+  display: none;
+}
+@media (min-width: 1280px) {
+  .record-screen.has-editor .record-preview {
+    width: 60%;
+    margin-left: 40%;
+  }
+  .record-screen.has-editor.dock-auto .prompter-window,
+  .record-screen.has-editor.dock-top .prompter-window {
+    width: 27.6%;
+    left: 56.2%;
+  }
+  .record-screen.has-editor .record-controls {
+    left: 40%;
+    right: 0;
+    width: 60%;
+    max-width: none;
+  }
+  .record-screen.dock-left .record-preview,
+  .record-screen.dock-right .record-preview {
+    width: 100%;
+    margin-left: 0;
+  }
+  .record-screen.dock-left .record-desktop-editor,
+  .record-screen.dock-right .record-desktop-editor {
+    display: none;
+  }
+  .record-screen.dock-right .record-controls {
+    left: 0;
+    right: 40%;
+  }
+  .record-desktop-editor {
+    display: grid;
+    gap: 12px;
+    align-content: start;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 40%;
+    padding: 24px;
+    background: #121410;
+    overflow: auto;
+  }
+  .record-desktop-editor h2 {
+    margin: 0;
+  }
+  .record-desktop-editor label {
+    display: grid;
+    gap: 6px;
+  }
+  .record-desktop-editor input,
+  .record-desktop-editor textarea {
+    width: 100%;
+    border: 1px solid #555;
+    border-radius: 8px;
+    background: #23251f;
+    color: #fff;
+    padding: 10px;
+    font: inherit;
+  }
+  .record-desktop-editor textarea {
+    min-height: 55dvh;
+    resize: vertical;
+  }
+  .record-desktop-editor a {
+    justify-self: start;
+  }
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('/fonts/atkinson-hyperlegible/AtkinsonHyperlegible-Regular.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+.studio-settings-nav {
+  display: grid;
+  gap: 10px;
+}
+.studio-settings-nav .studio-card {
+  color: #fff;
+  text-decoration: none;
+  margin: 0;
+}
+.studio-settings-fields {
+  display: grid;
+  gap: 14px;
+  padding: 12px 0;
+}
+.studio-setting-field {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) minmax(120px, 1.3fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+.studio-setting-field input[type='checkbox'] {
+  width: 24px;
+  height: 24px;
+}
+.studio-setting-field select,
+.studio-setting-field input[type='range'] {
+  min-width: 0;
+  width: 100%;
+}
+.studio-setting-field select {
+  min-height: 48px;
+}
+.studio-setting-field output {
+  grid-column: 2;
+}
+.studio-setting-field button {
+  min-height: 44px;
+}
+.record-screen .prompter-window {
+  width: var(--prompter-width, 92%);
+  left: calc((100% - var(--prompter-width, 92%)) / 2);
+}
+.prompter-scroll.mirror-horizontal {
+  transform: scaleX(-1);
+}
+.prompter-scroll.mirror-vertical {
+  transform: scaleY(-1);
+}
+.prompter-scroll.mirror-both {
+  transform: scale(-1, -1);
+}
+.prompter-cue-band.cue-line {
+  height: 2px;
+  background: rgba(244, 241, 234, 0.5);
+}
+.prompter-cue-band.cue-arrow {
+  height: 0;
+  border-top: 2px solid rgba(244, 241, 234, 0.5);
+}
+.prompter-cue-band.cue-arrow::before {
+  content: '▶';
+  position: absolute;
+  left: 0;
+  top: -12px;
+  color: #f4f1ea;
+}
+.record-screen-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  border: solid #fff4e5;
+  box-shadow: inset 0 0 20px #fff4e5;
+}
+.record-screen-light.light-soft {
+  border-width: min(6vw, 6vh);
+}
+.record-screen-light.light-bright {
+  border-width: min(12vw, 12vh);
+}
+.record-level-overlay {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  pointer-events: none;
+  color: #ffe066;
+  font-size: 20px;
+}
+.record-level-overlay span {
+  display: inline-block;
+}
+.record-level-meter {
+  position: absolute;
+  z-index: 4;
+  left: 8px;
+  bottom: 155px;
+  width: 120px;
+  height: 12px;
+  background: #555;
+  border-radius: 9px;
+}
+.record-level-meter span {
+  display: block;
+  height: 100%;
+  background: #f4f1ea;
+  border-radius: inherit;
+}
+.record-level-meter i {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 16px;
+  background: white;
+}
+/* Readiness warnings sit in the meter row, under the prompter and over the shutter row, as a
+   glyph and one word each, so they can never cover the line being read. */
+.readiness-chips {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.readiness-chips > span {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(10, 10, 11, 0.72);
+  color: #f4f1ea;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.record-touch-lock {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  background: #0009;
+  display: grid;
+  align-content: center;
+  justify-content: center;
+  text-align: center;
+}
+@media (orientation: landscape) and (max-width: 1023px) {
+  .record-screen.dock-left .prompter-window {
+    left: 0;
+    width: 40%;
+  }
+  .record-screen.dock-right .prompter-window {
+    left: 60%;
+    width: 40%;
+  }
+}
+@media (min-width: 1280px) {
+  .record-screen.has-editor.dock-auto .prompter-window,
+  .record-screen.has-editor.dock-top .prompter-window {
+    width: calc(var(--prompter-width, 46%) * 0.6);
+    left: calc(40% + (60% - var(--prompter-width, 46%) * 0.6) / 2);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .record-screen * {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+  }
+}
+.studio-install-backdrop,
+.studio-preset-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #000a;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+}
+.studio-install-sheet,
+.studio-preset-sheet {
+  background: var(--studio-card);
+  color: var(--studio-text);
+  border-radius: 20px 20px 0 0;
+  padding: 24px max(24px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom));
+  width: min(100%, 520px);
+  display: grid;
+  gap: 12px;
+  box-shadow: 0 0 0 1px #ffffff33;
+}
+.studio-install-sheet h2,
+.studio-install-sheet p,
+.studio-preset-sheet h2,
+.studio-preset-sheet h3,
+.studio-preset-sheet p {
+  margin: 0;
+}
+.studio-preset-sheet {
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.studio-preset-sheet ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.studio-update {
+  position: fixed;
+  z-index: 110;
+  bottom: calc(70px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--studio-card);
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 0 0 1px #ffffff33;
+  white-space: nowrap;
+}
+.studio-transfer-manual {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+.studio-transfer-manual textarea {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+.studio-practice {
+  position: fixed;
+  z-index: 1;
+  inset: 0;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: calc(env(safe-area-inset-top) + 4px) 4% calc(env(safe-area-inset-bottom) + 68px);
+  overflow-y: auto;
+  background: #000;
+}
+.studio-practice > :not(video) {
+  width: min(100%, 760px);
+}
+.studio-practice-camera {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scaleX(-1);
+}
+.studio-practice-prompter {
+  flex: 0 0 38dvh;
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-practice-prompter {
+    scroll-behavior: auto;
+  }
+}
+.studio-practice-script {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: clamp(1.4rem, 4vw, 2.3rem);
+  line-height: 1.55;
+}
+/* M12 P4: Practice speaks the camera's language. Title pinned at top, the prompter fills the
+   middle, and a shutter-style row sits at the bottom with play as the one accent. */
+.studio-practice .studio-practice-title {
+  flex: none;
+  margin: 0;
+  padding: 12px 4px 4px;
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.studio-practice .studio-practice-prompter {
+  flex: 1 1 auto;
+  min-height: 30dvh;
+}
+.studio-practice-controls {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+}
+.studio-practice-controls > p {
+  margin: 0;
+}
+.studio-practice-status {
+  color: var(--studio-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+.studio-practice .studio-stepper {
+  justify-content: center;
+}
+.studio-practice-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto minmax(0, 1fr) minmax(0, 1fr);
+  justify-items: center;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 22px;
+  background: rgba(10, 10, 11, 0.7);
+}
+.studio-practice .studio-stepper button,
+.studio-practice-row > a,
+.studio-practice-row > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--studio-text);
+  font: inherit;
+  cursor: pointer;
+}
+.studio-practice-row > .is-on {
+  background: var(--studio-text);
+  color: #0a0a0b;
+}
+.studio-practice-row > .studio-practice-play {
+  width: 72px;
+  height: 72px;
+}
+.studio-practice-row > .studio-practice-play.is-primary {
+  background: var(--studio-accent);
+  color: #0a0a0b;
+}
+/* Camera, Restart and Done: a 48px disc with an 11px word under it, like the nav. */
+.studio-practice-row > .studio-captioned {
+  display: grid;
+  width: auto;
+  height: auto;
+  min-width: 48px;
+  border-radius: 0;
+  background: transparent;
+}
+.studio-practice-row .studio-captioned__disc {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.studio-practice-row .studio-captioned__label {
+  color: rgba(244, 241, 234, 0.8);
+}
+.studio-practice-row > .is-on.studio-captioned {
+  background: transparent;
+  color: var(--studio-text);
+}
+.studio-practice-row > .is-on .studio-captioned__disc {
+  background: var(--studio-text);
+  color: #0a0a0b;
+}
+.studio-practice-row__spacer {
+  width: 48px;
+}
+/* Close and play get the label's height below them, so every disc shares one centre line. */
+.studio-practice-row > a,
+.studio-practice-row > .studio-practice-play {
+  margin-bottom: 14px;
+}
+.studio-practice-row > button:disabled,
+.studio-practice .studio-stepper button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.studio-practice-summary {
+  margin: 8px 0 16px;
+  padding-left: 1.2rem;
+}
+.studio-practice progress {
+  width: 100%;
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  appearance: none;
+  overflow: hidden;
+}
+.studio-practice progress::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.14);
+}
+.studio-practice progress::-webkit-progress-value {
+  background: var(--studio-text);
+}
+.studio-practice progress::-moz-progress-bar {
+  background: var(--studio-text);
+}
+.studio-qr {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem auto;
+  background: white;
+  padding: 0.5rem;
+}
+.studio-disclosure summary {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.studio-idea-text {
+  white-space: pre-wrap;
+}
+.studio-next-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+}
+.studio-next-row a:first-child {
+  flex: 1 1 12rem;
+  color: inherit;
+}
+.studio-counted-field {
+  margin-top: 12px;
+}
+.studio-count {
+  margin: 4px 0 0;
+  color: var(--studio-muted);
+  font-size: 0.88rem;
+}
+.studio-count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.studio-count.is-near {
+  color: var(--studio-danger, #ff4d4d);
+  font-weight: 700;
+}
+.studio-visually-hidden:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.studio-script-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 16px 12px;
+  border: 1px solid #292b27;
+  border-radius: 16px;
+  background: var(--studio-card);
+}
+.studio-script-card__main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  min-height: 44px;
+  color: var(--studio-text);
+  text-decoration: none;
+}
+.studio-script-card__title {
+  display: block;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+.studio-script-card__meta {
+  color: var(--studio-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  overflow-wrap: normal;
+}
+.studio-script-card__actions,
+.studio-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.studio-script-card__actions {
+  padding-top: 10px;
+  border-top: 1px solid #262823;
+}
+.studio-script-card__actions .studio-chip--danger {
+  margin-left: auto;
+}
+.studio-script-card__question {
+  flex: 1 1 100%;
+  font-weight: 700;
+}
+.studio-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid #3a3c36;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.studio-chip:disabled {
+  color: var(--studio-muted);
+  border-style: dashed;
+  cursor: default;
+}
+.studio-chip--danger {
+  border-color: #6d2a22;
+  color: #ff9d8f;
+}
+.studio-chip--danger-solid {
+  border-color: #8e3126;
+  background: #8e3126;
+  color: #fff;
+}
+.studio-row-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: row;
+}
+.studio-row {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid #262823;
+}
+.studio-row__title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+ol.studio-row-list .studio-row__title::before {
+  counter-increment: row;
+  content: counter(row) '. ';
+}
+
+/* M9 habit system */
+.studio-setting-field--check {
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 12px;
+}
+.studio-muted {
+  color: var(--studio-muted);
+  font-size: 0.9rem;
+}
+.studio-habit-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.studio-habit-summary__text {
+  min-width: 0;
+  flex: 1;
+}
+.studio-habit-summary__text p {
+  margin: 4px 0 0;
+}
+.studio-habit-summary__streak {
+  font-size: 1.25rem;
+}
+.studio-habit-summary__goal {
+  font-weight: 700;
+}
+.studio-habit-summary__text > [role='group'] + .studio-habit-summary__goal {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #292b27;
+}
+.studio-goal-ring {
+  --goal: 0%;
+  flex: none;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--studio-accent) var(--goal), #292b27 0);
+}
+.studio-goal-ring span {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--studio-card);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+.studio-actions--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+}
+.studio-today h2 {
+  margin: 0;
+  color: var(--studio-accent);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.studio-today__title {
+  margin: 6px 0 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.studio-today__hook {
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+.studio-rating {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
+  margin-top: 12px;
+}
+.studio-rating .studio-button {
+  min-width: 0;
+  padding: 0;
+}
+.studio-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 12px;
+  margin: 12px 0 0;
+}
+.studio-stat-grid div {
+  min-width: 0;
+}
+.studio-stat-grid dt {
+  color: var(--studio-muted);
+  font-size: 0.85rem;
+}
+.studio-stat-grid dd {
+  margin: 2px 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+.studio-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.studio-badges li {
+  border: 1px solid #3a3c36;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+.studio-celebration {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--studio-accent);
+  animation: studio-celebrate 420ms ease-out both;
+}
+.studio-celebration .studio-kicker {
+  margin: 0;
+}
+.studio-celebration h2 {
+  margin: 4px 0;
+}
+.studio-celebration__burst {
+  position: absolute;
+  inset: -40% -20% auto auto;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(228, 73, 46, 0.35), rgba(228, 73, 46, 0) 70%);
+  pointer-events: none;
+  animation: studio-burst 900ms ease-out both;
+}
+@keyframes studio-celebrate {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes studio-burst {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.studio-challenge__meter {
+  height: 12px;
+  margin-top: 16px;
+  border-radius: 999px;
+  background: #292b27;
+  overflow: hidden;
+}
+.studio-challenge__meter span {
+  display: block;
+  height: 100%;
+  background: var(--studio-accent);
+}
+.studio-challenge__days {
+  margin: 8px 0 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.studio-challenge__days li {
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: var(--studio-muted);
+}
+.studio-challenge__days li span:first-child {
+  display: inline-block;
+  min-width: 4.2em;
+  font-weight: 700;
+  color: var(--studio-text);
+}
+.studio-challenge__days li[aria-current='step'] {
+  background: var(--studio-card);
+  border: 1px solid var(--studio-accent);
+  color: var(--studio-text);
+}
+@media (max-width: 340px) {
+  .studio-goal-ring {
+    width: 72px;
+    height: 72px;
+  }
+  .studio-goal-ring span {
+    width: 54px;
+    height: 54px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-celebration,
+  .studio-celebration__burst {
+    animation: none;
+  }
+}
+
+/* M12 Studio camera interface. Tokens follow DESIGN.md (Studio Camera). The accent marks only
+   the record action, the one primary action per screen, and the active tab. */
+:root {
+  --studio-bg: #0a0a0b;
+  --studio-text: #f4f1ea;
+  --studio-muted: #8a8a8f;
+  --studio-accent: #f0472a;
+  /* Accent as text on dark surfaces: 5.7:1 on #202024, 6.4:1 on #161618 (WCAG AA). */
+  --studio-accent-text: #ff6a4d;
+  --studio-on-accent: #0a0a0b;
+  --studio-card: #161618;
+  --studio-raised: #202024;
+  --studio-border: #2a2a2e;
+  --studio-danger: #ff4d4d;
+  --studio-nav: calc(64px + env(safe-area-inset-bottom));
+}
+.studio-body {
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+.studio-body ::selection {
+  background: rgba(244, 241, 234, 0.25);
+}
+.studio-body :focus-visible {
+  outline: 2px solid var(--studio-text);
+  outline-offset: 2px;
+}
+.studio-shell {
+  padding-bottom: calc(var(--studio-nav) + 32px);
+}
+.studio-screen h1 {
+  margin: 0 0 16px;
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.studio-screen h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.studio-screen h3 {
+  margin: 20px 0 8px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--studio-muted);
+}
+.studio-kicker,
+.studio-muted {
+  color: var(--studio-muted);
+}
+.studio-card,
+.studio-list-item,
+.studio-deleted {
+  background: var(--studio-card);
+  border: 0;
+  border-radius: 22px;
+  padding: 16px;
+}
+
+/* Buttons: one accent primary per screen; everything else is a ghost on the raised surface. */
+.studio-button {
+  min-height: 48px;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 16px;
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+  font-weight: 700;
+}
+.studio-button--quiet,
+.studio-toolbar button,
+.studio-list-item button {
+  background: var(--studio-raised);
+  color: var(--studio-text);
+}
+.studio-button--danger {
+  background: var(--studio-raised);
+  color: var(--studio-danger);
+}
+.studio-button:disabled {
+  opacity: 0.45;
+}
+.studio-button svg,
+.studio-pill svg {
+  flex: none;
+}
+.studio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.studio-text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--studio-muted);
+  font-weight: 600;
+}
+.studio-chip {
+  border-color: var(--studio-border);
+}
+.studio-chip--danger {
+  border-color: var(--studio-border);
+  color: var(--studio-danger);
+}
+.studio-chip--danger-solid {
+  border-color: var(--studio-danger);
+  background: var(--studio-danger);
+  color: var(--studio-on-accent);
+}
+.studio-label input,
+.studio-label textarea,
+.studio-label select,
+.studio-filter-row input,
+.studio-filter-row select {
+  border: 1px solid var(--studio-border);
+  border-radius: 10px;
+  background: var(--studio-card);
+  color: var(--studio-text);
+  font: inherit;
+}
+.studio-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.studio-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.studio-section-head h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.studio-storage-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  font-size: 0.875rem;
+}
+.studio-update {
+  border-color: var(--studio-border);
+}
+
+/* Bottom bar: four icon tabs around an elevated record button. */
+.studio-tabs {
+  top: auto;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: var(--studio-nav);
+  padding: 0 8px env(safe-area-inset-bottom);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  gap: 4px;
+  background: var(--studio-card);
+  border: 0;
+  border-top: 1px solid var(--studio-border);
+}
+.studio-tabs a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 56px;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--studio-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+.studio-tabs a.is-active {
+  background: transparent;
+  color: var(--studio-accent-text);
+  font-weight: 700;
+}
+.studio-tabs .studio-record-link {
+  justify-self: center;
+  align-self: start;
+  width: 64px;
+  height: 64px;
+  min-height: 64px;
+  margin-top: -12px;
+  border-radius: 50%;
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+  box-shadow:
+    0 0 0 4px var(--studio-bg),
+    0 8px 20px rgba(0, 0, 0, 0.45);
+}
+.studio-tabs .studio-record-link::before {
+  display: none;
+}
+/* On Record itself the shutter is the action, so the active tab turns tinted like the others. */
+.studio-tabs .studio-record-link.is-active {
+  background: var(--studio-raised);
+  color: var(--studio-accent-text);
+  box-shadow:
+    0 0 0 4px var(--studio-bg),
+    0 0 0 5px var(--studio-accent);
+}
+.studio-tabs .studio-record-link svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* Home */
+.studio-home__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 16px;
+}
+.studio-home__top h1 {
+  margin: 0;
+  flex: 1 1 12rem;
+}
+.studio-streak {
+  position: relative;
+  flex: none;
+}
+.studio-streak summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 999px;
+  background: var(--studio-raised);
+  font-size: 0.8125rem;
+  list-style: none;
+  cursor: pointer;
+}
+.studio-streak summary::-webkit-details-marker {
+  display: none;
+}
+.studio-streak summary > svg {
+  color: var(--studio-muted);
+  transition: transform 150ms ease;
+}
+.studio-streak[open] summary > svg {
+  transform: rotate(180deg);
+}
+.studio-streak summary strong {
+  white-space: nowrap;
+}
+.studio-streak .studio-goal-ring {
+  width: 30px;
+  height: 30px;
+  background:
+    radial-gradient(closest-side, var(--studio-raised) 72%, transparent 74%),
+    conic-gradient(var(--studio-text) var(--goal), var(--studio-border) 0);
+}
+.studio-streak__details {
+  margin-top: 8px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--studio-card);
+  font-size: 0.875rem;
+}
+.studio-streak__details p {
+  margin: 0;
+}
+.studio-streak__details p + p {
+  margin-top: 4px;
+}
+.studio-today {
+  margin-top: 0;
+  padding: 20px;
+}
+.studio-today .studio-section-head {
+  margin-bottom: 4px;
+}
+.studio-today h2 {
+  color: var(--studio-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.studio-today__title {
+  margin: 8px 0 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.studio-today__hook {
+  margin: 10px 0 6px;
+  font-size: 1rem;
+}
+.studio-today .studio-muted {
+  margin: 0;
+  font-size: 0.875rem;
+}
+.studio-today__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 20px;
+}
+.studio-celebration {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 12px;
+  border: 0;
+}
+.studio-celebration__burst {
+  position: static;
+  inset: auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+}
+.studio-celebration__text h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+.studio-celebration__text p {
+  margin: 2px 0 0;
+  color: var(--studio-muted);
+  font-size: 0.875rem;
+}
+.studio-celebration .studio-actions {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
+.studio-icon-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 24px;
+}
+.studio-icon-row a {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 64px;
+  border-radius: 16px;
+  background: var(--studio-card);
+  color: var(--studio-text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+.studio-up-next {
+  margin-top: 32px;
+}
+.studio-next-row {
+  flex-wrap: nowrap;
+  gap: 12px;
+  min-height: 64px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--studio-border);
+}
+.studio-next-row > a:first-child {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 48px;
+  color: var(--studio-text);
+  text-decoration: none;
+}
+.studio-next-row small {
+  color: var(--studio-muted);
+  font-size: 0.8125rem;
+}
+/* Row record buttons are ghost circles: the accent stays on the one primary action. */
+.studio-round-action {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  text-decoration: none;
+}
+.studio-progress {
+  margin-top: 32px;
+}
+.studio-progress h2 {
+  margin-bottom: 8px;
+}
+.studio-progress p {
+  margin: 0 0 8px;
+}
+.studio-progress__stats {
+  font-size: 0.9375rem;
+}
+.studio-badges li {
+  border: 0;
+  background: var(--studio-raised);
+  font-size: 0.8125rem;
+}
+.studio-rating .studio-button {
+  min-height: 48px;
+}
+.studio-home > .studio-card {
+  margin-top: 16px;
+}
+.studio-home > .studio-card:not(.studio-today) h2 {
+  font-size: 1.0625rem;
+}
+
+/* Record permission: a dark camera frame, one accent action, one quiet way out. */
+.studio-permission {
+  min-height: calc(100dvh - var(--studio-nav) - 72px - env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+}
+.studio-permission h1 {
+  font-size: 1.25rem;
+}
+.studio-permission__frame {
+  flex: 1;
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  color: var(--studio-muted);
+  background: #000;
+  border-radius: 22px;
+}
+.studio-permission__bottom {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding-top: 16px;
+}
+.studio-permission__bottom .studio-button {
+  width: 100%;
+  min-height: 56px;
+  font-size: 1.0625rem;
+}
+.studio-permission__bottom p {
+  margin: 0;
+  color: var(--studio-muted);
+  font-size: 0.875rem;
+}
+.studio-permission__bottom > a {
+  display: grid;
+  place-items: center;
+  min-width: 96px;
+  min-height: 44px;
+  color: var(--studio-muted);
+  font-weight: 600;
+}
+
+/* Record screen: a full-bleed live camera with no tab bar; the X is the way out (M12 P3). */
+.studio-shell.is-full-bleed {
+  padding-bottom: 0;
+}
+.record-screen {
+  inset: 0;
+}
+.record-controls {
+  bottom: calc(20px + env(safe-area-inset-bottom));
+}
+/* The mic meter sits in the control stack, so it can never cover the speed row. */
+.record-meter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  padding: 0 8px;
+}
+.record-screen .record-level-meter {
+  position: relative;
+  inset: auto;
+  flex: 0 1 120px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.25);
+}
+.record-screen .record-level-meter i {
+  top: -3px;
+  height: 12px;
+}
+/* Clipping turns the meter tip red; there is no separate badge. */
+.record-screen .record-level-meter.is-clipping i {
+  background: #ff4d4d;
+}
+.record-screen .record-level-meter.is-clipping span {
+  background: linear-gradient(to right, #f4f1ea 80%, #ff4d4d);
+}
+/* M12 P4: one shutter row of five equal side slots around the shutter, and an Aa tray above it
+   for speed, text size, fit and sections. The tray is the only extra layer, and only on demand. */
+.record-screen .record-main-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto minmax(0, 1fr) minmax(0, 1fr);
+  justify-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 22px;
+}
+.record-screen .record-main-controls > :not(.record-button) {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+}
+/* The open Aa reads as raised, not as a second bright disk beside the shutter. */
+.record-screen .record-main-controls > .is-open {
+  background: #202024;
+  box-shadow: inset 0 0 0 2px #f4f1ea;
+  color: #f4f1ea;
+}
+.record-screen .record-tray {
+  display: grid;
+  justify-content: stretch;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 22px;
+  background: rgba(10, 10, 11, 0.86);
+}
+.record-tray__row,
+.studio-stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.studio-stepper__value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 72px;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.studio-stepper__value svg {
+  color: #8a8a8f;
+}
+.record-screen .record-tray button {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+}
+/* Fit is a pill naming its target, "Fit 0:30", filling the speed row's right side. Off it is a
+   ghost like its neighbours; on it takes the shared selected style, a light fill and dark text. */
+.record-screen .record-tray .record-tray__fit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 0 16px;
+  border-radius: 999px;
+  color: #f4f1ea;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.record-screen .record-tray button[aria-pressed='true'] {
+  background: #f4f1ea;
+  box-shadow: none;
+  color: #0a0a0b;
+}
+.record-screen .record-tray .record-sections {
+  flex-wrap: wrap;
+  padding: 0;
+  background: none;
+}
+.record-screen .record-tray .record-sections label {
+  padding: 0;
+}
+.record-screen .record-tray .record-sections select {
+  flex: 1 1 120px;
+  max-width: none;
+}
+.record-screen.controls-dim .record-main-controls:focus-within > * {
+  opacity: 1;
+}
+/* Fit to target changed the speed: only the target time is tinted, with no pill. */
+.record-timer__target.is-fit .record-timer__time {
+  color: #f4f1ea;
+  font-weight: 800;
+}
+.record-timer__target {
+  color: #8a8a8f;
+}
+/* The live camera fills the screen like Reels; the safe-zone guide shows the true crop. */
+@media (max-width: 1023px) {
+  .record-preview {
+    object-fit: cover;
+  }
+}
+/* The reading band sits behind the words; line 1 stays full contrast and the rest fade. */
+.prompter-scroll {
+  position: relative;
+  z-index: 1;
+}
+.prompter-scroll.has-cue {
+  --fade: rgba(0, 0, 0, 0.5);
+  mask-image: linear-gradient(
+    to bottom,
+    var(--fade) 0,
+    var(--fade) calc(var(--cue-top) - 4px),
+    #000 var(--cue-top),
+    #000 var(--cue-bottom),
+    var(--fade) calc(var(--cue-bottom) + 6px)
+  );
+}
+.prompter-scroll.has-cue.mirror-vertical,
+.prompter-scroll.has-cue.mirror-both {
+  mask-image: none;
+}
+/* Sheets live inside the full-bleed record screen, so they can use its whole height. */
+.sheet-backdrop {
+  bottom: 0;
+}
+.record-sheet {
+  max-height: min(85dvh, calc(100dvh - 12px));
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+.record-main-controls .record-button {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  padding: 0;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  background: transparent;
+}
+.record-main-controls .record-button::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--studio-accent);
+  transition:
+    inset 150ms ease,
+    border-radius 150ms ease;
+}
+.record-main-controls .record-button.is-recording::after {
+  inset: 20px;
+  border-radius: 8px;
+}
+
+/* Scripts library */
+.studio-screen-heading h1 {
+  margin: 0;
+}
+.studio-disclosure {
+  padding: 0 16px;
+}
+.studio-disclosure summary {
+  gap: 10px;
+  list-style: none;
+}
+.studio-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+.studio-filter-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 16px;
+}
+.studio-filter-row input,
+.studio-filter-row select {
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 12px;
+}
+.studio-filter-row select {
+  max-width: 9.5rem;
+}
+.studio-script-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px 44px;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--studio-border);
+  border-radius: 0;
+  background: transparent;
+}
+.studio-script-card__main {
+  grid-column: 1;
+  min-width: 0;
+  min-height: 48px;
+}
+.studio-script-card__title {
+  font-size: 1rem;
+}
+.studio-script-card__meta {
+  font-size: 0.8125rem;
+  white-space: normal;
+}
+.studio-script-card__record {
+  grid-column: 2;
+}
+.studio-script-card__confirm {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.studio-script-card__confirm span {
+  flex: 1 1 100%;
+  font-weight: 700;
+}
+
+/* Overflow (...) menu */
+.studio-overflow {
+  position: relative;
+}
+.studio-script-card .studio-overflow {
+  grid-column: 3;
+}
+.studio-overflow summary {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--studio-text);
+  list-style: none;
+  cursor: pointer;
+}
+.studio-overflow[open] summary {
+  background: var(--studio-raised);
+}
+.studio-overflow summary::-webkit-details-marker {
+  display: none;
+}
+.studio-overflow__menu {
+  position: absolute;
+  z-index: 7;
+  top: 48px;
+  right: 0;
+  width: max-content;
+  min-width: 184px;
+  padding: 6px;
+  border: 1px solid var(--studio-border);
+  border-radius: 16px;
+  background: var(--studio-raised);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+.studio-overflow--up .studio-overflow__menu {
+  top: auto;
+  bottom: 48px;
+}
+.studio-overflow__menu button,
+.studio-overflow__menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.studio-overflow__menu :is(button, a):hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.studio-overflow__menu button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Scripts editor: script text first, advanced fields behind More; Record is the nav's center button. */
+.studio-icon-button {
+  width: 48px;
+  padding: 0;
+}
+.studio-editor .studio-label textarea {
+  min-height: 40dvh;
+}
+.studio-editor .studio-sheet .studio-label textarea {
+  min-height: 96px;
+}
+/* Markup lives behind one Aa button, so the row never clips at 360px (M12 P3). */
+.studio-editor .studio-toolbar {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.studio-toolbar .studio-overflow summary {
+  width: 48px;
+  height: 48px;
+  background: var(--studio-raised);
+}
+.studio-toolbar .studio-overflow__menu {
+  left: 0;
+  right: auto;
+}
+/* M12 P4: the Aa menu sits on the Script label row; the script field is a transparent textarea
+   over a layer that draws the same text, so headings read as labels, not "# Hook". Both share
+   every metric that affects wrapping, and the layer sizes the field, so it grows with the text. */
+.studio-script-field {
+  display: grid;
+}
+.studio-script-field > .studio-script-layer,
+.studio-editor .studio-script-field > textarea {
+  grid-area: 1 / 1;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40dvh;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--studio-border);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  tab-size: 4;
+}
+.studio-script-layer {
+  background: var(--studio-card);
+  color: var(--studio-text);
+  pointer-events: none;
+}
+.studio-editor .studio-script-field > textarea {
+  overflow: hidden;
+  resize: none;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--studio-text);
+}
+.studio-editor .studio-script-field > textarea::placeholder {
+  color: var(--studio-muted);
+}
+.studio-editor .studio-script-field > textarea::selection {
+  background: rgba(244, 241, 234, 0.25);
+  color: transparent;
+}
+/* Width-neutral styling only (color, background, shadow), so the layer wraps like the textarea. */
+.studio-md-hash {
+  color: var(--studio-muted);
+  opacity: 0.45;
+}
+.studio-md-section {
+  border-radius: 6px;
+  background: var(--studio-border);
+  box-shadow: 0 0 0 3px var(--studio-border);
+  color: var(--studio-text);
+  text-shadow:
+    0.3px 0 0 currentColor,
+    -0.3px 0 0 currentColor;
+}
+.studio-md-cue {
+  border-radius: 6px;
+  background: var(--studio-raised);
+  box-shadow: 0 0 0 2px var(--studio-raised);
+  color: var(--studio-muted);
+}
+.studio-md-note {
+  color: var(--studio-muted);
+}
+.studio-stats span,
+.studio-section-durations span {
+  background: var(--studio-raised);
+  font-size: 0.8125rem;
+}
+.studio-target-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.studio-toggle,
+.studio-toggle-group button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 48px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--studio-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.studio-toggle[aria-pressed='true'] {
+  border-color: var(--studio-text);
+  background: var(--studio-text);
+  color: var(--studio-bg);
+}
+.studio-toggle.fit-on_target:not([aria-pressed='true']) {
+  border-color: #3d4a40;
+}
+.studio-toggle-group {
+  display: flex;
+  gap: 8px;
+}
+.studio-toggle {
+  white-space: nowrap;
+}
+.studio-target-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--studio-text);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.studio-target-custom input {
+  width: 4ch;
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  text-align: right;
+}
+.studio-aspect-field {
+  grid-column: 1 / -1;
+}
+.studio-more {
+  margin-top: 24px;
+}
+.studio-more > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 16px;
+  background: var(--studio-raised);
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+}
+.studio-more > summary::-webkit-details-marker {
+  display: none;
+}
+.studio-more[open] > summary svg {
+  transform: rotate(180deg);
+}
+.studio-more .studio-card {
+  padding: 0;
+  background: transparent;
+}
+.studio-more .studio-card h2 {
+  margin-top: 8px;
+  font-size: 1rem;
+}
+.studio-editor__actions {
+  position: sticky;
+  bottom: var(--studio-nav);
+  z-index: 3;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin: 16px -16px 0;
+  padding: 12px 16px;
+  background: var(--studio-bg);
+  border-top: 1px solid var(--studio-border);
+}
+
+/* Takes: a storage chip, a one-line save tip, then a 2-up thumbnail grid. */
+.studio-storage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--studio-raised);
+  color: var(--studio-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.studio-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-bottom: 12px;
+  padding-left: 14px;
+  border-radius: 16px;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  font-size: 0.875rem;
+}
+.studio-tip > svg {
+  flex: none;
+  color: var(--studio-muted);
+}
+.studio-tip__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.studio-tip__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--studio-muted);
+  cursor: pointer;
+}
+.studio-take-group {
+  margin-top: 24px;
+}
+.studio-take-group h3 {
+  margin-top: 12px;
+}
+.studio-takes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.studio-take-tile {
+  min-width: 0;
+  border-radius: 16px;
+  background: var(--studio-card);
+}
+.studio-take-tile__media {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  background: #000;
+}
+.studio-take-tile__media video,
+.studio-take-tile__placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  color: var(--studio-muted);
+}
+.studio-take-tile__play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+.studio-take-tile__play svg {
+  box-sizing: content-box;
+  padding: 12px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+}
+.studio-take-tile__star {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  pointer-events: none;
+}
+.studio-take-tile__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 2px 2px 2px 12px;
+}
+.studio-take-tile__meta > a {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 6px;
+  min-width: 0;
+  min-height: 44px;
+  color: var(--studio-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.studio-take-tile__meta small {
+  color: var(--studio-muted);
+  font-weight: 400;
+}
+.studio-take-tile__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 8px 8px;
+}
+.studio-takes__clear {
+  margin-top: 32px;
+}
+
+@media (min-width: 1024px) {
+  .studio-shell {
+    padding: 32px 48px calc(var(--studio-nav) + 32px);
+  }
+  .studio-tabs {
+    padding-inline: max(8px, calc(50vw - 260px));
+  }
+  .record-screen {
+    inset: 0;
+  }
+  .studio-takes-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.studio-practice {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+}
+
+/* M11: bottom sheets for take and script tools. One accent action per sheet. */
+.studio-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+.studio-sheet {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 520px);
+  max-height: 85dvh;
+  overflow-y: auto;
+  padding: 16px calc(16px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom))
+    calc(16px + env(safe-area-inset-left));
+  border-radius: 22px 22px 0 0;
+  background: var(--studio-card);
+  color: var(--studio-text);
+  box-shadow: 0 0 0 1px var(--studio-border);
+  overflow-wrap: anywhere;
+}
+.studio-sheet p {
+  margin: 0;
+}
+.studio-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.studio-sheet__head h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.studio-sheet__close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  cursor: pointer;
+}
+.studio-sheet__output {
+  width: 100%;
+  max-height: 40dvh;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid var(--studio-border);
+  border-radius: 10px;
+  background: var(--studio-bg);
+  color: var(--studio-text);
+  font:
+    0.875rem/1.5 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  white-space: pre-wrap;
+  resize: none;
+}
+.studio-sheet .studio-button {
+  width: 100%;
+}
+.studio-sheet progress {
+  width: 100%;
+}
+.studio-trim-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.studio-trim-fields .studio-label {
+  margin-top: 0;
+}
+.studio-take-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px 44px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.studio-take-actions[hidden] {
+  display: none;
+}
+.studio-take-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.studio-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* M11: operator window, the prompter alone for a second screen or a glass rig. */
+.studio-operator-body {
+  overflow: hidden;
+}
+.studio-operator {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #fff;
+}
+.studio-operator__scroll {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding: 0 6vw;
+  line-height: 1.35;
+  font-family: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  font-weight: 700;
+}
+.studio-operator__scroll.mirror-horizontal {
+  transform: scaleX(-1);
+}
+.studio-operator__scroll.mirror-vertical {
+  transform: scaleY(-1);
+}
+.studio-operator__scroll.mirror-both {
+  transform: scale(-1, -1);
+}
+.studio-operator__text {
+  padding: 33vh 0 67vh;
+}
+.studio-operator__text h2 {
+  margin: 0.4em 0 0.2em;
+  color: var(--studio-muted);
+  font-size: 0.6em;
+}
+.studio-operator__waiting {
+  color: var(--studio-muted);
+  font-size: 0.5em;
+}
+.studio-operator__cue {
+  position: absolute;
+  top: 33vh;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 2px solid rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+.studio-operator__controls {
+  position: absolute;
+  right: calc(8px + env(safe-area-inset-right));
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+.studio-operator__controls:hover,
+.studio-operator__controls:focus-within {
+  opacity: 1;
+}
+.studio-operator__controls button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  font: 700 0.875rem/1 inherit;
+  cursor: pointer;
+}
+.studio-operator__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--studio-muted);
+  font-size: 0.875rem;
+}
+
+/* M11: print or save a script as PDF. Only the script article prints, black on white. */
+.studio-print {
+  display: none;
+}
+@media print {
+  @page {
+    margin: 18mm;
+  }
+  .studio-body {
+    background: #fff;
+    color: #000;
+  }
+  /* Everything that neither is nor holds the script is removed, so no blank pages follow it. */
+  .studio-body *:not(:has(.studio-print)):not(.studio-print, .studio-print *) {
+    display: none !important;
+  }
+  .studio-body *:has(.studio-print) {
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+  }
+  .studio-print {
+    display: block;
+    color: #000;
+    font:
+      16pt/1.6 'Atkinson Hyperlegible',
+      Georgia,
+      serif;
+  }
+  .studio-print h1 {
+    margin: 0 0 12pt;
+    font-size: 22pt;
+  }
+  .studio-print__section {
+    display: block;
+    margin: 14pt 0 4pt;
+    font-size: 17pt;
+    break-after: avoid;
+  }
+  .studio-print mark {
+    background: #e8e8e8;
+    color: #000;
+  }
+  .studio-print__cue {
+    color: #555;
+    font-size: 12pt;
+  }
+}
+
+/* M12 P3: a badge is a toast where it was earned, never a Home card. M12 P4: it sits low,
+   above the nav, the editor's action row and the camera shutter, so it never covers a header. */
+.studio-toast-region {
+  position: fixed;
+  z-index: 200;
+  bottom: calc(var(--studio-nav) + 92px);
+  right: 12px;
+  left: 12px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.studio-toast.studio-celebration {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 6px 16px 6px 6px;
+  border-radius: 999px;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  font-size: 0.9375rem;
+}
+.studio-toast .studio-celebration__burst {
+  width: 36px;
+  height: 36px;
+  background: var(--studio-card);
+}
+
+/* The recording-feel rating, inline in the take review right after Keep. */
+.studio-take-rating {
+  display: grid;
+  gap: 8px;
+}
+.studio-take-rating__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.studio-take-rating h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+.record-sheet .studio-take-rating__dismiss {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--studio-muted);
+  cursor: pointer;
+}
+.studio-take-rating .studio-rating {
+  gap: 6px;
+  margin: 0;
+}
+.studio-take-rating p {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+/* Progress: one line, then at most one ghost Share and a quiet challenge link. */
+.studio-progress__line {
+  color: var(--studio-muted);
+}
+.studio-progress__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+/* M12 P5: the editor's facts are one quiet line, and the durations one segmented row that
+   scrolls sideways instead of wrapping. */
+.studio-stats-line {
+  margin: 12px 0 0;
+  color: var(--studio-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.studio-target-row {
+  flex-wrap: nowrap;
+  gap: 2px;
+  width: max-content;
+  max-width: 100%;
+  padding: 2px;
+  overflow-x: auto;
+  border-radius: 999px;
+  background: var(--studio-raised);
+  scrollbar-width: none;
+}
+.studio-target-row::-webkit-scrollbar {
+  display: none;
+}
+.studio-target-row .studio-toggle {
+  flex: none;
+  min-width: 52px;
+  border-color: transparent;
+}
+.studio-target-row .studio-target-custom {
+  flex: none;
+}
+.studio-target-row .studio-toggle:not([aria-pressed='true']) {
+  background: transparent;
+}
+.studio-segmented {
+  display: inline-flex;
+  gap: 2px;
+  width: max-content;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--studio-raised);
+}
+.studio-segmented button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 56px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--studio-muted);
+  cursor: pointer;
+}
+.studio-segmented button[aria-checked='true'] {
+  background: var(--studio-text);
+  color: var(--studio-bg);
+}
+.studio-status-field {
+  grid-column: 1 / -1;
+}
+/* In the editor the raised record button carries a tiny visible word for this script. */
+.studio-tabs .studio-record-link.has-tag {
+  gap: 2px;
+}
+.studio-tabs .studio-record-link.has-tag svg {
+  width: 24px;
+  height: 24px;
+}
+.studio-record-link__tag {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+/* Library: search on its own line, then a few filter chips, one pressed. Row details stay on
+   one line. */
+.studio-filter-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+.studio-filter-chips {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.studio-filter-count {
+  margin-left: 2px;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+.studio-script-card__meta {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* The editor shows a new badge as a small star chip beside "Saved", not a floating toast. */
+.studio-editor__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.studio-badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.studio-settings-nav + .studio-storage {
+  margin-top: 16px;
+}
+/* M12 P6: the editor opens on the words. A back chevron, the title as the heading and "Saved"
+   share one row; no field labels; Aa, Practice and ... sit right, clear of the nav record button. */
+.studio-editor__head {
+  align-items: flex-start;
+  gap: 4px;
+  margin: -8px 0 8px -12px;
+}
+.studio-back--icon {
+  flex: none;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+}
+/* The title uses the h2 token and rests at two lines with an ellipsis; focus shows it all. */
+.studio-editor__title {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+.studio-editor__title textarea,
+.studio-editor__title-clamp {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 0;
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  overflow-wrap: break-word;
+}
+.studio-editor__title textarea {
+  display: block;
+  min-height: 44px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--studio-text);
+  overflow: hidden;
+  resize: none;
+}
+.studio-editor__title-clamp {
+  position: absolute;
+  /* Offset, not padding: overflow clips at the padding box, so padding would show line 3. */
+  inset: 8px 0 auto;
+  padding: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  color: var(--studio-text);
+  pointer-events: none;
+  white-space: pre-wrap;
+}
+.studio-editor__title textarea:not(:focus) {
+  max-height: calc(2.75rem + 16px);
+  color: transparent;
+}
+.studio-editor__title textarea:focus + .studio-editor__title-clamp,
+.studio-editor__title:focus-within .studio-editor__title-clamp {
+  visibility: hidden;
+}
+.studio-editor__title textarea::placeholder {
+  color: var(--studio-muted);
+}
+.studio-editor__title textarea:focus-visible {
+  outline: 2px solid var(--studio-text);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.studio-editor__head .studio-editor__status {
+  flex: none;
+  justify-content: flex-end;
+  min-width: 4.5rem;
+  min-height: 44px;
+  color: var(--studio-muted);
+  font-size: 0.8125rem;
+}
+.studio-editor .studio-script-field > .studio-script-layer,
+.studio-editor .studio-script-field > textarea {
+  min-height: min(40dvh, 200px);
+}
+.studio-editor__actions .studio-toolbar {
+  margin: 0;
+}
+.studio-editor__actions .studio-toolbar .studio-overflow__menu {
+  right: auto;
+  left: 0;
+  bottom: 64px;
+}
+.studio-editor__actions .studio-overflow summary {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  background: var(--studio-raised);
+}
+/* M12 P7: writing tools (Aa, Hook) sit left of the raised record button, Practice and ...
+   right of it, so no control shares its column. Each named glyph has an 11px word under it. */
+.studio-editor__actions {
+  align-items: flex-start;
+}
+.studio-editor__hook {
+  margin-right: auto;
+}
+.studio-captioned,
+.studio-editor__actions .studio-overflow summary.studio-captioned {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 3px;
+  width: auto;
+  min-width: 48px;
+  height: auto;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.studio-captioned__disc {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--studio-raised);
+}
+.studio-captioned__label {
+  color: var(--studio-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.studio-captioned:focus-visible {
+  outline: none;
+}
+.studio-captioned:focus-visible .studio-captioned__disc {
+  outline: 2px solid var(--studio-text);
+  outline-offset: 2px;
+}
+/* Status: Draft, Recorded, Posted, each a glyph with an 11px label under it, like the nav. */
+.studio-status-field .studio-segmented {
+  border-radius: 18px;
+}
+.studio-status-field .studio-segmented button {
+  gap: 2px;
+  min-width: 72px;
+  min-height: 52px;
+  padding: 4px 8px;
+  border-radius: 16px;
+}
+.studio-segmented__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+/* Captions: Instagram fields first, YouTube behind one chip, and Done low in the sheet. */
+.studio-captions__youtube {
+  justify-self: start;
+}
+.studio-sheet > .studio-button--quiet:last-child {
+  position: sticky;
+  bottom: 0;
+  margin-top: 4px;
+}
+/* Library "+" sheet: three big glyph rows, Blank, Template and Import. */
+.studio-create-options {
+  display: grid;
+  gap: 8px;
+}
+.studio-create-options button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.studio-sheet .studio-counted-field,
+.studio-sheet .studio-counted-field .studio-label {
+  margin-top: 0;
+}
+/* M12 P7: the editor's Delete asks first, in place of the action row, like a library row. */
+.studio-editor__confirm {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+.studio-editor__confirm span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* After a delete, one toast above the nav says where it went and offers Undo. */
+.studio-toast.studio-undo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 6px 6px 6px 16px;
+  border-radius: 999px;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  font-size: 0.9375rem;
+  pointer-events: auto;
+}
+/* M12 P7: Aspect and Status share one row of glyph segments. Opening More scrolls them clear
+   of the sticky action row and the nav. */
+.studio-more__fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+  scroll-margin-bottom: calc(var(--studio-nav) + 96px);
+}
+.studio-more__fields .studio-segmented-field {
+  grid-column: auto;
+  flex: none;
+  margin-top: 0;
+}
+.studio-more__fields .studio-segmented {
+  border-radius: 18px;
+}
+.studio-more__fields .studio-segmented button {
+  gap: 2px;
+  min-width: 56px;
+  min-height: 52px;
+  padding: 4px 6px;
+  border-radius: 16px;
+}
+/* M12 P7: while the safe-zone guide peeks, an 11px caption at its bottom names the zone. */
+.record-safe-zone {
+  text-transform: none;
+}
+.record-safe-zone__caption {
+  margin-bottom: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(10, 10, 11, 0.6);
+  color: #f4f1ea;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+}

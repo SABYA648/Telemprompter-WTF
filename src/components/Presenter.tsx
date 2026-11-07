@@ -4,7 +4,6 @@ import {
   durationBucket,
   progressBucket,
   scriptSizeBucket,
-  voiceModeParam,
   type EntryContext,
   type SettingName,
 } from '../domain/analytics';
@@ -19,7 +18,6 @@ import { detectBrowserCapabilities } from '../domain/capabilities';
 import {
   estimateFocusCharacterIndex,
   highlightWindowAround,
-  scrollOffsetForCharacter,
   segmentScript,
   type HighlightWindow,
 } from '../domain/scriptHighlight';
@@ -36,7 +34,6 @@ import type { PresenterPreferences } from '../domain/types';
 import PictureInPictureControl from './PictureInPictureControl';
 import RecordingControl from './RecordingControl';
 import SettingControls from './SettingControls';
-import VoiceTrackingControls from './VoiceTrackingControls';
 
 interface Props {
   script: string;
@@ -81,8 +78,6 @@ export default function Presenter({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
-  const [voiceListening, setVoiceListening] = useState(false);
-  const [speechActive, setSpeechActive] = useState(false);
   // The highlight is applied straight to the DOM rather than held in state. It changes at word
   // rate while the scroll updates every frame, and rendering it through Preact re-diffed every
   // word span in the script on each frame.
@@ -90,10 +85,6 @@ export default function Presenter({
   const wordStartsRef = useRef<Int32Array>(new Int32Array(0));
   const appliedRef = useRef<HighlightWindow>({ trailStart: -1, liveStart: -1, liveEnd: -1 });
   const [liveStart, setLiveStart] = useState(0);
-  // Which word the speaker is on, used by the pace cue. Comes from the aligner while following and
-  // from scroll progress otherwise, so cues work in Manual mode too.
-  const spokenWordRef = useRef(0);
-  const followingRef = useRef(false);
   const cueEngineRef = useRef(new PaceCueEngine());
   // Speaking time, not wall-clock: a pause is not falling behind.
   const spokenMsRef = useRef(0);
@@ -104,9 +95,7 @@ export default function Presenter({
   const chipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cueRef = useRef<CueState>('steady');
   const [cueStrength, setCueStrength] = useState(0);
-  const voiceMultiplierRef = useRef(1);
   const scriptElementRef = useRef<HTMLDivElement>(null);
-  const precisionAnchorRef = useRef<number | null>(null);
   const guide = useMemo(
     () => compileScriptGuide(script, preferences.speakingWpm),
     [script, preferences.speakingWpm],
@@ -131,7 +120,7 @@ export default function Presenter({
   // The readout follows whatever plan is in force, so setting a finish time changes what the
   // presenter is told is left rather than leaving a stale rate-based estimate on screen.
   const remaining = planTotalSeconds * (1 - progress);
-  const activeSection = sectionAtSpokenOffset(guide, precisionAnchorRef.current ?? liveStart);
+  const activeSection = sectionAtSpokenOffset(guide, liveStart);
   const visualCue = cueSummary(activeSection, 'visual');
   const screenCue = cueSummary(activeSection, 'screen');
 
@@ -190,16 +179,12 @@ export default function Presenter({
     const scroller = scrollerRef.current;
     const scriptElement = scriptElementRef.current;
     if (!scroller || !scriptElement || !displayScript.length) return;
-    // Precision anchors temporarily own the live word when speech recognition is confident.
-    // Otherwise the focus-line caret estimate keeps Smart Pace and the reader visually aligned.
-    const center =
-      precisionAnchorRef.current ??
-      estimateFocusCharacterIndex(
-        scroller,
-        scriptElement,
-        focusPositionRef.current,
-        displayScript.length,
-      );
+    const center = estimateFocusCharacterIndex(
+      scroller,
+      scriptElement,
+      focusPositionRef.current,
+      displayScript.length,
+    );
     applyHighlightRef.current(highlightWindowAround(segmentsRef.current, center));
   };
   const syncHighlightRef = useRef(syncHighlightFromScroll);
@@ -229,11 +214,7 @@ export default function Presenter({
       return;
     }
 
-    // While following, the aligner knows the word. Otherwise scroll progress is the best estimate,
-    // which is what makes the cue work in Manual mode as well.
-    const wordIndex = followingRef.current
-      ? spokenWordRef.current
-      : Math.round(progressValue * plan.words);
+    const wordIndex = Math.round(progressValue * plan.words);
 
     const reading = cueEngineRef.current.update({
       plannedSeconds: plannedSecondsAtWord(wordIndex, plan.words, plan.totalSeconds),
@@ -324,7 +305,6 @@ export default function Presenter({
     controllerRef.current = controller;
     const startTimer = setTimeout(() => controller.start(), 350);
     analytics.track('started_teleprompter', {
-      voice_mode: voiceModeParam(preferences.voiceMode),
       script_size_bucket: scriptSizeBucket(words),
       entry_context: entryContext,
       script_kind: guide.kind === 'guided' ? 'production' : 'plain',
@@ -344,73 +324,8 @@ export default function Presenter({
   }, []);
 
   useEffect(() => {
-    controllerRef.current?.setSpeed(
-      speedToPixelsPerSecond(preferences.baseScrollSpeed) * voiceMultiplierRef.current,
-    );
+    controllerRef.current?.setSpeed(speedToPixelsPerSecond(preferences.baseScrollSpeed));
   }, [preferences.baseScrollSpeed]);
-
-  // Smart Pace without speech recognition has only microphone energy to go on, so the rhythm
-  // multiplier still sets the base speed. When an alignment target exists the servo owns the
-  // velocity and this only shapes the carrier underneath it.
-  const updateVoiceMultiplier = (multiplier: number) => {
-    voiceMultiplierRef.current = multiplier;
-    controllerRef.current?.setSpeed(
-      speedToPixelsPerSecond(preferences.baseScrollSpeed) * multiplier,
-    );
-  };
-
-  const applyAlignment = (
-    characterIndex: number,
-    tokenEnd: number,
-    confidence: number,
-    wordsPerMinute: number,
-  ) => {
-    const scroller = scrollerRef.current;
-    const scriptElement = scriptElementRef.current;
-    if (!scroller || !displayScript.length) return;
-
-    const focused =
-      scriptElement &&
-      scrollOffsetForCharacter(scroller, scriptElement, characterIndex, focusPositionRef.current);
-    const target =
-      typeof focused === 'number'
-        ? focused
-        : (characterIndex / displayScript.length) *
-          Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-
-    // Feed-forward from the speaker's own rate, so the reader keeps moving between alignments
-    // instead of waiting to be pushed. Pixels per word is measured from the rendered script.
-    const wordCount = wordNodesRef.current.length;
-    const pixelsPerWord = wordCount > 0 ? scroller.scrollHeight / wordCount : 0;
-    const feedForward = (Math.max(0, wordsPerMinute) / 60) * pixelsPerWord;
-
-    if (controllerRef.current) {
-      controllerRef.current.setFollowTarget(target, confidence, feedForward);
-    } else {
-      const max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-      scroller.scrollTop = Math.min(max, Math.max(0, target));
-    }
-
-    const center =
-      tokenEnd > characterIndex ? Math.round((characterIndex + tokenEnd) / 2) : characterIndex;
-    precisionAnchorRef.current = center;
-    spokenWordRef.current = wordIndexAt(center);
-    applyHighlightRef.current(highlightWindowAround(segmentsRef.current, center, 6, 3));
-  };
-
-  const handleVoiceActivity = (activity: { listening: boolean; speechActive: boolean }) => {
-    setVoiceListening(activity.listening);
-    setSpeechActive(activity.speechActive);
-    followingRef.current = activity.listening;
-    if (!activity.listening) {
-      precisionAnchorRef.current = null;
-      // Hand the reader back to plain time-based scrolling rather than leaving it chasing a
-      // target that will never be updated again.
-      controllerRef.current?.setFollowTarget(null, 0, 0);
-    } else {
-      requestAnimationFrame(() => syncHighlightRef.current());
-    }
-  };
 
   useEffect(() => {
     controllerRef.current?.setLineHeight(preferences.fontSize * preferences.lineHeight);
@@ -514,7 +429,6 @@ export default function Presenter({
       analytics.track('left_teleprompter_early', {
         progress_bucket: progressBucket(progressRef.current),
         duration_bucket: durationBucket((Date.now() - startedAtRef.current) / 1000),
-        voice_mode: voiceModeParam(preferences.voiceMode),
       });
     }
     onExit();
@@ -626,7 +540,7 @@ export default function Presenter({
   return (
     <section
       ref={presenterRef}
-      class={`presenter ${controlsVisible || !playing ? 'presenter--controls' : ''} ${voiceListening ? 'presenter--listening' : ''} ${speechActive ? 'presenter--speaking' : ''}`}
+      class={`presenter ${controlsVisible || !playing ? 'presenter--controls' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-label="Teleprompter presenter"
@@ -764,14 +678,6 @@ export default function Presenter({
         <button class="control-button" onClick={restart}>
           Restart
         </button>
-        <VoiceTrackingControls
-          script={displayScript}
-          mode={preferences.voiceMode}
-          onModeChange={(voiceMode) => updatePreference('voiceMode', voiceMode)}
-          onMultiplier={updateVoiceMultiplier}
-          onAlignment={applyAlignment}
-          onVoiceActivity={handleVoiceActivity}
-        />
         <RecordingControl />
         <PictureInPictureControl
           script={displayScript}

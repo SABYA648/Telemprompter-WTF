@@ -1,0 +1,1530 @@
+import { useEffect, useRef, useState } from 'preact/hooks';
+import type { SCRIPT_SIZE_BUCKETS } from '../domain/analytics';
+import { analytics, deviceClass, displayMode, studioEntry } from '../domain/analytics';
+import { editorSegments, parseMarkup } from '../domain/studio/markup';
+import { presetById } from '../content/studio/presets';
+import { starterById } from '../content/studio/starterScripts';
+import {
+  applySessionPreset,
+  applySessionTarget,
+  defaultSettings,
+  endSessionTarget,
+  loadSettings,
+  scriptTargetSeconds,
+} from '../domain/studio/settings';
+import type { StudioPreset } from '../content/studio/types';
+import {
+  migrateQuickScript,
+  listScripts,
+  ensureFirstScript,
+  createScript,
+  getScript,
+  saveScript,
+  softDelete,
+  restoreScript,
+  duplicateScript,
+  purgeDeletedScripts,
+} from '../domain/studio/scriptsRepo';
+import type { StudioScript } from '../domain/studio/types';
+import { SCRIPT_STAGES, scriptStage, type ScriptStage } from '../domain/studio/status';
+import { fitForTarget, scriptSeconds, scriptWpm, sectionDurations } from '../domain/studio/timing';
+import { readabilityWarning } from '../domain/studio/words';
+import { isMemoryStorage } from '../domain/studio/db';
+import { moveInQueue, upNext, setUpNext } from '../domain/studio/queue';
+import BatchScreen from './BatchScreen';
+import { limits } from '../content/studio/platformFacts';
+import { TemplatePicker, HookSheet, IdeasInbox, createFromTemplate } from './CreatorTools';
+import { SendToPhone, ReceiveScreen } from './SendReceive';
+import { isStandaloneDisplay } from '../domain/studio/install';
+import { persistOnFirstStandaloneLaunch } from '../domain/studio/storage';
+import { routeFromHash, bootHash, type Route } from './router';
+import { showsTabs, tabItems, type TabId } from './tabs';
+import { Overflow } from './Overflow';
+import OperatorWindow from './OperatorWindow';
+import { PrintableScript, useEditorBroadcast, useScriptImport } from './ScriptTools';
+import { openOperatorWindow } from '../domain/studio/operator';
+import { Icon, type IconName } from './Icons';
+import { Sheet } from './Sheet';
+import RecordScreen from './RecordScreen';
+import PracticeScreen from './PracticeScreen';
+import SettingsScreen from './SettingsScreen';
+import { TakesScreen, TakeScreen } from './TakesScreen';
+import { recoverTakes } from '../domain/studio/takesRepo';
+import { readHabits } from '../domain/studio/habits';
+import { readStreak } from '../domain/studio/streak';
+import InstallSheet from './InstallSheet';
+import {
+  BadgeChip,
+  BadgeToast,
+  ChallengeScreen,
+  HabitProgress,
+  HabitSummary,
+  HomeAsk,
+  TodayCard,
+  useHabits,
+  WeeklyRecap,
+} from './HabitUI';
+import { experimentArms } from '../domain/studio/experiments';
+import { ServiceWorkerUpdate, StandaloneTransferCard, TransferControls } from './PwaControls';
+import {
+  browserHandoffScript,
+  browserHandoffUrl,
+  isInAppBrowser,
+} from '../domain/studio/inAppBrowser';
+
+function go(path: string): void {
+  location.hash = path;
+}
+const editedThisSession = new Set<string>();
+/** A script the editor just deleted, so the library it lands on can offer Undo. */
+let deletedFromEditor: { id: string; title: string } | null = null;
+const wordBucket = (words: number): (typeof SCRIPT_SIZE_BUCKETS)[number] =>
+  words <= 100
+    ? '1_100'
+    : words <= 300
+      ? '101_300'
+      : words <= 750
+        ? '301_750'
+        : words <= 1500
+          ? '751_1500'
+          : '1501_plus';
+const TARGET_CHIPS = [15, 30, 60, 90, 180];
+const FORMAT = (seconds: number) =>
+  `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+
+type PrompterSpeed = { wpm: number; fitToTarget: boolean };
+/** The saved speed and fit setting, so every duration here matches the camera and Practice. */
+function usePrompterSpeed(): PrompterSpeed {
+  const [prompter, setPrompter] = useState<PrompterSpeed>(() => defaultSettings(false).prompter);
+  useEffect(() => {
+    let active = true;
+    void loadSettings().then((value) => active && setPrompter(value.prompter));
+    return () => {
+      active = false;
+    };
+  }, []);
+  return prompter;
+}
+/** "30 words · 0:13": a script's spoken words and how long it runs at the speed it opens at. */
+function wordsAndTime(script: StudioScript, prompter: PrompterSpeed): string {
+  const words = parseMarkup(script.body).spokenWordCount;
+  return `${words} words · ${FORMAT(scriptSeconds(words, scriptTargetSeconds(script), prompter))}`;
+}
+
+/** Handle `#/scripts/new`, with `?template=<id>` when a template page or picker sent the visitor. */
+async function createRoutedScript(): Promise<StudioScript> {
+  const templateId = new URLSearchParams(location.hash.split('?')[1] ?? '').get('template');
+  const fromTemplate = templateId ? await createFromTemplate(templateId) : null;
+  if (fromTemplate) return fromTemplate;
+  analytics.track('created_script', { source: 'blank' });
+  return createScript();
+}
+
+/** The operator window is a bare prompter for a second screen: no shell, no boot, no tabs. */
+export default function StudioRoot(): preact.JSX.Element {
+  return routeFromHash(location.hash).screen === 'prompter-window' ? (
+    <OperatorWindow />
+  ) : (
+    <StudioApp />
+  );
+}
+function StudioApp(): preact.JSX.Element {
+  const [route, setRoute] = useState<Route>(routeFromHash(location.hash));
+  const [scripts, setScripts] = useState<StudioScript[]>([]);
+  const [ready, setReady] = useState(false);
+  const [memory, setMemory] = useState(false);
+  const [recovered, setRecovered] = useState(false);
+  const [transferResult, setTransferResult] = useState('');
+  const [presetChoice, setPresetChoice] = useState<StudioPreset | null>(null);
+  // Record starts on its live camera, which has no tab bar; its permission and error screens do.
+  const [cameraLive, setCameraLive] = useState(true);
+  const presetDialog = useRef<HTMLElement>(null);
+  const refreshRequest = useRef(0);
+  const refresh = async () => {
+    const request = ++refreshRequest.current;
+    const result = await listScripts(true);
+    if (request === refreshRequest.current) setScripts(result);
+  };
+  useEffect(() => {
+    let identifiedBuckets = '';
+    let identityReady = false;
+    const bucketPair = () => {
+      try {
+        return `${localStorage.getItem('tw.takes_bucket')}/${localStorage.getItem('tw.streak_bucket')}`;
+      } catch {
+        return '';
+      }
+    };
+    const refreshIdentity = () => {
+      if (!identityReady) return;
+      const next = bucketPair();
+      if (next !== identifiedBuckets) {
+        identifiedBuckets = next;
+        analytics.identify();
+      }
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible')
+        void Promise.all([readHabits(), readStreak()])
+          .then(refreshIdentity)
+          .catch((error) => analytics.error('studio', error));
+    };
+    const boot = async () => {
+      // Read before the handoff or preset handling below rewrites the URL.
+      const entry = studioEntry();
+      try {
+        const presetId = new URLSearchParams(location.search).get('preset');
+        const preset = presetId ? presetById.get(presetId as StudioPreset['id']) : undefined;
+        let libraryWasEmpty = false;
+        let presetScriptId = 'quick';
+        if (preset && !location.hash)
+          applySessionPreset({ aspect: preset.aspect, safeZone: preset.safeZone });
+        try {
+          await migrateQuickScript();
+          await purgeDeletedScripts();
+          libraryWasEmpty = preset ? (await listScripts()).length === 0 : false;
+          if (preset && libraryWasEmpty) {
+            const starter = starterById.get(preset.starterId);
+            // A trashed `quick` still owns its id and takes, so never overwrite it.
+            const quickTaken = Boolean(await getScript('quick'));
+            if (starter)
+              presetScriptId = (
+                await createScript({
+                  ...(quickTaken ? {} : { id: 'quick' }),
+                  title: starter.title,
+                  body: starter.body,
+                  aspect: preset.aspect,
+                  targetSeconds: preset.targetSeconds,
+                })
+              ).id;
+          }
+          await ensureFirstScript();
+          await experimentArms();
+          await Promise.all([readHabits(), readStreak()]);
+        } finally {
+          identifiedBuckets = bucketPair();
+          analytics.initialize();
+          identityReady = true;
+        }
+        try {
+          if (!isMemoryStorage()) localStorage.setItem('studio.hasData', '1');
+        } catch {
+          /* Storage unavailable. */
+        }
+        const transfer = sessionStorage.getItem('studio.transfer.result');
+        if (transfer) {
+          setTransferResult(transfer);
+          sessionStorage.removeItem('studio.transfer.result');
+          // Tracked after the reload, so the event survives it and carries the imported device id.
+          analytics.track('transferred_scripts', { direction: 'import' });
+        }
+        await persistOnFirstStandaloneLaunch(isStandaloneDisplay());
+        const handoff = browserHandoffScript(location.hash);
+        if (handoff) {
+          const imported = await createScript(handoff);
+          history.replaceState(null, '', `#/record/${imported.id}`);
+          setRoute({ screen: 'record', id: imported.id });
+        }
+        const recoveredTakes = await recoverTakes();
+        if (recoveredTakes.length) {
+          setRecovered(true);
+          for (let index = 0; index < recoveredTakes.length; index++)
+            analytics.track('recovered_take');
+        }
+        if (routeFromHash(location.hash).id === 'new') {
+          const script = await createRoutedScript();
+          go(`/scripts/${script.id}`);
+        }
+        await refresh();
+        if (preset && !location.hash) {
+          history.replaceState(null, '', '/studio');
+          if (libraryWasEmpty) go(`/record/${presetScriptId}`);
+          else setPresetChoice(preset);
+        }
+        const boot = bootHash(location.search);
+        if (boot && !location.hash) location.hash = boot;
+        analytics.track('opened_studio', {
+          // A same-origin page that sent a handoff keeps its entry; only a bare link counts as link.
+          entry: handoff && entry === 'direct' ? 'link' : entry,
+          display: displayMode(),
+          device_class: deviceClass(),
+        });
+      } catch (error) {
+        analytics.error('studio', error);
+      } finally {
+        setMemory(isMemoryStorage());
+        setReady(true);
+      }
+    };
+    void boot();
+    const onHash = async () => {
+      const next = routeFromHash(location.hash);
+      setPresetChoice(null);
+      if (next.screen === 'editor' && next.id === 'new') {
+        const script = await createRoutedScript();
+        await refresh();
+        go(`/scripts/${script.id}`);
+      } else {
+        setRoute(next);
+        // The nav Record follows the latest edit, so any screen with the tab bar wants fresh scripts.
+        if (next.screen !== 'record' && next.screen !== 'practice') await refresh();
+      }
+    };
+    addEventListener('hashchange', onHash);
+    addEventListener('studio-streak-changed', refreshIdentity);
+    addEventListener('studio-habits-changed', refreshIdentity);
+    document.addEventListener('visibilitychange', onVisible);
+    // Effects run after paint, so a hash change since the first render has no listener to catch it.
+    const latest = routeFromHash(location.hash);
+    setRoute((route) =>
+      route.screen === latest.screen && route.id === latest.id ? route : latest,
+    );
+    return () => {
+      removeEventListener('hashchange', onHash);
+      removeEventListener('studio-streak-changed', refreshIdentity);
+      removeEventListener('studio-habits-changed', refreshIdentity);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
+  useEffect(() => {
+    if (ready)
+      analytics.page(
+        `#/` +
+          (route.screen === 'home'
+            ? ''
+            : route.screen === 'editor'
+              ? `scripts/${route.id}`
+              : `${route.screen}${route.id ? `/${route.id}` : ''}`),
+        'Studio',
+      );
+  }, [route, ready]);
+  useEffect(() => {
+    if (presetChoice) presetDialog.current?.querySelector<HTMLElement>('button')?.focus();
+  }, [presetChoice]);
+  if (!ready)
+    return (
+      <div class="studio-loading" aria-live="polite">
+        Loading Studio...
+      </div>
+    );
+  const active = scripts.filter((script) => !script.deletedAt);
+  const deleted = scripts.filter((script) => script.deletedAt);
+  const openPresetScript = async (preset: StudioPreset, script?: StudioScript) => {
+    const starter = starterById.get(preset.starterId);
+    // 14.6: an existing script keeps its saved target; the preset target applies to this session.
+    if (script) applySessionTarget({ id: script.id, seconds: preset.targetSeconds });
+    const chosen =
+      script ??
+      (await createScript({
+        title: starter?.title ?? preset.name,
+        body: starter?.body ?? '',
+        aspect: preset.aspect,
+        targetSeconds: preset.targetSeconds,
+      }));
+    setPresetChoice(null);
+    await refresh();
+    go(`/record/${chosen.id}`);
+  };
+  const inApp = isInAppBrowser(navigator.userAgent);
+  const handoffScript = active.find((script) => script.id === route.id) ?? active[0] ?? null;
+  return (
+    <div class={showsTabs(route, cameraLive) ? 'studio-shell' : 'studio-shell is-full-bleed'}>
+      <ServiceWorkerUpdate hidden={route.screen === 'record'} />
+      <BadgeToast docked={route.screen === 'editor'} />
+      <InstallSheet recording={route.screen === 'record' || !!presetChoice} />
+      {presetChoice && (
+        <div class="studio-preset-backdrop" role="presentation">
+          <section
+            ref={presetDialog}
+            class="studio-preset-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="preset-choice-title"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                setPresetChoice(null);
+                return;
+              }
+              if (event.key !== 'Tab') return;
+              const buttons = [...(presetDialog.current?.querySelectorAll('button') ?? [])];
+              if (event.shiftKey && document.activeElement === buttons[0]) {
+                event.preventDefault();
+                buttons.at(-1)?.focus();
+              } else if (!event.shiftKey && document.activeElement === buttons.at(-1)) {
+                event.preventDefault();
+                buttons[0]?.focus();
+              }
+            }}
+          >
+            <p class="eyebrow">{presetChoice.name} preset</p>
+            <h2 id="preset-choice-title">Choose a script to record</h2>
+            <p>
+              We set the {presetChoice.aspect} frame,{' '}
+              {presetChoice.targetSeconds
+                ? `${presetChoice.targetSeconds} second target`
+                : 'open duration'}{' '}
+              and recording safe zone for this session. Your saved scripts and settings stay as they
+              are.
+            </p>
+            <button class="studio-button" onClick={() => void openPresetScript(presetChoice)}>
+              Use starter
+            </button>
+            {active.length > 0 && (
+              <>
+                <h3>Use my script</h3>
+                <ul>
+                  {active.map((script) => (
+                    <li>
+                      <button
+                        class="studio-button studio-button--quiet"
+                        onClick={() => void openPresetScript(presetChoice, script)}
+                      >
+                        {script.title}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <button
+              class="studio-button studio-button--quiet"
+              onClick={() => setPresetChoice(null)}
+            >
+              Not now
+            </button>
+          </section>
+        </div>
+      )}
+      {inApp && route.screen !== 'record' && (
+        <div class="studio-storage-warning" role="status">
+          Instagram's browser can't record video. Open this page in{' '}
+          {/Android/i.test(navigator.userAgent) ? 'Chrome' : 'Safari'}.
+          <button
+            class="studio-button studio-button--quiet"
+            onClick={() =>
+              void navigator.clipboard.writeText(browserHandoffUrl(location.origin, handoffScript))
+            }
+          >
+            Copy link with script
+          </button>
+        </div>
+      )}
+      {memory && (
+        <p class="studio-storage-warning" role="status">
+          Private browsing: takes are lost when you close this tab.
+        </p>
+      )}
+      {recovered && (
+        <p
+          class={`studio-storage-warning ${route.screen === 'record' ? 'studio-recovery-notice' : ''}`}
+          role="status"
+        >
+          We recovered a take from your last session. <a href="#/takes">View take</a>
+        </p>
+      )}
+      {transferResult && (
+        <p class="studio-storage-warning" role="status">
+          {transferResult}
+        </p>
+      )}
+      {route.screen === 'home' && <Home scripts={active} />}
+      {route.screen === 'inbox' && <IdeasInbox refreshScripts={refresh} />}
+      {route.screen === 'receive' && <ReceiveScreen code={route.id ?? ''} />}
+      {route.screen === 'batch' && <BatchScreen />}
+      {route.screen === 'challenge' && <ChallengeScreen />}
+      {route.screen === 'scripts' && (
+        <Scripts scripts={active} deleted={deleted} refresh={refresh} />
+      )}
+      {route.screen === 'editor' && <Editor id={route.id ?? ''} refresh={refresh} />}
+      {route.screen === 'record' && (
+        <RecordScreen id={route.id ?? 'quick'} memory={memory} onCameraLive={setCameraLive} />
+      )}
+      {route.screen === 'practice' && <PracticeScreen id={route.id ?? ''} />}
+      {route.screen === 'take' && <TakeScreen id={route.id ?? ''} />}
+      {route.screen === 'takes' && <TakesScreen />}
+      {route.screen === 'settings' && <SettingsScreen section={route.id} />}
+      {route.screen === 'settings' && !route.id && (
+        <div class="studio-screen">
+          <TransferControls />
+        </div>
+      )}
+      {showsTabs(route, cameraLive) && <Tabs route={route} scripts={active} />}
+    </div>
+  );
+}
+
+const TAB_ICONS: Record<TabId, IconName> = {
+  home: 'home',
+  scripts: 'script',
+  record: 'camera',
+  takes: 'takes',
+  settings: 'settings',
+};
+function Tabs({ route, scripts }: { route: Route; scripts: StudioScript[] }) {
+  return (
+    <nav class="studio-tabs" aria-label="Studio navigation">
+      {tabItems(route, scripts).map((tab) => (
+        <a
+          class={[
+            tab.id === 'record' ? 'studio-record-link' : '',
+            tab.label === 'Record this script' ? 'has-tag' : '',
+            tab.current ? 'is-active' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          href={tab.href}
+          aria-label={tab.id === 'record' ? tab.label : undefined}
+          aria-current={tab.current ? 'page' : undefined}
+        >
+          <Icon name={TAB_ICONS[tab.id]} />
+          <span class={tab.id === 'record' ? 'studio-visually-hidden' : ''}>{tab.label}</span>
+          {/* In the editor, a tiny visible word ties the button to this script. */}
+          {tab.id === 'record' && tab.label === 'Record this script' && (
+            <span class="studio-record-link__tag" aria-hidden="true">
+              Record
+            </span>
+          )}
+        </a>
+      ))}
+    </nav>
+  );
+}
+function Home({ scripts }: { scripts: StudioScript[] }) {
+  const habits = useHabits();
+  const prompter = usePrompterSpeed();
+  const firstRun =
+    scripts.length === 1 &&
+    scripts[0]?.id === 'quick' &&
+    scripts[0]?.title === 'Introduce yourself in 30 seconds' &&
+    scripts[0]?.takeCount === 0;
+  const quick = scripts.find((script) => script.id === 'quick') ?? scripts[0];
+  const queue = upNext(scripts);
+  const shownNext = (queue.length ? queue : scripts).slice(0, 3);
+  return (
+    <section class="studio-screen studio-home">
+      <div class="studio-home__top">
+        <h1>{firstRun ? 'Record your first video in 60 seconds' : 'Welcome back'}</h1>
+        <HabitSummary {...habits} firstRun={firstRun} />
+      </div>
+      {/* Above the fold: streak chip, Today's prompt, Up next. Everything else waits below. */}
+      <TodayCard settings={habits.settings} />
+      {shownNext.length > 0 && (
+        <section class="studio-up-next" aria-label="Up next">
+          <div class="studio-section-head">
+            <h2>Up next</h2>
+            {queue.length >= 2 && (
+              <a class="studio-pill" href="#/batch">
+                Start batch
+              </a>
+            )}
+            {queue[0] && (
+              <a class="studio-pill" href="#/record/next">
+                Record next
+              </a>
+            )}
+          </div>
+          <div class="studio-list">
+            {shownNext.map((script) => (
+              <article class="studio-next-row" key={script.id}>
+                <a href={`#/scripts/${script.id}`}>
+                  <strong>{script.title || 'Untitled script'}</strong>
+                  <small>{wordsAndTime(script, prompter)}</small>
+                </a>
+                <a
+                  class="studio-round-action"
+                  href={`#/record/${script.id}`}
+                  aria-label={`Record ${script.title || 'Untitled script'}`}
+                >
+                  <Icon name="camera" />
+                </a>
+              </article>
+            ))}
+          </div>
+          <a class="studio-text-link" href="#/scripts">
+            All scripts
+          </a>
+        </section>
+      )}
+      <nav class="studio-icon-row" aria-label="Create tools">
+        {(
+          [
+            ['#/inbox', 'idea', 'Idea'],
+            [`#/practice/${quick?.id ?? 'quick'}`, 'play', 'Practice'],
+          ] as [string, IconName, string][]
+        ).map(([href, icon, label]) => (
+          <a href={href} key={label}>
+            <Icon name={icon} />
+            <span>{label}</span>
+          </a>
+        ))}
+      </nav>
+      <HomeAsk {...habits} />
+      <WeeklyRecap {...habits} />
+      <HabitProgress {...habits} />
+      <StandaloneTransferCard empty={firstRun} />
+    </section>
+  );
+}
+function Scripts({
+  scripts,
+  deleted,
+  refresh,
+}: {
+  scripts: StudioScript[];
+  deleted: StudioScript[];
+  refresh: () => Promise<void>;
+}) {
+  const prompter = usePrompterSpeed();
+  const [query, setQuery] = useState('');
+  const [picked, setStatus] = useState<'all' | ScriptStage>('all');
+  const [notice, setNotice] = useState('');
+  // "+" opens one sheet: Blank, Template or Import. Home's Templates link lands on its list.
+  const [creating, setCreating] = useState<'menu' | 'templates' | null>(() =>
+    new URLSearchParams(location.hash.split('?')[1] ?? '').has('templates') ? 'templates' : null,
+  );
+  const statusRef = useRef<HTMLParagraphElement>(null);
+  // The last delete, from a row or the editor, stays undoable from a toast above the nav.
+  const [undo, setUndo] = useState<{ id: string; title: string } | null>(null);
+  const deletedNotice = (deleted: { id: string; title: string }) => {
+    setUndo(deleted);
+    setNotice(`${deleted.title} moved to Recently deleted.`);
+    statusRef.current?.focus();
+  };
+  useEffect(() => {
+    if (!deletedFromEditor) return;
+    deletedNotice(deletedFromEditor);
+    deletedFromEditor = null;
+  }, []);
+  useEffect(() => {
+    if (!undo) return;
+    const timer = setTimeout(() => setUndo(null), 8000);
+    return () => clearTimeout(timer);
+  }, [undo]);
+  const statusCount = (value: ScriptStage) =>
+    scripts.filter((script) => scriptStage(script) === value).length;
+  // Only stages that hold a script get a chip; All shows whenever another chip does.
+  const filters = SCRIPT_STAGES.filter((stage) => statusCount(stage.value) > 0);
+  const status = picked !== 'all' && statusCount(picked) > 0 ? picked : 'all';
+  const visible = scripts.filter(
+    (script) =>
+      `${script.title} ${script.body}`.toLowerCase().includes(query.toLowerCase()) &&
+      (status === 'all' || scriptStage(script) === status),
+  );
+  const add = async () => {
+    const script = await createScript();
+    analytics.track('created_script', { source: 'blank' });
+    await refresh();
+    go(`/scripts/${script.id}`);
+  };
+  const importer = useScriptImport(async (script) => {
+    await refresh();
+    go(`/scripts/${script.id}`);
+  });
+  const queue = upNext(scripts);
+  const queueIds = queue.map((item) => item.id);
+  const changeQueue = async (ids: string[]) => {
+    await setUpNext(ids);
+    await refresh();
+  };
+  return (
+    <section class="studio-screen">
+      <div class="studio-screen-heading">
+        <div>
+          <h1>Scripts</h1>
+        </div>
+        <div class="studio-heading-actions">
+          <button
+            class="studio-button studio-button--quiet studio-icon-button"
+            aria-label="New script"
+            aria-haspopup="dialog"
+            onClick={() => setCreating('menu')}
+          >
+            <Icon name="plus" />
+          </button>
+        </div>
+        {importer.element}
+      </div>
+      {importer.status && <p role="status">{importer.status}</p>}
+      {creating === 'menu' && (
+        <Sheet title="New script" onClose={() => setCreating(null)}>
+          <div class="studio-create-options">
+            <button onClick={() => void add()}>
+              <Icon name="plus" />
+              Blank
+            </button>
+            <button onClick={() => setCreating('templates')}>
+              <Icon name="grid" />
+              Template
+            </button>
+            <button
+              onClick={() => {
+                importer.pick();
+                setCreating(null);
+              }}
+            >
+              <Icon name="import" />
+              Import
+            </button>
+          </div>
+        </Sheet>
+      )}
+      {creating === 'templates' && (
+        <Sheet title="Templates" onClose={() => setCreating(null)}>
+          <TemplatePicker onCreated={() => void refresh()} />
+        </Sheet>
+      )}
+      {queue.length > 0 && (
+        <section class="studio-card">
+          <h2>Up next</h2>
+          <p>Choose the order for your next recording session.</p>
+          <ol class="studio-row-list">
+            {queue.map((script, index) => (
+              <li class="studio-row" key={script.id}>
+                <span class="studio-row__title">{script.title || 'Untitled script'}</span>
+                <div class="studio-row__actions">
+                  <button
+                    class="studio-chip"
+                    aria-label={`Move ${script.title} up`}
+                    disabled={index === 0}
+                    onClick={() => void changeQueue(moveInQueue(queueIds, index, -1))}
+                  >
+                    Move up
+                  </button>
+                  <button
+                    class="studio-chip"
+                    aria-label={`Move ${script.title} down`}
+                    disabled={index === queue.length - 1}
+                    onClick={() => void changeQueue(moveInQueue(queueIds, index, 1))}
+                  >
+                    Move down
+                  </button>
+                  <button
+                    class="studio-chip"
+                    aria-label={`Remove ${script.title} from Up next`}
+                    onClick={() => void changeQueue(queueIds.filter((id) => id !== script.id))}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ol>
+          {queue.length >= 2 && (
+            <div class="studio-actions">
+              <a class="studio-button" href="#/batch">
+                Start batch
+              </a>
+            </div>
+          )}
+        </section>
+      )}
+      <div class="studio-filter-row">
+        <input
+          type="search"
+          aria-label="Search scripts"
+          value={query}
+          onInput={(event) => setQuery((event.target as HTMLInputElement).value)}
+          placeholder="Search scripts"
+        />
+      </div>
+      {filters.length > 1 && (
+        <div class="studio-filter-chips" role="group" aria-label="Filter scripts">
+          {[{ value: 'all' as const, label: 'All' }, ...filters].map(({ value, label }) => (
+            <button
+              type="button"
+              class="studio-toggle"
+              aria-pressed={status === value}
+              onClick={() => setStatus(value)}
+            >
+              {label}{' '}
+              <span class="studio-filter-count">
+                {value === 'all' ? scripts.length : statusCount(value)}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      <p
+        class="studio-visually-hidden"
+        aria-live="polite"
+        role={notice ? 'status' : undefined}
+        tabIndex={-1}
+        ref={statusRef}
+      >
+        {notice}
+      </p>
+      <div class="studio-list">
+        {visible.map((script) => (
+          <ScriptCard
+            key={script.id}
+            script={script}
+            prompter={prompter}
+            queued={queueIds.includes(script.id)}
+            onQueue={() => void changeQueue([...queueIds, script.id])}
+            onDuplicate={async () => {
+              await duplicateScript(script.id);
+              await refresh();
+            }}
+            onDelete={async () => {
+              await softDelete(script.id);
+              await refresh();
+              deletedNotice({ id: script.id, title: script.title || 'Untitled script' });
+            }}
+          />
+        ))}
+      </div>
+      {!visible.length && <p>No scripts match.</p>}
+      {undo && (
+        <div class="studio-toast-region">
+          <p class="studio-toast studio-undo">
+            Moved to Recently deleted
+            <button
+              class="studio-chip"
+              aria-label={`Undo delete ${undo.title}`}
+              onClick={async () => {
+                await restoreScript(undo.id);
+                await refresh();
+                setUndo(null);
+                setNotice(`${undo.title} restored.`);
+              }}
+            >
+              Undo
+            </button>
+          </p>
+        </div>
+      )}
+      {deleted.length > 0 && (
+        <section class="studio-deleted">
+          <h2>Recently deleted</h2>
+          <ul class="studio-row-list">
+            {deleted.map((script) => (
+              <li class="studio-row" key={script.id}>
+                <span class="studio-row__title">{script.title || 'Untitled script'}</span>
+                <div class="studio-row__actions">
+                  <button
+                    class="studio-chip"
+                    onClick={async () => {
+                      await restoreScript(script.id);
+                      await refresh();
+                    }}
+                  >
+                    Restore
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </section>
+  );
+}
+/** "Today", "Yesterday", or a short date such as "Nov 4", so a row's details stay on one line. */
+function shortDate(time: number): string {
+  const day = (value: number) => new Date(value).setHours(0, 0, 0, 0);
+  const days = Math.round((day(Date.now()) - day(time)) / 86_400_000);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  return new Date(time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+const STAGE_LABELS = Object.fromEntries(
+  SCRIPT_STAGES.map((stage) => [stage.value, stage.label]),
+) as Record<ScriptStage, string>;
+/** Library row: title and details lead; one round record action; the rest sit in a ... menu. */
+function ScriptCard({
+  script,
+  prompter,
+  queued,
+  onQueue,
+  onDuplicate,
+  onDelete,
+}: {
+  script: StudioScript;
+  prompter: PrompterSpeed;
+  queued: boolean;
+  onQueue: () => void;
+  onDuplicate: () => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLElement>(null);
+  const opened = useRef(false);
+  useEffect(() => {
+    if (confirming) cancelRef.current?.focus();
+    else if (opened.current) menuRef.current?.focus();
+    opened.current = confirming;
+  }, [confirming]);
+  const title = script.title || 'Untitled script';
+  const details = [
+    wordsAndTime(script, prompter),
+    STAGE_LABELS[scriptStage(script)],
+    shortDate(script.updatedAt),
+  ].join(' · ');
+  return (
+    <article class="studio-script-card">
+      <a class="studio-script-card__main" href={`#/scripts/${script.id}`}>
+        <strong class="studio-script-card__title">{title}</strong>
+        <span class="studio-script-card__meta">{details}</span>
+      </a>
+      <a
+        class="studio-round-action studio-script-card__record"
+        href={`#/record/${script.id}`}
+        aria-label={`Record ${title}`}
+      >
+        <Icon name="camera" />
+      </a>
+      {confirming ? (
+        <div
+          class="studio-script-card__confirm"
+          role="group"
+          aria-label={`Delete ${title}?`}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setConfirming(false);
+          }}
+        >
+          <span>Delete this script?</span>
+          <button ref={cancelRef} class="studio-chip" onClick={() => setConfirming(false)}>
+            Cancel
+          </button>
+          <button
+            class="studio-chip studio-chip--danger-solid"
+            aria-label={`Confirm delete ${title}`}
+            onClick={() => void onDelete()}
+          >
+            Delete
+          </button>
+        </div>
+      ) : (
+        <Overflow label={`More actions for ${title}`} summaryRef={menuRef}>
+          <button
+            aria-label={queued ? `${title} is in Up next` : `Add to Up next: ${title}`}
+            disabled={queued}
+            onClick={onQueue}
+          >
+            <Icon name="plus" size={18} /> {queued ? 'In Up next' : 'Up next'}
+          </button>
+          <button aria-label={`Duplicate ${title}`} onClick={() => void onDuplicate()}>
+            <Icon name="copy" size={18} /> Duplicate
+          </button>
+          <button aria-label={`Delete ${title}`} onClick={() => setConfirming(true)}>
+            <Icon name="trash" size={18} /> Delete
+          </button>
+        </Overflow>
+      )}
+    </article>
+  );
+}
+function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
+  const [script, setScript] = useState<StudioScript | null>(null);
+  const [saved, setSaved] = useState('Loading...');
+  const [showSend, setShowSend] = useState(false);
+  const [operatorOn, setOperatorOn] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [customTarget, setCustomTarget] = useState(false);
+  const [captionsOpen, setCaptionsOpen] = useState(false);
+  const [presentOpen, setPresentOpen] = useState(false);
+  const [hookOpen, setHookOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+  const moreRef = useRef<HTMLElement>(null);
+  const askedDelete = useRef(false);
+  const prompter = usePrompterSpeed();
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+  const currentRef = useRef<StudioScript | null>(null);
+  const pendingRef = useRef(false);
+  const sequenceRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const writeRef = useRef<Promise<void>>(Promise.resolve());
+  const persist = (snapshot: StudioScript, sequence: number) => {
+    const operation = writeRef.current.then(() => saveScript(snapshot));
+    writeRef.current = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    return operation.then(() => {
+      if (sequence === sequenceRef.current) {
+        pendingRef.current = false;
+        setSaved('Saved');
+      }
+      if (!editedThisSession.has(snapshot.id)) {
+        editedThisSession.add(snapshot.id);
+        analytics.track('edited_script', {
+          words_bucket: wordBucket(parseMarkup(snapshot.body).spokenWordCount),
+        });
+      }
+      void refresh();
+    });
+  };
+  const flush = async () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (!pendingRef.current || !currentRef.current) return;
+    const sequence = ++sequenceRef.current;
+    await persist(currentRef.current, sequence);
+  };
+  const edit = (next: StudioScript) => {
+    currentRef.current = next;
+    pendingRef.current = true;
+    sequenceRef.current++;
+    setScript(next);
+  };
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (pendingRef.current && currentRef.current)
+        void persist(currentRef.current, ++sequenceRef.current);
+    },
+    [id],
+  );
+  useEffect(() => {
+    setScript(null);
+    setSaved('Loading...');
+    void getScript(id).then((item) => {
+      currentRef.current = item ?? null;
+      pendingRef.current = false;
+      setScript(item ?? null);
+      // Nothing to report until the first edit; a stale "Loading..." is only noise.
+      setSaved('');
+    });
+  }, [id]);
+  useEffect(() => {
+    if (!script || !pendingRef.current) return;
+    const sequence = sequenceRef.current;
+    setSaved('Saving...');
+    timerRef.current = setTimeout(() => {
+      void persist(script, sequence).catch((error) => {
+        analytics.error('studio', error);
+        setSaved('Save failed');
+      });
+    }, 400);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [script]);
+  // The title wraps instead of truncating: the field grows to fit every line, and refits when
+  // its width or the font changes.
+  useEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    const fit = () => {
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    };
+    fit();
+    let width = el.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (el.clientWidth === width) return;
+      width = el.clientWidth;
+      fit();
+    });
+    observer.observe(el);
+    void document.fonts?.ready.then(fit);
+    return () => observer.disconnect();
+  }, [script?.title, Boolean(script)]);
+  useEditorBroadcast(script?.body, operatorOn);
+  useEffect(() => {
+    if (confirmingDelete) cancelDeleteRef.current?.focus();
+    else if (askedDelete.current) moreRef.current?.focus();
+    askedDelete.current = confirmingDelete;
+  }, [confirmingDelete]);
+  const insert = (value: string) => {
+    const el = bodyRef.current;
+    if (!el || !script) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = script.body.slice(start, end);
+    let inserted = value;
+    if (value === '# ' || value === '// ') {
+      const lineStart = script.body.lastIndexOf('\n', start - 1) + 1;
+      const prefix = start === lineStart ? '' : '\n';
+      inserted = `${prefix}${value}`;
+    } else if (value === '**text**' && selected) inserted = `**${selected}**`;
+    else if (value === '==text==' && selected) inserted = `==${selected}==`;
+    edit({ ...script, body: script.body.slice(0, start) + inserted + script.body.slice(end) });
+    requestAnimationFrame(() => {
+      el.focus();
+      el.selectionStart = el.selectionEnd = start + inserted.length;
+    });
+  };
+  if (!script)
+    return <Placeholder title="Script not found" text="This script may have been deleted." />;
+  const parsed = parseMarkup(script.body);
+  const wpm = scriptWpm(parsed.spokenWordCount, scriptTargetSeconds(script), prompter);
+  const sections = sectionDurations(parsed.sections, wpm);
+  const setTarget = (targetSeconds: number) => {
+    endSessionTarget(script.id);
+    edit({ ...script, targetSeconds });
+  };
+  const placeholders = (script.body.match(/\{[^}]+\}/g) ?? []).length;
+  return (
+    <section class="studio-screen studio-editor">
+      {/* The title is the heading: a back chevron, the title itself, and "Saved" on one row. */}
+      <div class="studio-screen-heading studio-editor__head">
+        <a class="studio-back studio-back--icon" href="#/scripts" aria-label="Scripts">
+          <Icon name="back" />
+        </a>
+        <h1 class="studio-editor__title">
+          <span class="studio-visually-hidden">Editor</span>
+          {/* At rest a long title shows two lines and an ellipsis; focus shows all of it. */}
+          <span class="studio-editor__title-clamp" aria-hidden="true">
+            {script.title}
+          </span>
+          <textarea
+            ref={titleRef}
+            rows={1}
+            aria-label="Title"
+            placeholder="Untitled script"
+            value={script.title}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.preventDefault();
+            }}
+            onInput={(event) =>
+              edit({
+                ...script,
+                title: (event.target as HTMLTextAreaElement).value.replace(/\s*\n\s*/g, ' '),
+              })
+            }
+          />
+        </h1>
+        <span class="studio-editor__status">
+          <BadgeChip />
+          <span aria-live="polite">{saved}</span>
+        </span>
+      </div>
+      {/* The textarea's own text is transparent; a layer behind it draws the same characters
+          with section headings as labels and cues as chips, so "#" reads as a marker. */}
+      <div class="studio-script-field">
+        <div class="studio-script-layer" aria-hidden="true">
+          {editorSegments(script.body).map((line, index) => (
+            <>
+              {index > 0 && '\n'}
+              {line.map((segment) =>
+                segment.kind === 'text' ? (
+                  segment.text
+                ) : (
+                  <span class={`studio-md-${segment.kind}`}>{segment.text}</span>
+                ),
+              )}
+            </>
+          ))}
+          {'\u200b'}
+        </div>
+        <textarea
+          id="studio-body"
+          aria-label="Script"
+          ref={bodyRef}
+          value={script.body}
+          onInput={(event) =>
+            edit({ ...script, body: (event.target as HTMLTextAreaElement).value })
+          }
+          placeholder="Write your script"
+        />
+      </div>
+      {/* One quiet line of facts; only the duration row below is tappable. */}
+      <p class="studio-stats-line">
+        {[
+          wordsAndTime(script, prompter),
+          ...sections.map((section) => `${section.title} ${FORMAT(section.seconds)}`),
+        ].join(' · ')}
+      </p>
+      <div class="studio-target-row" role="group" aria-label="Target length">
+        {TARGET_CHIPS.map((target) => (
+          <button
+            type="button"
+            class={`studio-toggle fit-${fitForTarget(
+              parsed.spokenWordCount,
+              target,
+              scriptWpm(parsed.spokenWordCount, target, prompter),
+            )}`}
+            aria-pressed={script.targetSeconds === target}
+            onClick={() => {
+              setCustomTarget(false);
+              setTarget(target);
+            }}
+          >
+            {target}s
+          </button>
+        ))}
+        {/* Any other length: one custom chip that turns into a seconds field. */}
+        {customTarget ||
+        (script.targetSeconds > 0 && !TARGET_CHIPS.includes(script.targetSeconds)) ? (
+          <label class="studio-target-custom">
+            <input
+              type="number"
+              min="0"
+              inputMode="numeric"
+              aria-label="Target seconds"
+              value={script.targetSeconds || ''}
+              autoFocus={customTarget}
+              onInput={(event) => setTarget(Number((event.target as HTMLInputElement).value) || 0)}
+            />
+            <span aria-hidden="true">s</span>
+          </label>
+        ) : (
+          <button
+            type="button"
+            class="studio-toggle"
+            aria-label="Custom target length"
+            onClick={() => setCustomTarget(true)}
+          >
+            <Icon name="timer" size={20} />
+          </button>
+        )}
+      </div>
+      {readabilityWarning(parsed.spokenText) && (
+        <p class="studio-warning">One or more sentences are longer than 25 words.</p>
+      )}
+      {placeholders > 0 && (
+        <p class="studio-warning">
+          {placeholders} placeholder{placeholders === 1 ? '' : 's'} left
+        </p>
+      )}
+      {/* Opening More brings Aspect and Status above the sticky action row. */}
+      <details
+        class="studio-more"
+        onToggle={(event) => {
+          const details = event.currentTarget;
+          if (details.open)
+            details.querySelector('.studio-grid-fields')?.scrollIntoView({ block: 'nearest' });
+        }}
+      >
+        <summary>
+          More
+          <Icon name="chevron" size={18} />
+        </summary>
+        <div class="studio-grid-fields studio-more__fields">
+          <SegmentedField
+            id="studio-aspect-label"
+            label="Aspect"
+            class="studio-aspect-field"
+            options={ASPECT_OPTIONS}
+            value={script.aspect}
+            onChange={(aspect) => edit({ ...script, aspect })}
+          />
+          <SegmentedField
+            id="studio-status-label"
+            label="Status"
+            class="studio-status-field"
+            options={STATUS_OPTIONS}
+            value={scriptStage(script)}
+            onChange={(status) => edit({ ...script, status })}
+          />
+        </div>
+      </details>
+      {/* Sheets render outside the sticky action row, whose stacking sits under the nav. */}
+      {hookOpen && <HookSheet insert={insert} onClose={() => setHookOpen(false)} />}
+      {captionsOpen && (
+        <CaptionsSheet script={script} edit={edit} onClose={() => setCaptionsOpen(false)} />
+      )}
+      {showSend && <SendToPhone script={script} />}
+      {notice && <p role="status">{notice}</p>}
+      {presentOpen && (
+        <Sheet title="Present" onClose={() => setPresentOpen(false)}>
+          <div class="studio-create-options">
+            <button
+              onClick={async () => {
+                await flush();
+                sessionStorage.setItem('studio.presentScript', script.body);
+                location.href = '/?studio-present=1';
+              }}
+            >
+              <Icon name="present" /> Present
+            </button>
+            <button
+              onClick={async () => {
+                await flush();
+                setPresentOpen(false);
+                if (openOperatorWindow()) {
+                  setOperatorOn(true);
+                  setNotice('Operator window open. Start Practice or Record here to drive it.');
+                } else setNotice('Allow pop-ups for this site to open the operator window.');
+              }}
+            >
+              <Icon name="monitor" /> Operator window
+            </button>
+            <button
+              onClick={() =>
+                void flush().then(() => {
+                  setPresentOpen(false);
+                  print();
+                })
+              }
+            >
+              <Icon name="print" /> Print or PDF
+            </button>
+          </div>
+        </Sheet>
+      )}
+      <PrintableScript script={script} />
+      {/* Record is the raised nav button, which records this script while the editor is open. */}
+      <div class="studio-editor__actions">
+        {/* One Aa menu holds sections, marks and cues, so no markup syntax needs typing. */}
+        {!confirmingDelete && (
+          <div class="studio-toolbar" role="group" aria-label="Markup tools">
+            <Overflow label="Format" icon="format" caption="Format" up>
+              <button onClick={() => insert('# ')}>Add section</button>
+              <button onClick={() => insert('[pause]')}>Pause</button>
+              <button onClick={() => insert('**text**')}>Emphasis</button>
+              <button onClick={() => insert('==text==')}>Highlight</button>
+              <button onClick={() => insert('// ')}>Note</button>
+              {['breathe', 'smile', 'look up', 'slow', 'cut'].map((cue) => (
+                <button aria-label={`Cue: ${cue}`} onClick={() => insert(`[${cue}]`)}>
+                  {cue.charAt(0).toUpperCase() + cue.slice(1)}
+                </button>
+              ))}
+            </Overflow>
+          </div>
+        )}
+        {!confirmingDelete && (
+          <button
+            type="button"
+            class="studio-captioned studio-editor__hook"
+            aria-label="Choose a hook"
+            aria-haspopup="dialog"
+            onClick={() => setHookOpen(true)}
+          >
+            <span class="studio-captioned__disc">
+              <Icon name="idea" />
+            </span>
+            <span class="studio-captioned__label" aria-hidden="true">
+              Hook
+            </span>
+          </button>
+        )}
+        {!confirmingDelete && (
+          <a
+            class="studio-captioned studio-editor__practice"
+            href={`#/practice/${script.id}`}
+            aria-label="Practice"
+          >
+            <span class="studio-captioned__disc">
+              <Icon name="play" />
+            </span>
+            <span class="studio-captioned__label" aria-hidden="true">
+              Practice
+            </span>
+          </a>
+        )}
+        {confirmingDelete ? (
+          <div
+            class="studio-script-card__confirm studio-editor__confirm"
+            role="group"
+            aria-label={`Delete ${script.title || 'Untitled script'}?`}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setConfirmingDelete(false);
+            }}
+          >
+            <span>Delete this script?</span>
+            <button
+              ref={cancelDeleteRef}
+              class="studio-chip"
+              onClick={() => setConfirmingDelete(false)}
+            >
+              Cancel
+            </button>
+            <button
+              class="studio-chip studio-chip--danger-solid"
+              aria-label={`Confirm delete ${script.title || 'Untitled script'}`}
+              onClick={async () => {
+                await flush();
+                await softDelete(script.id);
+                await refresh();
+                deletedFromEditor = { id: script.id, title: script.title || 'Untitled script' };
+                go('/scripts');
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        ) : (
+          <Overflow label="More script actions" up summaryRef={moreRef}>
+            <button onClick={() => setCaptionsOpen(true)}>
+              <Icon name="captions" size={18} /> Captions
+            </button>
+            <button onClick={() => void flush().then(() => setShowSend(!showSend))}>
+              <Icon name="phone" size={18} /> Send to phone
+            </button>
+            <button aria-haspopup="dialog" onClick={() => setPresentOpen(true)}>
+              <Icon name="present" size={18} /> Present
+            </button>
+            <button onClick={() => setConfirmingDelete(true)}>
+              <Icon name="trash" size={18} /> Delete
+            </button>
+          </Overflow>
+        )}
+      </div>
+    </section>
+  );
+}
+const STAGE_ICONS: Record<ScriptStage, IconName> = {
+  draft: 'pencil',
+  recorded: 'recorded',
+  posted: 'posted',
+};
+const STATUS_OPTIONS = SCRIPT_STAGES.map((stage) => ({ ...stage, icon: STAGE_ICONS[stage.value] }));
+const ASPECT_OPTIONS: { value: StudioScript['aspect']; label: string; icon: IconName }[] = [
+  { value: '9:16', label: '9:16', icon: 'portrait' },
+  { value: '16:9', label: '16:9', icon: 'landscape' },
+];
+/** Icon segments, each with a small label, and radio semantics: arrows move the choice. */
+function SegmentedField<T extends string>({
+  id,
+  label,
+  class: className,
+  options,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  class: string;
+  options: { value: T; label: string; icon: IconName }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  const current = options.findIndex((option) => option.value === value);
+  return (
+    <div class={`studio-label studio-segmented-field ${className}`}>
+      <span id={id}>{label}</span>
+      <div class="studio-segmented" role="radiogroup" aria-labelledby={id}>
+        {options.map((option, index) => (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={value === option.value}
+            tabIndex={index === Math.max(0, current) ? 0 : -1}
+            onClick={() => onChange(option.value)}
+            onKeyDown={(event) => {
+              const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+              if (!step) return;
+              event.preventDefault();
+              const next = (index + step + options.length) % options.length;
+              onChange(options[next]!.value);
+              const group = event.currentTarget.parentElement;
+              (group?.children[next] as HTMLElement | undefined)?.focus();
+            }}
+          >
+            <Icon name={option.icon} size={20} />
+            <span class="studio-segmented__label">{option.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+/** Instagram first: caption and hashtags. YouTube's two fields wait behind one chip. */
+function CaptionsSheet({
+  script,
+  edit,
+  onClose,
+}: {
+  script: StudioScript;
+  edit: (next: StudioScript) => void;
+  onClose: () => void;
+}) {
+  const [youtube, setYoutube] = useState(Boolean(script.youtubeTitle || script.youtubeDescription));
+  return (
+    <Sheet title="Captions" onClose={onClose}>
+      <CountedField
+        label="Instagram caption"
+        multiline
+        value={script.caption}
+        count={script.caption.length}
+        limit={limits.instagramCaption}
+        unit="characters"
+        onInput={(caption) => edit({ ...script, caption })}
+      />
+      <CountedField
+        label="Hashtags"
+        value={script.hashtags}
+        count={(script.hashtags.match(/#[\p{L}\p{N}_]+/gu) ?? []).length}
+        limit={limits.instagramHashtags}
+        unit="hashtags"
+        onInput={(hashtags) => edit({ ...script, hashtags })}
+      />
+      <button
+        type="button"
+        class="studio-toggle studio-captions__youtube"
+        aria-pressed={youtube}
+        onClick={() => setYoutube(!youtube)}
+      >
+        YouTube
+      </button>
+      {youtube && (
+        <>
+          <CountedField
+            label="YouTube title"
+            value={script.youtubeTitle}
+            count={script.youtubeTitle.length}
+            limit={limits.youtubeTitle}
+            unit="characters"
+            onInput={(youtubeTitle) => edit({ ...script, youtubeTitle })}
+          />
+          <CountedField
+            label="YouTube description"
+            multiline
+            value={script.youtubeDescription}
+            count={script.youtubeDescription.length}
+            limit={limits.youtubeDescription}
+            unit="characters"
+            onInput={(youtubeDescription) => edit({ ...script, youtubeDescription })}
+          />
+        </>
+      )}
+      <button type="button" class="studio-button studio-button--quiet" onClick={onClose}>
+        Done
+      </button>
+    </Sheet>
+  );
+}
+/** A field with a bare "12/2200" counter that turns danger red near the limit. */
+function CountedField({
+  label,
+  value,
+  count,
+  limit,
+  unit,
+  multiline,
+  onInput,
+}: {
+  label: string;
+  value: string;
+  count: number;
+  limit: number;
+  unit: string;
+  multiline?: boolean;
+  onInput: (value: string) => void;
+}) {
+  const hintId = `count-${label.replace(/\W+/g, '-').toLowerCase()}`;
+  const near = count >= limit * 0.9;
+  const update = (event: Event) => onInput((event.target as HTMLInputElement).value);
+  return (
+    <div class="studio-counted-field">
+      <label class="studio-label">
+        {label}
+        {multiline ? (
+          <textarea value={value} aria-describedby={hintId} onInput={update} />
+        ) : (
+          <input value={value} aria-describedby={hintId} onInput={update} />
+        )}
+      </label>
+      <p id={hintId} class={near ? 'studio-count is-near' : 'studio-count'}>
+        {count}/{limit}
+        <span class="studio-visually-hidden">
+          {' '}
+          {unit}
+          {count > limit ? `, ${count - limit} over the limit` : ''}
+        </span>
+      </p>
+    </div>
+  );
+}
+function Placeholder({ title, text }: { title: string; text: string }) {
+  return (
+    <section class="studio-screen">
+      <h1>{title}</h1>
+      <p>{text}</p>
+    </section>
+  );
+}

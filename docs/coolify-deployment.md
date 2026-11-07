@@ -35,9 +35,10 @@ The container redirects `/route/` and `/route/index.html` to `/route` with 308. 
 Optional build args / environment variables:
 
 ```text
-PUBLIC_GA_MEASUREMENT_ID=
 PUBLIC_UMAMI_WEBSITE_ID=c5952a2b-b192-46fe-8a3d-04ad673ffd6d
 PUBLIC_UMAMI_SCRIPT_URL=https://analytics.sabya.pm/script.js
+PUBLIC_UMAMI_DOMAINS=www.teleprompter.wtf
+PUBLIC_UMAMI_PROXY=false
 PUBLIC_GOOGLE_SITE_VERIFICATION=
 PUBLIC_BING_SITE_VERIFICATION=
 ```

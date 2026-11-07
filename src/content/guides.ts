@@ -1,4 +1,5 @@
 import type { PresenterPreferences } from '../domain/types';
+import { creatorGuides } from './creatorGuides';
 
 export interface GuideSection {
   heading: string;
@@ -14,7 +15,9 @@ export type GuideCluster =
   | 'zoom'
   | 'speed'
   | 'voice_tracking'
-  | 'mobile';
+  | 'mobile'
+  | 'short_form'
+  | 'creator';
 
 export interface GuideIllustration {
   src: string;
@@ -31,22 +34,26 @@ export interface Guide {
   slug: string;
   cluster: GuideCluster;
   title: string;
+  /** Full document title, 30 to 65 characters, keyword first; set when "{title} | teleprompter.wtf" is too long. */
+  seoTitle?: string;
   description: string;
   eyebrow: string;
   intro: string;
   updated: string;
   sections: GuideSection[];
   related: string[];
+  relatedPages?: { label: string; href: string }[];
   illustration?: GuideIllustration;
   embed?: GuideEmbed;
 }
 
-export const guides: Guide[] = [
+const originalGuides: Guide[] = [
   {
     slug: 'how-to-use-a-teleprompter',
     cluster: 'getting_started',
     updated: '2026-08-23',
     title: 'How to use a teleprompter without sounding scripted',
+    seoTitle: 'How to use a teleprompter without sounding scripted',
     description:
       'A practical teleprompter workflow: prepare readable copy, set the right pace, position your screen, rehearse, and deliver naturally.',
     eyebrow: 'Getting started',
@@ -70,7 +77,7 @@ export const guides: Guide[] = [
       {
         heading: 'Find a pace you can lead',
         paragraphs: [
-          'Start slower than you think you need. The scroll should follow your voice, not force you to chase it. A conversational delivery often lands around 120-150 words per minute, but clarity matters more than the number.',
+          'Start slower than you think you need. Adjust the scroll to your speaking pace so you do not need to chase it. A conversational delivery often lands around 120-150 words per minute, but clarity matters more than the number.',
         ],
         bullets: [
           'Pause the scroll at a section break if you need to reset.',
@@ -180,6 +187,7 @@ export const guides: Guide[] = [
     cluster: 'recording',
     updated: '2026-08-23',
     title: 'A practical teleprompter setup for video recording',
+    seoTitle: 'Teleprompter setup for video recording | teleprompter.wtf',
     description:
       'Choose a screen position, lens distance, text size, pace, and recording workflow that keeps eye contact natural on camera.',
     eyebrow: 'Camera setup',
@@ -246,6 +254,7 @@ export const guides: Guide[] = [
     cluster: 'recording',
     updated: '2026-08-23',
     title: 'Teleprompter camera distance, font size, and line width guide',
+    seoTitle: 'Teleprompter camera distance, font size and line width',
     description:
       'Calculate ideal teleprompter font size, viewing distance, line length, and camera placement to minimize visible eye movement on video.',
     eyebrow: 'Optical geometry',
@@ -318,6 +327,7 @@ export const guides: Guide[] = [
     cluster: 'presentation',
     updated: '2026-08-23',
     title: 'Using a teleprompter for talks and presentations',
+    seoTitle: 'Teleprompter for talks and presentations | teleprompter.wtf',
     description:
       'Use a teleprompter as a safety net for speeches and presentations without losing audience connection or slide awareness.',
     eyebrow: 'Live presentations',
@@ -383,6 +393,7 @@ export const guides: Guide[] = [
     cluster: 'zoom',
     updated: '2026-08-23',
     title: 'How to use a teleprompter on Zoom and video calls',
+    seoTitle: 'How to use a teleprompter on Zoom and video calls',
     description:
       'Place notes close to the webcam, stay present in the conversation, and use a teleprompter effectively for Zoom meetings and webinars.',
     eyebrow: 'Video calls',
@@ -631,6 +642,7 @@ export const guides: Guide[] = [
     cluster: 'presentation',
     updated: '2026-08-23',
     title: 'How to maintain eye contact with a teleprompter',
+    seoTitle: 'How to maintain eye contact with a teleprompter',
     description:
       'Reduce visible reading with better camera placement, narrower lines, a stable focus region, and deliberate moments away from the script.',
     eyebrow: 'Eye contact',
@@ -689,6 +701,7 @@ export const guides: Guide[] = [
     cluster: 'getting_started',
     updated: '2026-08-23',
     title: 'How to format a teleprompter script for easy reading',
+    seoTitle: 'How to format a teleprompter script for easy reading',
     description:
       'Format spoken copy with short paragraphs, useful line breaks, visible emphasis, pronunciation help, and clean transitions.',
     eyebrow: 'Script formatting',
@@ -747,6 +760,7 @@ export const guides: Guide[] = [
     cluster: 'voice_tracking',
     updated: '2026-08-23',
     title: 'How voice-activated teleprompters follow your speech',
+    seoTitle: 'How voice-activated teleprompters follow your speech',
     description:
       'Compare volume detection, browser speech recognition, and local speech models for teleprompter voice tracking, privacy, and reliability.',
     eyebrow: 'Voice tracking',
@@ -783,7 +797,7 @@ export const guides: Guide[] = [
         heading: 'A hybrid controller is safer',
         paragraphs: [
           'Recognition confidence changes during pauses, ad-libs, noise, and repeated lines. A good controller does not jump on one uncertain result. It uses rhythm when confidence is low, gentle corrections when confidence is medium, and stronger evidence before a larger position change.',
-          'teleprompter.wtf calls these two local paths Smart Pace and Private Precision. Its private voice tracking page documents the complete implementation boundary.',
+          'teleprompter.wtf uses manually controlled scrolling. Set the speed, pause when needed, and resume with the controls.',
         ],
       },
     ],
@@ -797,10 +811,9 @@ export const guides: Guide[] = [
       alt: 'Short and long script cards following a calm visual rhythm into a teleprompter',
     },
     embed: {
-      intro:
-        'This practice prompter starts in manual mode; try the same script with voice follow in the full app.',
+      intro: 'Try this script with manual scrolling and adjust the speed as you read.',
       sampleScript:
-        'Speak, and the page should keep up.\nPause here, and notice the scroll waiting.\nSkip ahead a line, then find your place again.\nRhythm matters more than raw speed.\nA good prompter forgives an ad-lib.',
+        'Read at a steady pace.\nPause the scroll when you need a breath.\nResume when you are ready.\nAdjust the speed to fit your delivery.\nPractice until the words feel natural.',
       preset: { speakingWpm: 130 },
     },
   },
@@ -809,51 +822,30 @@ export const guides: Guide[] = [
     cluster: 'voice_tracking',
     updated: '2026-08-23',
     title: 'Manual vs. voice-activated teleprompter: which should you choose?',
+    seoTitle: 'Manual vs. voice-activated teleprompter: which to choose?',
     description:
-      'Compare fixed-speed manual scrolling, cadence-based Smart Pace, and recognition-based Private Precision across speeches, courses, and calls.',
-    eyebrow: 'Mode selection',
+      'Compare manually controlled scrolling with voice-activated teleprompters and choose a setup that suits your delivery and recording environment.',
+    eyebrow: 'Choosing a prompter',
     intro:
-      'Neither manual scrolling nor voice tracking is universally superior. The right choice depends on whether your priority is strict timing, conversational freedom, or offline resilience.',
+      'Manual and voice-activated teleprompters take different approaches to pacing. Consider your setting, privacy needs and how much you plan to improvise.',
     sections: [
       {
-        heading: 'When Manual fixed-speed scrolling wins',
+        heading: 'When manual scrolling helps',
         paragraphs: [
-          'Manual mode maintains a constant elapsed-time speed regardless of room noise or acoustic interruptions. It is the best choice for:',
-        ],
-        bullets: [
-          'Time-critical keynote speeches where you have a hard stop (e.g., exactly 10 minutes).',
-          'Live stages with heavy acoustic feedback, loud PA systems, or audience applause.',
-          'Offline presentations in venues with zero internet or strict browser permissions.',
-          'Presenters who prefer pacing their delivery against a metronomic visual guide.',
+          'Manual scrolling moves at a speed you choose. It is predictable in noisy rooms and does not need microphone access. Pause or adjust the speed as your delivery changes.',
+          'teleprompter.wtf uses manual scrolling. Set a speaking rate to estimate duration, then tune the scroll speed during practice.',
         ],
       },
       {
-        heading: 'When Smart Pace rhythm following wins',
+        heading: 'When voice activation may help',
         paragraphs: [
-          'Smart Pace listens to speech presence without speech-to-text. It adjusts scroll rate dynamically and pauses automatically when you stop to take a breath, answer a quick question, or show a prop.',
-          'Because it requires zero download and zero model initialization, Smart Pace is the recommended default for YouTube creators, online teachers, and casual video calls.',
+          'Some products attempt to follow the speaker. Results depend on the room, accent, microphone and the product. Check whether speech processing happens on the device or through a service.',
         ],
       },
       {
-        heading: 'When Private Precision word alignment wins',
+        heading: 'Practice with your setup',
         paragraphs: [
-          'Private Precision Beta downloads an on-device Whisper model to match spoken words against script tokens. It is ideal when you need the prompter to track your exact location through longer takes where you might ad-lib, repeat a line, or skip a sentence.',
-          'Because the model runs locally, your script and voice never touch a cloud server, but it does require a modern laptop or desktop with sufficient memory.',
-        ],
-      },
-      {
-        heading: 'Summary comparison table',
-        paragraphs: ['Here is how the three modes compare on key production criteria:'],
-        bullets: [
-          'Manual: 0 MB download, 0% CPU overhead, no mic required, fixed pacing.',
-          'Smart Pace: 0 MB download, <1% CPU overhead, microphone required, rhythm following.',
-          'Private Precision: ~67 MB one-time download, moderate CPU overhead, microphone required, verbatim script tracking with Smart Pace fallback.',
-        ],
-      },
-      {
-        heading: 'The hybrid recommendation',
-        paragraphs: [
-          'For most creators, start with Smart Pace. If you find yourself frequently pausing or improvising and want position recovery, enable Private Precision Beta. If you are speaking in an auditorium or on a stage, switch to Manual.',
+          'Try a short passage at the distance and font size you will use. Add line breaks at natural pauses, then rehearse with the controls you will use during the presentation.',
         ],
       },
     ],
@@ -937,6 +929,7 @@ export const guides: Guide[] = [
     cluster: 'youtube',
     updated: '2026-08-23',
     title: 'Teleprompter workflow for recording online courses',
+    seoTitle: 'Teleprompter workflow for recording online courses',
     description:
       'Script lessons that sound like teaching, keep module structure consistent, and record course videos in clean segments with a teleprompter.',
     eyebrow: 'Online courses',
@@ -1002,6 +995,7 @@ export const guides: Guide[] = [
     cluster: 'recording',
     updated: '2026-08-23',
     title: 'Using a teleprompter for podcast intros, outros, and ad reads',
+    seoTitle: 'Teleprompter for podcast intros, outros and ad reads',
     description:
       'Script podcast intros and sponsor reads word for word while keeping the conversation itself unscripted and natural.',
     eyebrow: 'Podcasting',
@@ -1307,6 +1301,7 @@ export const guides: Guide[] = [
     cluster: 'getting_started',
     updated: '2026-08-23',
     title: 'Teleprompter keyboard shortcuts: the complete reference',
+    seoTitle: 'Teleprompter keyboard shortcuts: the complete reference',
     description:
       'Every keyboard control in the teleprompter: play and pause, scroll speed, font size, mirror, fullscreen, restart, and exit.',
     eyebrow: 'Keyboard control',
@@ -1362,4 +1357,21 @@ export const guides: Guide[] = [
   },
 ];
 
+const creatorByCluster: Record<Exclude<GuideCluster, 'short_form' | 'creator'>, string> = {
+  getting_started: 'how-to-write-a-30-second-video-script',
+  youtube: 'capcut-teleprompter',
+  recording: 'how-to-film-talking-head-reels',
+  presentation: 'teleprompter-remote-control',
+  zoom: 'teleprompter-remote-control',
+  speed: 'how-to-write-a-30-second-video-script',
+  voice_tracking: 'teleprompter-remote-control',
+  mobile: 'external-microphone-for-phone-video',
+};
+export const guides: Guide[] = [
+  ...originalGuides.map((guide) => ({
+    ...guide,
+    related: [...guide.related, creatorByCluster[guide.cluster as keyof typeof creatorByCluster]],
+  })),
+  ...creatorGuides,
+];
 export const guideBySlug = new Map(guides.map((guide) => [guide.slug, guide]));

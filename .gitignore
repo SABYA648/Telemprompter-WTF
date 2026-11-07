@@ -1,6 +1,5 @@
 node_modules/
 dist/
-dist-ga/
 .astro/
 .env
 .DS_Store
@@ -9,8 +8,6 @@ playwright-report/
 test-results/
 coverage/
 *.log
-public/models/runtime/
-public/models/whisper-tiny-v1/
 .agents/
 skills-lock.json
 .claude/skills/

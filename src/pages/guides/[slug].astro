@@ -2,14 +2,33 @@
 import { guideBySlug, guides } from '../../content/guides';
 import TeleprompterEmbed from '../../components/TeleprompterEmbed.astro';
 import Layout from '../../layouts/Layout.astro';
+import { isContentCluster } from '../../domain/analytics';
 
 export function getStaticPaths() {
   return guides.map((guide) => ({ params: { slug: guide.slug }, props: { guide } }));
 }
 
 const { guide } = Astro.props;
-const title = `${guide.title} | teleprompter.wtf`;
+// Long guide titles carry an authored seoTitle; content-lint enforces the 30 to 65 range.
+const title = guide.seoTitle ?? `${guide.title} | teleprompter.wtf`;
+const description =
+  guide.description.length >= 120
+    ? guide.description
+    : `${guide.description} Includes a working sample.`;
 const canonical = `https://www.teleprompter.wtf/guides/${guide.slug}`;
+// Vertical clusters record a 30 second phone video; the rest default to landscape with no target.
+const vertical = ['short_form', 'creator', 'mobile'].includes(guide.cluster);
+const recordHandoff = guide.embed
+  ? `/studio#/record/quick?handoff=${encodeURIComponent(
+      JSON.stringify({
+        title: `${guide.eyebrow} practice`,
+        body: guide.embed.sampleScript,
+        targetSeconds: vertical ? 30 : 0,
+        aspect: vertical ? '9:16' : '16:9',
+      }),
+    )}`
+  : '';
+const cluster = isContentCluster(guide.cluster) ? guide.cluster : undefined;
 const schema = [
   {
     '@context': 'https://schema.org',
@@ -45,7 +64,7 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
 
 <Layout
   title={title}
-  description={guide.description}
+  description={description}
   ogType="article"
   schema={schema}
   rss="/guides/feed.xml"
@@ -130,14 +149,6 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
           )
         }
         {
-          guide.slug === 'voice-activated-teleprompters' && (
-            <p class="guide-context-link">
-              See the exact local processing boundary in{' '}
-              <a href="/private-voice-tracking">How private voice tracking works</a>.
-            </p>
-          )
-        }
-        {
           guide.embed && (
             <div id="practice">
               <TeleprompterEmbed
@@ -146,7 +157,35 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
                 initialScript={guide.embed.sampleScript}
                 {...(guide.embed.preset ? { preset: guide.embed.preset } : {})}
               />
+              <p class="guide-record-link">
+                <a
+                  class="button button--primary"
+                  href={recordHandoff}
+                  data-analytics-cta="inline"
+                  data-page-type="guide"
+                  data-content-cluster={cluster}
+                >
+                  {' '}
+                  Record with camera{' '}
+                </a>
+              </p>
             </div>
+          )
+        }
+        {
+          guide.relatedPages && (
+            <section>
+              <>
+                <h2>Record your next video</h2>
+                <ul>
+                  {guide.relatedPages.map((page: { label: string; href: string }) => (
+                    <li>
+                      <a href={page.href}>{page.label}</a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            </section>
           )
         }
       </div>
@@ -180,10 +219,10 @@ const related = guide.related.map((slug: string) => guideBySlug.get(slug)).filte
             rel="author me noopener">Sabyasachi Mishra</a
           >
         </p>
-        <p class="sabyacard__role">AI Product Manager &amp; Systems Builder</p>
+        <p class="sabyacard__role">Product Manager &amp; Systems Builder</p>
         <p class="sabyacard__bio">
-          Builds AI products that hold up in production, and independently runs Shiproom,
-          teleprompter.wtf, and compressimage.fun.
+          Builds software products and independently runs Shiproom, teleprompter.wtf, and
+          compressimage.fun.
         </p>
         <p class="sabyacard__links">
           <a

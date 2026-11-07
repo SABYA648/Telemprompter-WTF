@@ -2,7 +2,6 @@
 .github
 node_modules
 dist
-dist-ga
 .astro
 artifacts
 playwright-report

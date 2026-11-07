@@ -31,9 +31,12 @@ describe('presenter settings', () => {
     expect(result.fontSize).toBe(DEFAULT_PREFERENCES.fontSize);
     expect(result.alignment).toBe('left');
     expect(result.focusLine).toBe(true);
-    expect(result.voiceMode).toBe('smart');
-    expect(sanitizePreferences({ voiceMode: 'precision' }).voiceMode).toBe('precision');
-    expect(sanitizePreferences({ voiceMode: 'manual' }).voiceMode).toBe('manual');
+  });
+
+  it('drops unknown fields from older stored preferences', () => {
+    const old = { fontSize: 60, voiceMode: 'manual' };
+    expect(sanitizePreferences(old)).not.toHaveProperty('voiceMode');
+    expect(sanitizePreferences(old).fontSize).toBe(60);
   });
 
   it('maps the speed scale monotonically', () => {

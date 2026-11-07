@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { ScriptAlignmentEngine } from './alignment';
 import {
   compileScriptGuide,
   parseRoleLabel,
@@ -204,17 +203,6 @@ describe('production script guide', () => {
     expect(guide.spokenWordCount).toBeLessThan(countApprox(SHIPROOM_SAMPLE) / 2);
     expect(guide.sections[0]?.beats.some((beat) => beat.role === 'visual')).toBe(true);
     expect(guide.sections[0]?.beats.some((beat) => beat.role === 'speak')).toBe(true);
-  });
-
-  it('aligns speech to VO and ignores visual-only phrases', () => {
-    const guide = compileScriptGuide(SHIPROOM_SAMPLE);
-    const engine = new ScriptAlignmentEngine(guide.spokenText);
-    const spoken = engine.align('your AI can fix the bug in seconds explaining the bug');
-    expect(spoken.movement).not.toBe('hold');
-    const visual = engine.align('red circle drawn around a broken button slack message');
-    expect(visual.movement).toBe('hold');
-    const later = engine.align('so I built Shiproom one command turns your local app');
-    expect(later.tokenIndex).toBeGreaterThan(spoken.tokenIndex);
   });
 
   it('resolves the active beat from a spoken caret', () => {

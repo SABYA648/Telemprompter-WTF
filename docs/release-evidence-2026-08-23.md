@@ -77,7 +77,6 @@ The 404 SEO score is intentionally lower because that page is correctly `noindex
 
 ## Payload, privacy, and security
 
-- Largest application payloads: precision worker 852 KiB (loaded only for Private Precision), main teleprompter island 60 KiB, shared CSS 40 KiB, Preact runtime 12 KiB.
 - The nine WebP illustrations are 34,440 to 52,768 bytes each. The hero is 47,986 bytes and the 1200 by 630 social image is 51,592 bytes.
 - Normal visits do not fetch the 66,874,154-byte optional model/runtime package. Its download is explicit, same-origin, cacheable, removable, and covered by the browser and real-inference tests.
 - The Nginx runtime returned CSP, `nosniff`, strict referrer policy, COOP, and an allow-listed permissions policy. A model range request returned HTTP 206 with the correct 100-byte range and immutable one-year caching.

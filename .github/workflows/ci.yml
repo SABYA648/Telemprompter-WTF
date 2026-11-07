@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build --build-arg PUBLIC_GA_MEASUREMENT_ID=G-TEST123 -t teleprompter-wtf:ci .
+      - run: docker build -t teleprompter-wtf:ci .
       - run: docker run -d --name teleprompter-ci --read-only --tmpfs /tmp:uid=101,gid=101 --tmpfs /var/cache/nginx:uid=101,gid=101 --tmpfs /var/run:uid=101,gid=101 -p 8080:8080 teleprompter-wtf:ci
       - run: |
           for attempt in {1..20}; do
@@ -51,5 +51,5 @@ jobs:
           done
           docker logs teleprompter-ci
           exit 1
-      - run: test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/private-voice-tracking)" = "200"
-      - run: test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/models/whisper-tiny-v1/onnx/encoder_model_quantized.onnx)" = "200"
+      - run: test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/private-voice-tracking)" = "301"
+      - run: test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/)" = "200"

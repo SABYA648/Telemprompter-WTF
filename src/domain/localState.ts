@@ -40,7 +40,7 @@ export function embedInitialState(
   return {
     ...base,
     script: initialScript,
-    preferences: sanitizePreferences({ ...base.preferences, voiceMode: 'manual', ...preset }),
+    preferences: sanitizePreferences({ ...base.preferences, ...preset }),
   };
 }
 
