@@ -277,7 +277,10 @@ test('transfer code restores script and device identity in a fresh context', asy
   await page.getByLabel('Prompter dock').selectOption('left');
   await page.reload();
   await expect(page.getByLabel('Prompter dock')).toHaveValue('left');
-  await page.evaluate(async () => {
+  // Seed today's local date: a fixed date goes stale and the imported streak reads as broken.
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  await page.evaluate(async (today) => {
     const request = indexedDB.open('teleprompter-wtf');
     const db = await new Promise<IDBDatabase>((resolve) => {
       request.onsuccess = () => resolve(request.result);
@@ -285,12 +288,12 @@ test('transfer code restores script and device identity in a fresh context', asy
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(['ideas', 'kv'], 'readwrite');
       tx.objectStore('ideas').put({ id: 'transfer-idea', text: 'An idea to move', createdAt: 10 });
-      tx.objectStore('kv').put({ current: 2, best: 2, activeDates: ['2026-11-05'] }, 'streak');
+      tx.objectStore('kv').put({ current: 2, best: 2, activeDates: [today] }, 'streak');
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
     db.close();
-  });
+  }, today);
   await page.goto('/studio#/settings');
   await page.getByRole('button', { name: 'Copy transfer code' }).click();
   await expect(page.getByRole('status')).toContainText('Transfer code copied');
@@ -341,7 +344,7 @@ test('transfer code restores script and device identity in a fresh context', asy
   expect(importedStreak).toMatchObject({
     current: 1,
     best: 2,
-    activeDates: ['2026-11-05'],
+    activeDates: [today],
   });
   await importedPage.goto('/studio#/inbox');
   await expect(importedPage.getByText('An idea to move')).toBeVisible();
