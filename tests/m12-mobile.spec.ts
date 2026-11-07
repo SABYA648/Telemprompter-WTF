@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // M12: one current tab on every route with a tab bar, and at most one accent (primary) action
 // per screen. Practice and the live camera are full-bleed with no tab bar (M12 P3).
@@ -28,6 +28,14 @@ const accentActions = (page: Page) =>
       .filter((el) => getComputedStyle(el).backgroundColor === 'rgb(240, 71, 42)')
       .map((el) => (el.getAttribute('aria-label') || el.textContent || '').trim()),
   );
+
+/** Text a sighted user sees: everything except visually hidden spans. */
+const visibleText = (locator: Locator) =>
+  locator.evaluate((el) => {
+    const copy = el.cloneNode(true) as HTMLElement;
+    copy.querySelectorAll('.studio-visually-hidden').forEach((node) => node.remove());
+    return (copy.textContent ?? '').trim();
+  });
 
 const currentItems = (page: Page) =>
   page.getByRole('navigation', { name: 'Studio navigation' }).locator('[aria-current]');
@@ -65,9 +73,18 @@ test('every route marks exactly one tab and shows at most one accent action', as
     'false',
   );
   await expect(page.locator('.studio-practice input[type="checkbox"]')).toHaveCount(0);
-  const title = (await page.getByRole('heading', { name: /^Practice:/ }).boundingBox())!;
+  const heading = page.getByRole('heading', { name: /^Practice:/ });
+  // The header shows the script title alone; "Practice:" is for screen readers.
+  expect(await visibleText(heading)).not.toMatch(/Practice/);
+  await expect(heading.locator('.studio-visually-hidden')).toHaveText('Practice:');
+  const title = (await heading.boundingBox())!;
   const prompter = (await page.getByTestId('practice-prompter').boundingBox())!;
   expect(title.y + title.height).toBeLessThanOrEqual(prompter.y);
+  // Speed is the camera tray's control: a gauge glyph and a number, WPM for screen readers.
+  const speed = page.getByRole('group', { name: 'Speed' });
+  await expect(speed.locator('.studio-stepper__value svg')).toHaveCount(1);
+  await expect(speed.locator('.studio-stepper__value')).toHaveText(/^\d+ WPM$/);
+  expect(await visibleText(speed.locator('.studio-stepper__value'))).toMatch(/^\d+$/);
 });
 
 test('active tab labels meet 4.5:1 contrast on the tab bar', async ({ page }) => {
@@ -238,16 +255,28 @@ for (const viewport of [
     await expect(page.getByLabel('Script', { exact: true })).toHaveValue(/\[pause\]/);
     await page.getByText('More', { exact: true }).click();
     await expect(page.getByLabel('Target seconds')).toHaveCount(0);
-    const practice = (await actions.getByRole('link', { name: 'Practice' }).boundingBox())!;
-    const more = (await actions.locator('summary').boundingBox())!;
+    const practiceLink = actions.getByRole('link', { name: 'Practice' });
+    // Practice is a round ghost play glyph beside ..., not a wide button.
+    expect(((await practiceLink.textContent()) ?? '').trim()).toBe('');
+    await expect(practiceLink.locator('svg')).toHaveCount(1);
+    const practice = (await practiceLink.boundingBox())!;
+    const more = (await actions.getByLabel('More script actions').boundingBox())!;
     const fab = (await record.boundingBox())!;
     for (const box of [practice, more]) {
       expect(box.height).toBeGreaterThanOrEqual(44);
       expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(box.width).toBeLessThanOrEqual(48);
       expect(box.y + box.height).toBeLessThanOrEqual(fab.y);
+      // Right-aligned, clear of the raised record button's column.
+      expect(box.x).toBeGreaterThan(fab.x + fab.width);
     }
-    // Practice fills the row beside the overflow button.
-    expect(practice.width).toBeGreaterThan(viewport.width - 32 - 44 - 8 - 2);
+    expect(more.x + more.width).toBeLessThanOrEqual(viewport.width - 8);
+    // The nav Record word uses the 11px label token.
+    expect(
+      await record
+        .locator('.studio-record-link__tag')
+        .evaluate((el) => getComputedStyle(el).fontSize),
+    ).toBe('11px');
     await record.click();
     await expect(page).toHaveURL(new RegExp(`#\\/record\\/${scriptId}$`));
   });
@@ -367,4 +396,40 @@ test('library rows keep their details on one line with a short date', async ({ p
   const fontSize = await meta.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
   expect((await meta.boundingBox())!.height).toBeLessThan(fontSize * 2.2);
   expect(await meta.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+});
+
+test('the editor opens on the words: chevron, title as heading, and timing on the first screen', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto('/studio#/scripts/new');
+  const title = page.getByLabel('Title', { exact: true });
+  await title.fill('How I film a whole week of short videos in one Sunday afternoon');
+  await expect(page.getByText('Saved')).toBeVisible();
+  // No visible "Editor" heading or field labels; the back link is a chevron named Scripts.
+  const heading = page.getByRole('heading', { level: 1 });
+  await expect(heading).toHaveCount(1);
+  await expect(heading.getByLabel('Title', { exact: true })).toHaveCount(1);
+  await expect(page.getByText('Editor', { exact: true })).toHaveCount(1);
+  await expect(page.getByText('Editor', { exact: true })).toHaveClass(/studio-visually-hidden/);
+  await expect(page.locator('label', { hasText: /^Title$|^Script$/ })).toHaveCount(0);
+  const back = page.getByRole('link', { name: 'Scripts', exact: true }).first();
+  await expect(back).toHaveAttribute('href', '#/scripts');
+  expect(((await back.textContent()) ?? '').trim()).toBe('');
+  const backBox = (await back.boundingBox())!;
+  expect(backBox.width).toBeGreaterThanOrEqual(44);
+  // The title wraps instead of truncating, and shares its row with "Saved".
+  const field = (await title.boundingBox())!;
+  expect(await title.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+  expect(field.height).toBeGreaterThan(40);
+  const saved = (await page.getByText('Saved').boundingBox())!;
+  expect(saved.y).toBeLessThan(field.y + field.height);
+  expect(saved.x).toBeGreaterThan(field.x + field.width - 1);
+  // Empty script: the stats line and duration row are on the first screen.
+  const row = (await page.getByRole('group', { name: 'Target length' }).boundingBox())!;
+  const stats = (await page.locator('.studio-stats-line').boundingBox())!;
+  const actions = (await page.locator('.studio-editor__actions').boundingBox())!;
+  expect(stats.y + stats.height).toBeLessThanOrEqual(actions.y);
+  expect(row.y + row.height).toBeLessThanOrEqual(actions.y);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
 });

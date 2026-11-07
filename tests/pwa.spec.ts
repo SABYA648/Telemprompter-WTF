@@ -231,6 +231,7 @@ test('offline Studio keeps working on saved scripts', async ({ page, context }) 
   await context.setOffline(true);
   await page.reload();
   await page.getByRole('button', { name: 'New script' }).click();
+  await page.getByRole('button', { name: 'Blank' }).click();
   await page.getByLabel('Title', { exact: true }).fill('Written offline');
   await expect(page.getByText('Saved')).toBeVisible();
   await page.goto('/studio#/scripts');
@@ -245,6 +246,7 @@ test('transfer code restores script and device identity in a fresh context', asy
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/studio#/scripts');
   await page.getByRole('button', { name: 'New script' }).click();
+  await page.getByRole('button', { name: 'Blank' }).click();
   await page.getByLabel('Title', { exact: true }).fill('Transfer title');
   await page.getByLabel('Script', { exact: true }).fill('The script crosses storage contexts.');
   await expect

@@ -5,6 +5,7 @@ test('Studio creates a script and persists it after reload', async ({ page }) =>
   await page.goto('/studio#/scripts');
   await expect(page.getByRole('heading', { name: 'Scripts' })).toBeVisible();
   await page.getByRole('button', { name: 'New script' }).click();
+  await page.getByRole('button', { name: 'Blank' }).click();
   await expect(page.getByRole('heading', { name: 'Editor' })).toBeVisible();
   await page.getByLabel('Title', { exact: true }).fill('A persistent Studio script');
   await page.getByLabel('Script', { exact: true }).fill('A few words for a stored script.');
@@ -75,6 +76,7 @@ test('Studio works at phone width and library search, delete, restore work', asy
     .click();
   await expect(page.getByRole('heading', { name: 'Scripts' })).toBeVisible();
   await page.getByRole('button', { name: 'New script' }).click();
+  await page.getByRole('button', { name: 'Blank' }).click();
   await page.getByLabel('Title', { exact: true }).fill('Searchable story');
   await page.getByLabel('Script', { exact: true }).fill('A body with unique content.');
   await expect(page.getByText('Saved')).toBeVisible();
@@ -99,6 +101,7 @@ test('Studio works at phone width and library search, delete, restore work', asy
 test('Studio markup controls and stats update safely', async ({ page }) => {
   await page.goto('/studio#/scripts');
   await page.getByRole('button', { name: 'New script' }).click();
+  await page.getByRole('button', { name: 'Blank' }).click();
   await expect(page.getByRole('heading', { name: 'Editor' })).toBeVisible();
   const body = page.getByRole('textbox', { name: 'Script', exact: true });
   await body.fill('# Intro\nHello **friend** [pause] {name}');
@@ -121,6 +124,7 @@ test('Studio home, library and editor pass accessibility scans', async ({ page }
 test('deleting a just-edited script does not restore it on reload', async ({ page }) => {
   await page.goto('/studio#/scripts');
   await page.getByRole('button', { name: 'New script' }).click();
+  await page.getByRole('button', { name: 'Blank' }).click();
   await page.getByLabel('Title', { exact: true }).fill('Delete immediately');
   await page.getByLabel('Script', { exact: true }).fill('Unsaved words');
   await page.getByLabel('More script actions').click();

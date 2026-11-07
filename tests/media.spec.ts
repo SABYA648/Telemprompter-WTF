@@ -1057,11 +1057,21 @@ for (const width of [360, 390]) {
     await expect(tray.getByText('Text', { exact: true })).toHaveCount(0);
     await expect(tray.getByRole('group', { name: 'Speed' }).locator('svg')).not.toHaveCount(0);
     await expect(tray.getByRole('group', { name: 'Text size' }).locator('svg')).not.toHaveCount(0);
-    await expect(tray.locator('.record-tray__value').first()).toHaveText(/^\d+ WPM$/);
+    await expect(tray.locator('.studio-stepper__value').first()).toHaveText(/^\d+ WPM$/);
     const fit = tray.getByRole('button', { name: 'Fit speed to target length' });
+    // Off, Fit is an outline ghost; on, it fills like any pressed ghost button.
     expect(await fit.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
-      'rgba(0, 0, 0, 0)',
+      (await fit.getAttribute('aria-pressed')) === 'true' ? 'rgb(32, 32, 36)' : 'rgba(0, 0, 0, 0)',
     );
+    // Fit sits inline right after +, not alone in the far corner.
+    const faster = (await tray.getByRole('button', { name: 'Faster' }).boundingBox())!;
+    const fitBox = (await fit.boundingBox())!;
+    expect(fitBox.x - (faster.x + faster.width)).toBeLessThanOrEqual(12);
+    expect(Math.abs(fitBox.y - faster.y)).toBeLessThanOrEqual(2);
+    // The open Aa is a raised surface with a neutral ring, never a solid white disk.
+    const aa = page.getByRole('button', { name: 'Prompter controls' });
+    expect(await aa.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(32, 32, 36)');
+    expect(await aa.evaluate((el) => getComputedStyle(el).boxShadow)).toContain('2px');
     expect(await saturated()).toEqual([]);
   });
 }

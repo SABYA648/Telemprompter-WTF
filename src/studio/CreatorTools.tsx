@@ -45,9 +45,9 @@ export async function createFromTemplate(id: string) {
   return script;
 }
 
-export function TemplatePicker({ onCreated, open }: { onCreated?: () => void; open?: boolean }) {
-  const [expanded, setExpanded] = useState(Boolean(open));
-  const templates = usePack<StudioTemplate>(loadTemplates, expanded);
+/** The template list, shown in the library's New script sheet. */
+export function TemplatePicker({ onCreated }: { onCreated?: () => void }) {
+  const templates = usePack<StudioTemplate>(loadTemplates, true);
   const [query, setQuery] = useState('');
   const [duration, setDuration] = useState('all');
   const [format, setFormat] = useState('all');
@@ -63,15 +63,7 @@ export function TemplatePicker({ onCreated, open }: { onCreated?: () => void; op
       (format === 'all' || item.format === format),
   );
   return (
-    <details
-      class="studio-card studio-disclosure"
-      open={open}
-      onToggle={(event) => setExpanded(event.currentTarget.open)}
-    >
-      <summary>
-        <Icon name="grid" size={20} />
-        Start from a template
-      </summary>
+    <div class="studio-template-picker">
       <div class="studio-grid-fields">
         <label class="studio-label">
           Search templates
@@ -117,7 +109,7 @@ export function TemplatePicker({ onCreated, open }: { onCreated?: () => void; op
       {!shown.length && (
         <p>{templates.length ? 'No matching templates.' : 'Loading templates...'}</p>
       )}
-    </details>
+    </div>
   );
 }
 

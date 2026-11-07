@@ -15,6 +15,7 @@ import type { KeyAction, StudioScript } from '../domain/studio/types';
 import { watchGamepads } from '../domain/studio/gamepad';
 import { PrompterBroadcast, operatorRequested } from '../domain/studio/operator';
 import { Icon } from './Icons';
+import { SpeedRow } from './SpeedRow';
 
 const FIT_COPY: Record<PracticeFit, string> = {
   under: 'Under target',
@@ -184,7 +185,10 @@ export default function PracticeScreen({ id }: { id: string }) {
   return (
     <section class={`studio-screen studio-practice${cameraOn ? ' has-camera' : ''}`}>
       {cameraOn && <video ref={video} autoPlay muted playsInline class="studio-practice-camera" />}
-      <h1 class="studio-practice-title">Practice: {script.title}</h1>
+      <h1 class="studio-practice-title">
+        <span class="studio-visually-hidden">Practice: </span>
+        {script.title || 'Untitled script'}
+      </h1>
       <div
         class="studio-practice-prompter"
         ref={scroller}
@@ -215,23 +219,7 @@ export default function PracticeScreen({ id }: { id: string }) {
           <span class="studio-visually-hidden">{percent}% complete.</span>
           {percent >= 80 ? ' Practice counted for today.' : ''}
         </p>
-        <div class="studio-practice-speed">
-          <button
-            aria-label="Slower"
-            disabled={wpm <= 80}
-            onClick={() => setWpm(Math.max(80, wpm - 5))}
-          >
-            −
-          </button>
-          <span>{wpm} WPM</span>
-          <button
-            aria-label="Faster"
-            disabled={wpm >= 240}
-            onClick={() => setWpm(Math.min(240, wpm + 5))}
-          >
-            +
-          </button>
-        </div>
+        <SpeedRow wpm={wpm} onChange={setWpm} />
         {/* The camera's shutter row: close, camera, play (the one accent), restart, finish. */}
         <div class="studio-practice-row">
           <a href={`#/scripts/${script.id}`} aria-label="Close practice">

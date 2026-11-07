@@ -50,6 +50,7 @@ import {
 } from '../domain/studio/readiness';
 import ProCameraControls from './ProCameraControls';
 import { Icon, type IconName } from './Icons';
+import { SpeedRow } from './SpeedRow';
 import { TakeRating } from './HabitUI';
 import { SAFE_ZONES } from '../content/studio/platformFacts';
 import { SettingsFields } from './SettingsScreen';
@@ -1341,7 +1342,9 @@ export default function RecordScreen({
                 // Fit to target tints the target, so no separate chip repeats it.
                 <span class={fitted ? 'record-timer__target is-fit' : 'record-timer__target'}>
                   {' / '}
-                  {formatTime(Math.max(0, targetMs - elapsed))}
+                  <span class="record-timer__time">
+                    {formatTime(Math.max(0, targetMs - elapsed))}
+                  </span>
                 </span>
               ) : (
                 ''
@@ -1465,18 +1468,7 @@ export default function RecordScreen({
         </div>
         {controlsOpen && (
           <div id="record-tray" class="record-tray" role="group" aria-label="Prompter controls">
-            <div class="record-tray__row" role="group" aria-label="Speed">
-              <button onClick={() => setSpeed(wpm - 5)} aria-label="Slower">
-                −
-              </button>
-              <span class="record-tray__value">
-                <Icon name="gauge" size={16} />
-                {wpm}
-                <span class="studio-visually-hidden"> WPM</span>
-              </span>
-              <button onClick={() => setSpeed(wpm + 5)} aria-label="Faster">
-                +
-              </button>
+            <SpeedRow wpm={wpm} onChange={setSpeed}>
               <button
                 class="record-tray__fit"
                 aria-label="Fit speed to target length"
@@ -1494,12 +1486,12 @@ export default function RecordScreen({
               >
                 <Icon name="timer-check" />
               </button>
-            </div>
-            <div class="record-tray__row" role="group" aria-label="Text size">
+            </SpeedRow>
+            <div class="studio-stepper" role="group" aria-label="Text size">
               <button onClick={() => setFontSize(font - 2)} aria-label="Smaller text">
                 <Icon name="text-smaller" />
               </button>
-              <span class="record-tray__value">
+              <span class="studio-stepper__value">
                 <Icon name="format" size={16} />
                 {font}
               </span>

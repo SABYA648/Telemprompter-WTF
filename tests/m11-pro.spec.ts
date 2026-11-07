@@ -293,13 +293,13 @@ test('take detail keeps one accent action and fits 360 and 390 px', async ({ pag
   }
 });
 
-test('imports a .docx and a .md script from the library menu', async ({ page }) => {
+test('imports a .docx and a .md script from the library + sheet', async ({ page }) => {
   await stubUmami(page);
   await page.goto('/studio#/scripts');
-  await page.getByLabel('More library actions').click();
+  await page.getByRole('button', { name: 'New script' }).click();
   const [chooser] = await Promise.all([
     page.waitForEvent('filechooser'),
-    page.getByRole('button', { name: 'Import file' }).click(),
+    page.getByRole('button', { name: 'Import', exact: true }).click(),
   ]);
   await chooser.setFiles('tests/fixtures/script.docx');
   await expect(page.getByRole('heading', { name: 'Editor' })).toBeVisible();
@@ -327,10 +327,10 @@ test('imports a .docx and a .md script from the library menu', async ({ page }) 
 
 test('a broken .docx shows an honest message', async ({ page }) => {
   await page.goto('/studio#/scripts');
-  await page.getByLabel('More library actions').click();
+  await page.getByRole('button', { name: 'New script' }).click();
   const [chooser] = await Promise.all([
     page.waitForEvent('filechooser'),
-    page.getByRole('button', { name: 'Import file' }).click(),
+    page.getByRole('button', { name: 'Import', exact: true }).click(),
   ]);
   await chooser.setFiles({
     name: 'bad.docx',

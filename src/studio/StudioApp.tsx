@@ -22,7 +22,8 @@ import {
   duplicateScript,
   purgeDeletedScripts,
 } from '../domain/studio/scriptsRepo';
-import type { ScriptStatus, StudioScript } from '../domain/studio/types';
+import type { StudioScript } from '../domain/studio/types';
+import { SCRIPT_STAGES, scriptStage, type ScriptStage } from '../domain/studio/status';
 import { durationAtWpm, fitForTarget, sectionDurations } from '../domain/studio/timing';
 import { readabilityWarning } from '../domain/studio/words';
 import { isMemoryStorage } from '../domain/studio/db';
@@ -551,16 +552,23 @@ function Scripts({
   refresh: () => Promise<void>;
 }) {
   const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<'all' | ScriptStatus>('all');
+  const [picked, setStatus] = useState<'all' | ScriptStage>('all');
   const [notice, setNotice] = useState('');
+  // "+" opens one sheet: Blank, Template or Import. Home's Templates link lands on its list.
+  const [creating, setCreating] = useState<'menu' | 'templates' | null>(() =>
+    new URLSearchParams(location.hash.split('?')[1] ?? '').has('templates') ? 'templates' : null,
+  );
   const statusRef = useRef<HTMLParagraphElement>(null);
+  const statusCount = (value: ScriptStage) =>
+    scripts.filter((script) => scriptStage(script) === value).length;
+  // Only stages that hold a script get a chip; All shows whenever another chip does.
+  const filters = SCRIPT_STAGES.filter((stage) => statusCount(stage.value) > 0);
+  const status = picked !== 'all' && statusCount(picked) > 0 ? picked : 'all';
   const visible = scripts.filter(
     (script) =>
       `${script.title} ${script.body}`.toLowerCase().includes(query.toLowerCase()) &&
-      (status === 'all' || script.status === status),
+      (status === 'all' || scriptStage(script) === status),
   );
-  const statusCount = (value: ScriptStatus) =>
-    scripts.filter((script) => script.status === value).length;
   const add = async () => {
     const script = await createScript();
     analytics.track('created_script', { source: 'blank' });
@@ -587,23 +595,43 @@ function Scripts({
           <button
             class="studio-button studio-button--quiet studio-icon-button"
             aria-label="New script"
-            onClick={() => void add()}
+            aria-haspopup="dialog"
+            onClick={() => setCreating('menu')}
           >
             <Icon name="plus" />
           </button>
-          <Overflow label="More library actions">
-            <button onClick={importer.pick}>
-              <Icon name="import" size={18} /> Import file
-            </button>
-          </Overflow>
         </div>
         {importer.element}
       </div>
       {importer.status && <p role="status">{importer.status}</p>}
-      <TemplatePicker
-        onCreated={() => void refresh()}
-        open={new URLSearchParams(location.hash.split('?')[1] ?? '').has('templates')}
-      />
+      {creating === 'menu' && (
+        <Sheet title="New script" onClose={() => setCreating(null)}>
+          <div class="studio-create-options">
+            <button onClick={() => void add()}>
+              <Icon name="plus" />
+              Blank
+            </button>
+            <button onClick={() => setCreating('templates')}>
+              <Icon name="grid" />
+              Template
+            </button>
+            <button
+              onClick={() => {
+                importer.pick();
+                setCreating(null);
+              }}
+            >
+              <Icon name="import" />
+              Import
+            </button>
+          </div>
+        </Sheet>
+      )}
+      {creating === 'templates' && (
+        <Sheet title="Templates" onClose={() => setCreating(null)}>
+          <TemplatePicker onCreated={() => void refresh()} />
+        </Sheet>
+      )}
       {queue.length > 0 && (
         <section class="studio-card">
           <h2>Up next</h2>
@@ -658,21 +686,23 @@ function Scripts({
           placeholder="Search scripts"
         />
       </div>
-      <div class="studio-filter-chips" role="group" aria-label="Filter scripts">
-        {LIBRARY_FILTERS.map(([value, label]) => (
-          <button
-            type="button"
-            class="studio-toggle"
-            aria-pressed={status === value}
-            onClick={() => setStatus(value)}
-          >
-            {label}{' '}
-            <span class="studio-filter-count">
-              {value === 'all' ? scripts.length : statusCount(value)}
-            </span>
-          </button>
-        ))}
-      </div>
+      {filters.length > 1 && (
+        <div class="studio-filter-chips" role="group" aria-label="Filter scripts">
+          {[{ value: 'all' as const, label: 'All' }, ...filters].map(({ value, label }) => (
+            <button
+              type="button"
+              class="studio-toggle"
+              aria-pressed={status === value}
+              onClick={() => setStatus(value)}
+            >
+              {label}{' '}
+              <span class="studio-filter-count">
+                {value === 'all' ? scripts.length : statusCount(value)}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
       <p
         class="studio-visually-hidden"
         aria-live="polite"
@@ -729,12 +759,6 @@ function Scripts({
     </section>
   );
 }
-/** Two or three chips cover the library: everything, ready to shoot, and already posted. */
-const LIBRARY_FILTERS: Array<['all' | ScriptStatus, string]> = [
-  ['all', 'All'],
-  ['ready', 'Ready'],
-  ['posted', 'Posted'],
-];
 /** "Today", "Yesterday", or a short date such as "Nov 4", so a row's details stay on one line. */
 function shortDate(time: number): string {
   const day = (value: number) => new Date(value).setHours(0, 0, 0, 0);
@@ -743,13 +767,9 @@ function shortDate(time: number): string {
   if (days === 1) return 'Yesterday';
   return new Date(time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
-const STATUS_LABELS: Record<ScriptStatus, string> = {
-  idea: 'Idea',
-  draft: 'Draft',
-  ready: 'Ready',
-  recorded: 'Recorded',
-  posted: 'Posted',
-};
+const STAGE_LABELS = Object.fromEntries(
+  SCRIPT_STAGES.map((stage) => [stage.value, stage.label]),
+) as Record<ScriptStage, string>;
 /** Library row: title and details lead; one round record action; the rest sit in a ... menu. */
 function ScriptCard({
   script,
@@ -778,7 +798,7 @@ function ScriptCard({
   const details = [
     `${words} words`,
     FORMAT(durationAtWpm(words, 140)),
-    STATUS_LABELS[script.status],
+    STAGE_LABELS[scriptStage(script)],
     shortDate(script.updatedAt),
   ].join(' · ');
   return (
@@ -844,6 +864,7 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
   const [customTarget, setCustomTarget] = useState(false);
   const [captionsOpen, setCaptionsOpen] = useState(false);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
   const currentRef = useRef<StudioScript | null>(null);
   const pendingRef = useRef(false);
   const sequenceRef = useRef(0);
@@ -896,6 +917,8 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
       currentRef.current = item ?? null;
       pendingRef.current = false;
       setScript(item ?? null);
+      // Nothing to report until the first edit; a stale "Loading..." is only noise.
+      setSaved('');
     });
   }, [id]);
   useEffect(() => {
@@ -912,6 +935,26 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [script]);
+  // The title wraps instead of truncating: the field grows to fit every line, and refits when
+  // its width or the font changes.
+  useEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    const fit = () => {
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    };
+    fit();
+    let width = el.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (el.clientWidth === width) return;
+      width = el.clientWidth;
+      fit();
+    });
+    observer.observe(el);
+    void document.fonts?.ready.then(fit);
+    return () => observer.disconnect();
+  }, [script?.title, Boolean(script)]);
   useEditorBroadcast(script?.body, operatorOn);
   const importer = useScriptImport(async (imported) => {
     await flush();
@@ -948,70 +991,63 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
   const placeholders = (script.body.match(/\{[^}]+\}/g) ?? []).length;
   return (
     <section class="studio-screen studio-editor">
-      <a class="studio-back" href="#/scripts">
-        Scripts
-      </a>
-      <div class="studio-screen-heading">
-        <h1>Editor</h1>
+      {/* The title is the heading: a back chevron, the title itself, and "Saved" on one row. */}
+      <div class="studio-screen-heading studio-editor__head">
+        <a class="studio-back studio-back--icon" href="#/scripts" aria-label="Scripts">
+          <Icon name="back" />
+        </a>
+        <h1 class="studio-editor__title">
+          <span class="studio-visually-hidden">Editor</span>
+          <textarea
+            ref={titleRef}
+            rows={1}
+            aria-label="Title"
+            placeholder="Untitled script"
+            value={script.title}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.preventDefault();
+            }}
+            onInput={(event) =>
+              edit({
+                ...script,
+                title: (event.target as HTMLTextAreaElement).value.replace(/\s*\n\s*/g, ' '),
+              })
+            }
+          />
+        </h1>
         <span class="studio-editor__status">
           <BadgeChip />
           <span aria-live="polite">{saved}</span>
         </span>
       </div>
-      <label class="studio-label">
-        Title
-        <input
-          value={script.title}
-          onInput={(event) => edit({ ...script, title: (event.target as HTMLInputElement).value })}
+      {/* The textarea's own text is transparent; a layer behind it draws the same characters
+          with section headings as labels and cues as chips, so "#" reads as a marker. */}
+      <div class="studio-script-field">
+        <div class="studio-script-layer" aria-hidden="true">
+          {editorSegments(script.body).map((line, index) => (
+            <>
+              {index > 0 && '\n'}
+              {line.map((segment) =>
+                segment.kind === 'text' ? (
+                  segment.text
+                ) : (
+                  <span class={`studio-md-${segment.kind}`}>{segment.text}</span>
+                ),
+              )}
+            </>
+          ))}
+          {'\u200b'}
+        </div>
+        <textarea
+          id="studio-body"
+          aria-label="Script"
+          ref={bodyRef}
+          value={script.body}
+          onInput={(event) =>
+            edit({ ...script, body: (event.target as HTMLTextAreaElement).value })
+          }
+          placeholder="Write your script"
         />
-      </label>
-      <div class="studio-label studio-script-label">
-        <div class="studio-script-head">
-          <label for="studio-body">Script</label>
-          {/* One Aa menu holds sections, marks and cues, so no markup syntax needs typing. */}
-          <div class="studio-toolbar" role="group" aria-label="Markup tools">
-            <Overflow label="Format" icon="format">
-              <button onClick={() => insert('# ')}>Add section</button>
-              <button onClick={() => insert('[pause]')}>Pause</button>
-              <button onClick={() => insert('**text**')}>Emphasis</button>
-              <button onClick={() => insert('==text==')}>Highlight</button>
-              <button onClick={() => insert('// ')}>Note</button>
-              {['breathe', 'smile', 'look up', 'slow', 'cut'].map((cue) => (
-                <button aria-label={`Cue: ${cue}`} onClick={() => insert(`[${cue}]`)}>
-                  {cue.charAt(0).toUpperCase() + cue.slice(1)}
-                </button>
-              ))}
-            </Overflow>
-          </div>
-        </div>
-        {/* The textarea's own text is transparent; a layer behind it draws the same characters
-            with section headings as labels and cues as chips, so "#" reads as a marker. */}
-        <div class="studio-script-field">
-          <div class="studio-script-layer" aria-hidden="true">
-            {editorSegments(script.body).map((line, index) => (
-              <>
-                {index > 0 && '\n'}
-                {line.map((segment) =>
-                  segment.kind === 'text' ? (
-                    segment.text
-                  ) : (
-                    <span class={`studio-md-${segment.kind}`}>{segment.text}</span>
-                  ),
-                )}
-              </>
-            ))}
-            {'\u200b'}
-          </div>
-          <textarea
-            id="studio-body"
-            ref={bodyRef}
-            value={script.body}
-            onInput={(event) =>
-              edit({ ...script, body: (event.target as HTMLTextAreaElement).value })
-            }
-            placeholder="Write your script"
-          />
-        </div>
       </div>
       <HookPicker insert={insert} />
       {/* One quiet line of facts; only the duration row below is tappable. */}
@@ -1092,47 +1128,14 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
               ))}
             </span>
           </div>
-          <StatusToggle value={script.status} onChange={(status) => edit({ ...script, status })} />
+          <StatusToggle
+            value={scriptStage(script)}
+            onChange={(status) => edit({ ...script, status })}
+          />
         </div>
       </details>
       {captionsOpen && (
-        <Sheet title="Captions" onClose={() => setCaptionsOpen(false)}>
-          <CountedField
-            label="Instagram caption"
-            multiline
-            value={script.caption}
-            count={script.caption.length}
-            limit={limits.instagramCaption}
-            unit="characters"
-            note={`About ${limits.instagramCaptionVisible} show before the more link.`}
-            onInput={(caption) => edit({ ...script, caption })}
-          />
-          <CountedField
-            label="Hashtags"
-            value={script.hashtags}
-            count={(script.hashtags.match(/#[\p{L}\p{N}_]+/gu) ?? []).length}
-            limit={limits.instagramHashtags}
-            unit="hashtags"
-            onInput={(hashtags) => edit({ ...script, hashtags })}
-          />
-          <CountedField
-            label="YouTube title"
-            value={script.youtubeTitle}
-            count={script.youtubeTitle.length}
-            limit={limits.youtubeTitle}
-            unit="characters"
-            onInput={(youtubeTitle) => edit({ ...script, youtubeTitle })}
-          />
-          <CountedField
-            label="YouTube description"
-            multiline
-            value={script.youtubeDescription}
-            count={script.youtubeDescription.length}
-            limit={limits.youtubeDescription}
-            unit="characters"
-            onInput={(youtubeDescription) => edit({ ...script, youtubeDescription })}
-          />
-        </Sheet>
+        <CaptionsSheet script={script} edit={edit} onClose={() => setCaptionsOpen(false)} />
       )}
       {showSend && <SendToPhone script={script} />}
       {(notice || importer.status) && <p role="status">{notice || importer.status}</p>}
@@ -1140,8 +1143,27 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
       <PrintableScript script={script} />
       {/* Record is the raised nav button, which records this script while the editor is open. */}
       <div class="studio-editor__actions">
-        <a class="studio-button studio-button--quiet" href={`#/practice/${script.id}`}>
-          <Icon name="play" size={20} /> Practice
+        {/* One Aa menu holds sections, marks and cues, so no markup syntax needs typing. */}
+        <div class="studio-toolbar" role="group" aria-label="Markup tools">
+          <Overflow label="Format" icon="format" up>
+            <button onClick={() => insert('# ')}>Add section</button>
+            <button onClick={() => insert('[pause]')}>Pause</button>
+            <button onClick={() => insert('**text**')}>Emphasis</button>
+            <button onClick={() => insert('==text==')}>Highlight</button>
+            <button onClick={() => insert('// ')}>Note</button>
+            {['breathe', 'smile', 'look up', 'slow', 'cut'].map((cue) => (
+              <button aria-label={`Cue: ${cue}`} onClick={() => insert(`[${cue}]`)}>
+                {cue.charAt(0).toUpperCase() + cue.slice(1)}
+              </button>
+            ))}
+          </Overflow>
+        </div>
+        <a
+          class="studio-round-action studio-editor__practice"
+          href={`#/practice/${script.id}`}
+          aria-label="Practice"
+        >
+          <Icon name="play" />
         </a>
         <Overflow label="More script actions" up>
           <button onClick={() => setCaptionsOpen(true)}>
@@ -1191,18 +1213,19 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
     </section>
   );
 }
-const STATUS_OPTIONS: Array<{ value: ScriptStatus; label: string; icon: IconName }> = [
-  { value: 'draft', label: 'Draft', icon: 'pencil' },
-  { value: 'ready', label: 'Ready', icon: 'check' },
-  { value: 'posted', label: 'Posted', icon: 'share' },
-];
-/** Three icon segments with radio semantics: arrows move the choice, one tab stop. */
+const STAGE_ICONS: Record<ScriptStage, IconName> = {
+  draft: 'pencil',
+  recorded: 'recorded',
+  posted: 'posted',
+};
+const STATUS_OPTIONS = SCRIPT_STAGES.map((stage) => ({ ...stage, icon: STAGE_ICONS[stage.value] }));
+/** Three icon segments, each with a small label, and radio semantics: arrows move the choice. */
 function StatusToggle({
   value,
   onChange,
 }: {
-  value: ScriptStatus;
-  onChange: (status: ScriptStatus) => void;
+  value: ScriptStage;
+  onChange: (status: ScriptStage) => void;
 }) {
   const current = STATUS_OPTIONS.findIndex((option) => option.value === value);
   return (
@@ -1214,8 +1237,6 @@ function StatusToggle({
             type="button"
             role="radio"
             aria-checked={value === option.value}
-            aria-label={option.label}
-            title={option.label}
             tabIndex={index === Math.max(0, current) ? 0 : -1}
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => {
@@ -1229,19 +1250,85 @@ function StatusToggle({
             }}
           >
             <Icon name={option.icon} size={20} />
+            <span class="studio-segmented__label">{option.label}</span>
           </button>
         ))}
       </div>
     </div>
   );
 }
+/** Instagram first: caption and hashtags. YouTube's two fields wait behind one chip. */
+function CaptionsSheet({
+  script,
+  edit,
+  onClose,
+}: {
+  script: StudioScript;
+  edit: (next: StudioScript) => void;
+  onClose: () => void;
+}) {
+  const [youtube, setYoutube] = useState(Boolean(script.youtubeTitle || script.youtubeDescription));
+  return (
+    <Sheet title="Captions" onClose={onClose}>
+      <CountedField
+        label="Instagram caption"
+        multiline
+        value={script.caption}
+        count={script.caption.length}
+        limit={limits.instagramCaption}
+        unit="characters"
+        onInput={(caption) => edit({ ...script, caption })}
+      />
+      <CountedField
+        label="Hashtags"
+        value={script.hashtags}
+        count={(script.hashtags.match(/#[\p{L}\p{N}_]+/gu) ?? []).length}
+        limit={limits.instagramHashtags}
+        unit="hashtags"
+        onInput={(hashtags) => edit({ ...script, hashtags })}
+      />
+      <button
+        type="button"
+        class="studio-toggle studio-captions__youtube"
+        aria-pressed={youtube}
+        onClick={() => setYoutube(!youtube)}
+      >
+        YouTube
+      </button>
+      {youtube && (
+        <>
+          <CountedField
+            label="YouTube title"
+            value={script.youtubeTitle}
+            count={script.youtubeTitle.length}
+            limit={limits.youtubeTitle}
+            unit="characters"
+            onInput={(youtubeTitle) => edit({ ...script, youtubeTitle })}
+          />
+          <CountedField
+            label="YouTube description"
+            multiline
+            value={script.youtubeDescription}
+            count={script.youtubeDescription.length}
+            limit={limits.youtubeDescription}
+            unit="characters"
+            onInput={(youtubeDescription) => edit({ ...script, youtubeDescription })}
+          />
+        </>
+      )}
+      <button type="button" class="studio-button studio-button--quiet" onClick={onClose}>
+        Done
+      </button>
+    </Sheet>
+  );
+}
+/** A field with a bare "12/2200" counter that turns danger red near the limit. */
 function CountedField({
   label,
   value,
   count,
   limit,
   unit,
-  note,
   multiline,
   onInput,
 }: {
@@ -1250,12 +1337,11 @@ function CountedField({
   count: number;
   limit: number;
   unit: string;
-  note?: string;
   multiline?: boolean;
   onInput: (value: string) => void;
 }) {
   const hintId = `count-${label.replace(/\W+/g, '-').toLowerCase()}`;
-  const over = count > limit;
+  const near = count >= limit * 0.9;
   const update = (event: Event) => onInput((event.target as HTMLInputElement).value);
   return (
     <div class="studio-counted-field">
@@ -1267,9 +1353,13 @@ function CountedField({
           <input value={value} aria-describedby={hintId} onInput={update} />
         )}
       </label>
-      <p id={hintId} class={over ? 'studio-count is-over' : 'studio-count'}>
-        {count}/{limit} {unit}
-        {over ? `. ${count - limit} over the limit.` : note ? '.' : ''} {note}
+      <p id={hintId} class={near ? 'studio-count is-near' : 'studio-count'}>
+        {count}/{limit}
+        <span class="studio-visually-hidden">
+          {' '}
+          {unit}
+          {count > limit ? `, ${count - limit} over the limit` : ''}
+        </span>
       </p>
     </div>
   );

@@ -265,6 +265,14 @@ test('an editor target edit ends the preset target in Record and Practice', asyn
   await page.goto('/studio#/record/quick');
   // 150 spoken words over a 60 second target, and the camera says why it is not 140.
   await expect(page.locator('.record-timer .is-fit')).toHaveText('/ 1:00');
+  // Only the target time is tinted; no inner pill.
+  const target = page.locator('.record-timer .is-fit');
+  expect(await target.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+    'rgba(0, 0, 0, 0)',
+  );
+  expect(
+    await target.locator('.record-timer__time').evaluate((el) => getComputedStyle(el).color),
+  ).toBe('rgb(244, 241, 234)');
   await expect(page.getByText('Speed fits 1:00')).toHaveCount(1);
   await page.getByRole('button', { name: 'Prompter controls' }).click();
   await expect(page.getByText('150 WPM')).toBeVisible();

@@ -1032,16 +1032,8 @@
   font-size: 0.8125rem;
   text-align: center;
 }
-.studio-practice-speed {
-  display: flex;
+.studio-practice .studio-stepper {
   justify-content: center;
-  align-items: center;
-  gap: 8px;
-  font-variant-numeric: tabular-nums;
-}
-.studio-practice-speed span {
-  min-width: 72px;
-  text-align: center;
 }
 .studio-practice-row {
   display: grid;
@@ -1053,7 +1045,7 @@
   border-radius: 22px;
   background: rgba(10, 10, 11, 0.7);
 }
-.studio-practice-speed button,
+.studio-practice .studio-stepper button,
 .studio-practice-row > a,
 .studio-practice-row > button {
   display: inline-flex;
@@ -1082,7 +1074,7 @@
   color: #0a0a0b;
 }
 .studio-practice-row > button:disabled,
-.studio-practice-speed button:disabled {
+.studio-practice .studio-stepper button:disabled {
   opacity: 0.4;
   cursor: default;
 }
@@ -1146,8 +1138,12 @@
   color: var(--studio-muted);
   font-size: 0.88rem;
 }
-.studio-count.is-over {
-  color: #ffd47b;
+.studio-count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.studio-count.is-near {
+  color: var(--studio-danger, #ff4d4d);
   font-weight: 700;
 }
 .studio-visually-hidden:not(:focus) {
@@ -2008,9 +2004,11 @@ ol.studio-row-list .studio-row__title::before {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.14);
 }
+/* The open Aa reads as raised, not as a second bright disk beside the shutter. */
 .record-screen .record-main-controls > .is-open {
-  background: var(--studio-text, #f4f1ea);
-  color: #0a0a0b;
+  background: #202024;
+  box-shadow: inset 0 0 0 2px #f4f1ea;
+  color: #f4f1ea;
 }
 .record-screen .record-tray {
   display: grid;
@@ -2020,13 +2018,14 @@ ol.studio-row-list .studio-row__title::before {
   border-radius: 22px;
   background: rgba(10, 10, 11, 0.86);
 }
-.record-tray__row {
+.record-tray__row,
+.studio-stepper {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
-.record-tray__value {
+.studio-stepper__value {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2036,7 +2035,7 @@ ol.studio-row-list .studio-row__title::before {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.record-tray__value svg {
+.studio-stepper__value svg {
   color: #8a8a8f;
 }
 .record-screen .record-tray button {
@@ -2045,14 +2044,15 @@ ol.studio-row-list .studio-row__title::before {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.14);
 }
-/* Fit is a ghost button; on, it gains a thin ring rather than a solid fill. */
+/* Fit sits right after + as an outline ghost; on, it fills like any pressed ghost button. */
 .record-screen .record-tray .record-tray__fit {
-  margin-left: auto;
   background: transparent;
   box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.3);
 }
 .record-screen .record-tray button[aria-pressed='true'] {
-  box-shadow: inset 0 0 0 2px #f4f1ea;
+  background: #202024;
+  box-shadow: none;
+  color: #f4f1ea;
 }
 .record-screen .record-tray .record-sections {
   flex-wrap: wrap;
@@ -2069,13 +2069,13 @@ ol.studio-row-list .studio-row__title::before {
 .record-screen.controls-dim .record-main-controls:focus-within > * {
   opacity: 1;
 }
-/* Fit to target changed the speed: the timer's target lights up instead of a chip. */
-.record-timer__target.is-fit {
-  margin-left: 2px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: rgba(244, 241, 234, 0.2);
-  font-weight: 700;
+/* Fit to target changed the speed: only the target time is tinted, with no pill. */
+.record-timer__target.is-fit .record-timer__time {
+  color: #f4f1ea;
+  font-weight: 800;
+}
+.record-timer__target {
+  color: #8a8a8f;
 }
 /* The live camera fills the screen like Reels; the safe-zone guide shows the true crop. */
 @media (max-width: 1023px) {
@@ -2297,19 +2297,6 @@ ol.studio-row-list .studio-row__title::before {
 /* M12 P4: the Aa menu sits on the Script label row; the script field is a transparent textarea
    over a layer that draws the same text, so headings read as labels, not "# Hook". Both share
    every metric that affects wrapping, and the layer sizes the field, so it grows with the text. */
-.studio-script-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.studio-editor .studio-script-head .studio-toolbar {
-  margin: 0;
-}
-.studio-script-head .studio-overflow__menu {
-  right: 0;
-  left: auto;
-}
 .studio-script-field {
   display: grid;
 }
@@ -2475,8 +2462,8 @@ ol.studio-row-list .studio-row__title::before {
   position: sticky;
   bottom: var(--studio-nav);
   z-index: 3;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px;
+  display: flex;
+  justify-content: flex-end;
   align-items: center;
   gap: 8px;
   margin: 16px -16px 0;
@@ -3035,7 +3022,7 @@ ol.studio-row-list .studio-row__title::before {
   height: 24px;
 }
 .studio-record-link__tag {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1;
 }
@@ -3080,4 +3067,130 @@ ol.studio-row-list .studio-row__title::before {
 }
 .studio-settings-nav + .studio-storage {
   margin-top: 16px;
+}
+/* M12 P6: the editor opens on the words. A back chevron, the title as the heading and "Saved"
+   share one row; no field labels; Aa, Practice and ... sit right, clear of the nav record button. */
+.studio-editor__head {
+  align-items: flex-start;
+  gap: 4px;
+  margin: -8px 0 8px -12px;
+}
+.studio-back--icon {
+  flex: none;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+}
+.studio-editor__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+.studio-editor__title textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.4rem;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  resize: none;
+  overflow-wrap: break-word;
+}
+.studio-editor__title textarea::placeholder {
+  color: var(--studio-muted);
+}
+.studio-editor__title textarea:focus-visible {
+  outline: 2px solid var(--studio-text);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.studio-editor__head .studio-editor__status {
+  flex: none;
+  justify-content: flex-end;
+  min-width: 4.5rem;
+  min-height: 44px;
+  color: var(--studio-muted);
+  font-size: 0.8125rem;
+}
+.studio-editor .studio-script-field > .studio-script-layer,
+.studio-editor .studio-script-field > textarea {
+  min-height: min(40dvh, 200px);
+}
+.studio-editor__actions .studio-toolbar {
+  margin: 0;
+}
+.studio-editor__actions .studio-toolbar .studio-overflow__menu {
+  right: 0;
+  left: auto;
+}
+.studio-editor__actions .studio-overflow summary,
+.studio-editor__practice {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  background: var(--studio-raised);
+}
+.studio-editor__practice {
+  color: var(--studio-text);
+}
+/* Status: Draft, Recorded, Posted, each a glyph with an 11px label under it, like the nav. */
+.studio-status-field .studio-segmented {
+  border-radius: 18px;
+}
+.studio-status-field .studio-segmented button {
+  gap: 2px;
+  min-width: 72px;
+  min-height: 52px;
+  padding: 4px 8px;
+  border-radius: 16px;
+}
+.studio-segmented__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+/* Captions: Instagram fields first, YouTube behind one chip, and Done low in the sheet. */
+.studio-captions__youtube {
+  justify-self: start;
+}
+.studio-sheet > .studio-button--quiet:last-child {
+  position: sticky;
+  bottom: 0;
+  margin-top: 4px;
+}
+/* Library "+" sheet: three big glyph rows, Blank, Template and Import. */
+.studio-create-options {
+  display: grid;
+  gap: 8px;
+}
+.studio-create-options button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.studio-sheet .studio-counted-field,
+.studio-sheet .studio-counted-field .studio-label {
+  margin-top: 0;
 }

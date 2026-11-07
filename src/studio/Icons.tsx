@@ -18,6 +18,9 @@ export type IconName =
   | 'copy'
   | 'close'
   | 'pause'
+  | 'back'
+  | 'recorded'
+  | 'posted'
   | 'lock'
   | 'phone'
   | 'present'
@@ -152,6 +155,21 @@ const paths: Record<IconName, preact.JSX.Element> = {
     </>
   ),
   chevron: <path d="m6 9 6 6 6-6" />,
+  back: <path d="m15 5-7 7 7 7" />,
+  // A record dot in a ring: this script has a take.
+  recorded: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="3.5" fill="currentColor" />
+    </>
+  ),
+  // A check in a circle: done and out in the world, not a share action.
+  posted: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="m8.5 12.2 2.4 2.4 4.6-4.9" />
+    </>
+  ),
   portrait: <rect x="7" y="3" width="10" height="18" rx="2" />,
   landscape: <rect x="3" y="7" width="18" height="10" rx="2" />,
   monitor: (

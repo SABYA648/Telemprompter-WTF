@@ -203,6 +203,7 @@ try {
     ]) {
       await page.goto(`${base}/studio#/scripts`);
       await page.getByRole('button', { name: 'New script' }).click();
+      await page.getByRole('button', { name: 'Blank' }).click();
       await page.getByLabel('Title', { exact: true }).fill(title);
       await page.getByLabel('Script', { exact: true }).fill(body);
       await page.getByText('Saved').waitFor();
@@ -222,6 +223,12 @@ try {
     await shoot(page, 'scripts-library', w);
     await page.locator('.studio-overflow summary').first().click();
     await page.screenshot({ path: `${outDir}/scripts-library-menu-${w}.png` });
+    await page.keyboard.press('Escape');
+    // M12 P6: "+" is the one way to start a script: Blank, Template or Import in one sheet.
+    await page.getByRole('button', { name: 'New script' }).click();
+    await page.getByRole('dialog', { name: 'New script' }).waitFor();
+    await page.screenshot({ path: `${outDir}/scripts-library-new-${w}.png` });
+    await page.keyboard.press('Escape');
 
     await page.goto(`${base}/studio#/takes`);
     await page.locator('.studio-take-tile').first().waitFor();
