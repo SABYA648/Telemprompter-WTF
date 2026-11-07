@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { SCRIPT_SIZE_BUCKETS } from '../domain/analytics';
 import { analytics, deviceClass, displayMode, studioEntry } from '../domain/analytics';
-import { parseMarkup } from '../domain/studio/markup';
+import { editorSegments, parseMarkup } from '../domain/studio/markup';
 import { presetById } from '../content/studio/presets';
 import { starterById } from '../content/studio/starterScripts';
 import {
@@ -934,44 +934,54 @@ function Editor({ id, refresh }: { id: string; refresh: () => Promise<void> }) {
           onInput={(event) => edit({ ...script, title: (event.target as HTMLInputElement).value })}
         />
       </label>
-      <div class="studio-toolbar" role="group" aria-label="Markup tools">
-        <Overflow label="Format" icon="format">
-          <button onClick={() => insert('# ')}>Section</button>
-          <button onClick={() => insert('[pause]')}>Pause</button>
-          <button onClick={() => insert('**text**')}>Emphasis</button>
-          <button onClick={() => insert('==text==')}>Highlight</button>
-          <button onClick={() => insert('// ')}>Note</button>
-        </Overflow>
-        <label class="studio-cue-label">
-          Cue
-          <select
-            aria-label="Cue"
-            value=""
-            onChange={(event) => {
-              const value = (event.target as HTMLSelectElement).value;
-              if (value) insert(`[${value}]`);
-              (event.target as HTMLSelectElement).value = '';
-            }}
-          >
-            <option value="">Choose cue</option>
-            {['breathe', 'smile', 'look up', 'slow', 'cut'].map((cue) => (
-              <option value={cue}>{cue}</option>
+      <div class="studio-label studio-script-label">
+        <div class="studio-script-head">
+          <label for="studio-body">Script</label>
+          {/* One Aa menu holds sections, marks and cues, so no markup syntax needs typing. */}
+          <div class="studio-toolbar" role="group" aria-label="Markup tools">
+            <Overflow label="Format" icon="format">
+              <button onClick={() => insert('# ')}>Add section</button>
+              <button onClick={() => insert('[pause]')}>Pause</button>
+              <button onClick={() => insert('**text**')}>Emphasis</button>
+              <button onClick={() => insert('==text==')}>Highlight</button>
+              <button onClick={() => insert('// ')}>Note</button>
+              {['breathe', 'smile', 'look up', 'slow', 'cut'].map((cue) => (
+                <button aria-label={`Cue: ${cue}`} onClick={() => insert(`[${cue}]`)}>
+                  {cue.charAt(0).toUpperCase() + cue.slice(1)}
+                </button>
+              ))}
+            </Overflow>
+          </div>
+        </div>
+        {/* The textarea's own text is transparent; a layer behind it draws the same characters
+            with section headings as labels and cues as chips, so "#" reads as a marker. */}
+        <div class="studio-script-field">
+          <div class="studio-script-layer" aria-hidden="true">
+            {editorSegments(script.body).map((line, index) => (
+              <>
+                {index > 0 && '\n'}
+                {line.map((segment) =>
+                  segment.kind === 'text' ? (
+                    segment.text
+                  ) : (
+                    <span class={`studio-md-${segment.kind}`}>{segment.text}</span>
+                  ),
+                )}
+              </>
             ))}
-          </select>
-        </label>
+            {'\u200b'}
+          </div>
+          <textarea
+            id="studio-body"
+            ref={bodyRef}
+            value={script.body}
+            onInput={(event) =>
+              edit({ ...script, body: (event.target as HTMLTextAreaElement).value })
+            }
+            placeholder="Write your script"
+          />
+        </div>
       </div>
-      <label class="studio-label">
-        Script
-        <textarea
-          id="studio-body"
-          ref={bodyRef}
-          value={script.body}
-          onInput={(event) =>
-            edit({ ...script, body: (event.target as HTMLTextAreaElement).value })
-          }
-          placeholder="Write your script"
-        />
-      </label>
       <HookPicker insert={insert} />
       <div class="studio-stats">
         <span>{parsed.spokenWordCount} spoken words</span>

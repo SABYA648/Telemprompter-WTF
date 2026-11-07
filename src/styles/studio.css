@@ -252,22 +252,6 @@
   outline: 3px solid #ffd47b;
   outline-offset: 3px;
 }
-.studio-cue-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 48px;
-  color: var(--studio-text);
-}
-.studio-cue-label select {
-  min-height: 48px;
-  border-radius: 10px;
-  background: #292b27;
-  color: var(--studio-text);
-  border: 1px solid #575950;
-  padding: 0 8px;
-  font: inherit;
-}
 .studio-list-item button {
   min-height: 48px;
 }
@@ -2241,19 +2225,86 @@ ol.studio-row-list .studio-row__title::before {
   left: 0;
   right: auto;
 }
-.studio-editor .studio-toolbar > button,
-.studio-editor .studio-cue-label {
-  flex: none;
-  min-height: 44px;
-  border-radius: 999px;
-  font-size: 0.875rem;
-  font-weight: 600;
+/* M12 P4: the Aa menu sits on the Script label row; the script field is a transparent textarea
+   over a layer that draws the same text, so headings read as labels, not "# Hook". Both share
+   every metric that affects wrapping, and the layer sizes the field, so it grows with the text. */
+.studio-script-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
-.studio-editor .studio-cue-label select {
-  min-height: 44px;
-  border-radius: 999px;
-  border-color: var(--studio-border);
+.studio-editor .studio-script-head .studio-toolbar {
+  margin: 0;
+}
+.studio-script-head .studio-overflow__menu {
+  right: 0;
+  left: auto;
+}
+.studio-script-field {
+  display: grid;
+}
+.studio-script-field > .studio-script-layer,
+.studio-editor .studio-script-field > textarea {
+  grid-area: 1 / 1;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40dvh;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--studio-border);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  tab-size: 4;
+}
+.studio-script-layer {
+  background: var(--studio-card);
+  color: var(--studio-text);
+  pointer-events: none;
+}
+.studio-editor .studio-script-field > textarea {
+  overflow: hidden;
+  resize: none;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--studio-text);
+}
+.studio-editor .studio-script-field > textarea::placeholder {
+  color: var(--studio-muted);
+}
+.studio-editor .studio-script-field > textarea::selection {
+  background: rgba(244, 241, 234, 0.25);
+  color: transparent;
+}
+/* Width-neutral styling only (color, background, shadow), so the layer wraps like the textarea. */
+.studio-md-hash {
+  color: var(--studio-muted);
+  opacity: 0.45;
+}
+.studio-md-section {
+  border-radius: 6px;
+  background: var(--studio-border);
+  box-shadow: 0 0 0 3px var(--studio-border);
+  color: var(--studio-text);
+  text-shadow:
+    0.3px 0 0 currentColor,
+    -0.3px 0 0 currentColor;
+}
+.studio-md-cue {
+  border-radius: 6px;
   background: var(--studio-raised);
+  box-shadow: 0 0 0 2px var(--studio-raised);
+  color: var(--studio-muted);
+}
+.studio-md-note {
+  color: var(--studio-muted);
 }
 .studio-stats span,
 .studio-section-durations span {

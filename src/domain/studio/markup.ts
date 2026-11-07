@@ -110,3 +110,30 @@ export function parseMarkup(input: string): MarkupResult {
   const spokenText = spoken.join(' ').replace(/\s+/g, ' ').trim();
   return { tokens, spokenText, spokenWordCount: countWords(spokenText), sections };
 }
+
+export type EditorSegment = { kind: 'text' | 'hash' | 'section' | 'cue' | 'note'; text: string };
+/**
+ * Splits the stored script into lines of styled segments for the editor's highlight layer. Each
+ * line's segments join back to exactly that line, so the layer wraps like the textarea above it.
+ */
+export function editorSegments(body: string): EditorSegment[][] {
+  return body.split('\n').map((line) => {
+    if (/^\s*\/\//.test(line)) return [{ kind: 'note', text: line }];
+    const heading = line.match(/^(#\s+)(.*)$/);
+    if (heading)
+      return [
+        { kind: 'hash', text: heading[1] ?? '' },
+        { kind: 'section', text: heading[2] ?? '' },
+      ].filter((segment) => segment.text) as EditorSegment[];
+    const segments: EditorSegment[] = [];
+    let at = 0;
+    for (const match of line.matchAll(/\[[^\]\n]+\]/g)) {
+      const index = match.index ?? 0;
+      if (index > at) segments.push({ kind: 'text', text: line.slice(at, index) });
+      segments.push({ kind: 'cue', text: match[0] });
+      at = index + match[0].length;
+    }
+    if (at < line.length) segments.push({ kind: 'text', text: line.slice(at) });
+    return segments;
+  });
+}

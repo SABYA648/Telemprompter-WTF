@@ -214,7 +214,7 @@ for (const viewport of [
     expect(row.x + row.width).toBeLessThanOrEqual(viewport.width);
     await expect(markup.getByRole('button', { name: 'Pause' })).toBeHidden();
     await markup.getByLabel('Format').click();
-    for (const name of ['Section', 'Pause', 'Emphasis', 'Highlight']) {
+    for (const name of ['Add section', 'Pause', 'Emphasis', 'Highlight', 'Cue: breathe']) {
       const option = (await markup.getByRole('button', { name }).boundingBox())!;
       expect(option.x).toBeGreaterThanOrEqual(0);
       expect(option.x + option.width).toBeLessThanOrEqual(viewport.width);
