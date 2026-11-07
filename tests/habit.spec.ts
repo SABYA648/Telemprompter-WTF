@@ -78,6 +78,10 @@ test('practice credits the streak after 80 percent', async ({ page }) => {
   await page.goto('/studio#/practice/quick');
   await expect(page.getByRole('heading', { name: /Practice:/ })).toBeVisible();
   await page.getByRole('button', { name: 'Start practice' }).click();
+  // Let the running state render and its timer start before the jump, or a loaded machine can
+  // jump the clock before the practice timer exists and credit only part of the minute.
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+  await page.clock.runFor(200);
   await page.clock.fastForward(60_000);
   await expect(page.getByText('Practice counted for today.')).toBeVisible();
   await page.goto('/studio#/');
